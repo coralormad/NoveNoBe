@@ -1,0 +1,1 @@
+export const ACCESS_TOKEN = 'tu_token_real';
