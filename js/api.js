@@ -1,27 +1,27 @@
 import { API_KEY } from './config.js';
 
-const BASE_URL = '____';   // pista: https://api.themoviedb.org/3
+const BASE_URL = 'https://api.themoviedb.org/3';  
 const LANGUAGE = 'es-ES';
 
 async function request(endpoint, params = {}) {
-  const url = new URL(`${BASE_URL}${____}`);
+  const url = new URL(`${BASE_URL}${endpoint}`);
   url.search = new URLSearchParams({
     api_key: API_KEY,
     language: LANGUAGE,
-    ____            // pista: copia aquí los params recibidos
+    ...params
   }).toString();
 
-  const response = await fetch(____);
-  if (!____) {
+  const response = await fetch(url);
+  if (!response.ok) {
     throw new Error(`Error ${response.status} al llamar a TMDB`);
   }
-  return ____;      // pista: leer el JSON también es asíncrono
+  return response.json();      // pista: leer el JSON también es asíncrono
 }
 
 export function searchMovies(query) {
-  return request(____, { ____ });
+  return request('search/movie', { query });
 }
 
 export function getMovieDetails(id) {
-  return request(____);
+  return request(`movie/${id}`);
 }
