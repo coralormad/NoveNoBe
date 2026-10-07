@@ -1,155 +1,80 @@
-/* ===== Variables (tema claro) ===== */
+/* =========================================================
+   1. TOKENS: escala fija de morados + fuentes
+   ========================================================= */
 :root {
-  --bg: #f4f5f9;
-  --surface: #ffffff;
-  --text: #1b1d29;
-  --text-muted: #5f6475;
-  --primary: #e63946;
-  --primary-contrast: #ffffff;
-  --border: #dde0ea;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --radius: 12px;
-  --gap: 1rem;
+  --purple-100: #9B719B;
+  --purple-300: #B08FB0;
+  --purple-500: #C5ADC5;
+  --purple-700: #DACBDA;
+  --purple-900: #EFE9EF;
+
+  --font-title: 'Playfair Display', Georgia, serif;
+  --font-body: 'Courier Prime', 'Courier New', monospace;
+
+  /* =======================================================
+     2. TOKENS DINÁMICOS: dependen de --scroll (0 a 1)
+     ======================================================= */
+  --scroll: 0;
+  --hue: calc(268 + var(--scroll) * 32);
+
+  --bg: hsl(var(--hue) 55% calc(6% + var(--scroll) * 10%));
+  --surface: hsl(var(--hue) 45% calc(12% + var(--scroll) * 10%));
+  --border: hsl(var(--hue) 40% calc(24% + var(--scroll) * 12%));
+  --accent: hsl(var(--hue) 85% 72%);
+  --text: var(--purple-100);
+  --muted: var(--purple-300);
 }
 
-/* ===== Tema oscuro ===== */
-[data-theme="dark"] {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --text: #eceef5;
-  --text-muted: #9aa0b4;
-  --border: #2c3040;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+/* =========================================================
+   3. BASE
+   ========================================================= */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
-
-/* ===== Base ===== */
-*, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  line-height: 1.5;
-  transition: background 0.2s, color 0.2s;
+  font-family: var(--font-body);
+  line-height: 1.6;
 }
 
-a { color: var(--primary); }
-h1, h2 { margin: 0 0 0.75rem; }
-h2 { font-size: 1.1rem; }
-
-.visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+h1, h2, h3 {
+  font-family: var(--font-title);
 }
 
-/* ===== Header / Footer ===== */
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--gap);
-  padding: 1rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-.app-header h1 { margin: 0; font-size: 1.4rem; }
-
-.app-footer {
-  padding: 1rem 1.5rem;
+/* =========================================================
+   4. LAYOUT
+   ========================================================= */
+header,
+footer {
+  padding: 1.5rem 1rem;
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
 }
 
-/* ===== Layout (mobile first: 1 columna) ===== */
-.layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--gap);
-  padding: var(--gap);
-  max-width: 1200px;
+header {
+  border-bottom: 4px double var(--accent);
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+main {
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 1.5rem 1rem;
 }
 
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: var(--gap);
-  min-width: 0; /* evita desbordes en grid */
-}
-
-/* ===== Controles ===== */
-input[type="search"] {
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  font-size: 1rem;
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-input[type="search"]:focus-visible,
-.btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.btn {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.btn:hover { border-color: var(--primary); }
-
-.status { min-height: 1.5em; margin: 0.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
-.status--error { color: var(--primary); }
-
-/* ===== Listas (resultados e historial) ===== */
-.results, .history { list-style: none; margin: 0; padding: 0; }
-.results { max-height: 320px; overflow-y: auto; }
-
-.results li, .history li {
-  padding: 0.5rem 0.6rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.results li:hover, .history li:hover { background: var(--bg); }
-
-.placeholder { color: var(--text-muted); margin: 0; }
-
-/* ===== Mapa y gráfica ===== */
-#map {
-  height: 360px;
-  border-radius: 8px;
-  z-index: 0;
-}
-
-.chart-wrapper {
-  position: relative;
-  height: 320px; /* Chart.js necesita contenedor con altura para ser responsive */
-}
-
-/* ===== Desktop ===== */
-@media (min-width: 768px) {
-  .layout { grid-template-columns: 2fr 1fr; }
-  .panel--detail, .panel--map, .panel--chart { grid-column: 1 / -1; }
-}
-
-@media (min-width: 1024px) {
-  .layout { grid-template-columns: repeat(3, 1fr); }
-  .panel--search  { grid-column: span 2; }
-  .panel--history { grid-column: span 1; }
-  .panel--detail  { grid-column: 1 / -1; }
-  .panel--map     { grid-column: span 2; }
-  .panel--chart   { grid-column: span 1; }
+/* =========================================================
+   5. COMPONENTES
+   ========================================================= */
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  letter-spacing: 0.08em;
+  color: var(--accent);
 }
