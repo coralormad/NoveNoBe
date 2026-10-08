@@ -1,22 +1,21 @@
-import { ACCESS_TOKEN } from './config.js';
+import { TMDB_API_KEY, TMDB_BASE_URL } from './config.js';
 
-const BASE_URL = 'https://api.themoviedb.org/3';
-
-// Helper privado (no se exporta): todas las peticiones pasan por aquí
+// Helper privado: todas las peticiones pasan por aquí
 async function request(endpoint, params = {}) {
-  const url = new URL(`${BASE_URL}${endpoint}`);
-  url.search = new URLSearchParams({ language: 'es-ES', ...params });
+  const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${ACCESS_TOKEN}`,
-      accept: 'application/json',
-    },
+  url.search = new URLSearchParams({
+    api_key: TMDB_API_KEY,
+    language: 'es-ES',
+    ...params,
   });
+
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(`TMDB ${response.status}: ${response.statusText}`);
   }
+
   return response.json();
 }
 

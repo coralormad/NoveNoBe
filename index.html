@@ -4,25 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoveNoBé · CineData Explorer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <script type="module" src="js/main.js"></script>
 
-  <header>
-    <h1>NoveNoBé</h1>
+  <!-- 1. CABECERA -->
+  <header class="cabecera">
+    <h1 class="logo">NoveNoBé</h1>
+
+    <nav class="menu" aria-label="Principal">
+      <ul>
+        <li><button type="button" class="menu-boton" data-vista="inicio" aria-current="page">Inicio</button></li>
+        <li><button type="button" class="menu-boton" data-vista="que-ver">Qué ver</button></li>
+        <li><button type="button" class="menu-boton" data-vista="peliculas">Películas</button></li>
+        <li><button type="button" class="menu-boton" data-vista="series">Series</button></li>
+        <li><button type="button" class="menu-boton" data-vista="mi-lista">Mi lista</button></li>
+      </ul>
+    </nav>
+
+    <div class="herramientas">
+      <button type="button" id="btn-buscar" aria-expanded="false" aria-controls="panel-buscar" aria-label="Buscar">Buscar</button>
+      <button type="button" id="btn-avisos" aria-expanded="false" aria-controls="panel-avisos" aria-label="Notificaciones">Avisos</button>
+      <button type="button" id="btn-feminista" class="interruptor" role="switch" aria-checked="true">
+        <span class="interruptor-texto">Versión feminista</span>
+        <span class="interruptor-capsula" aria-hidden="true">
+          <span class="interruptor-bola">
+              <span class="cara cara-feliz">🙂</span>
+               <span class="cara cara-triste">🙁</span>
+          </span>
+        </span>
+        </button>   
+     </div>
+
+    <div id="panel-buscar" class="panel" hidden>
+      <input type="search" id="buscador" placeholder="Busca una película o serie" aria-label="Buscar películas y series" autocomplete="off">
+      <ul id="resultados-busqueda"></ul>
+    </div>
+
+    <div id="panel-avisos" class="panel" hidden>
+      <h2>Novedades</h2>
+      <ul id="lista-avisos"></ul>
+    </div>
   </header>
 
   <main>
-    <section id="buscador">
-      <!-- Fase 4: input de búsqueda -->
-    </section>
+
+    <!-- 2. VISTA INICIO -->
+    <div id="vista-inicio" class="vista">
+
+      <section id="hero" class="hero" aria-label="Destacados">
+        <div id="hero-slide" class="hero-slide"></div>
+        <div class="hero-paginacion">
+          <button type="button" id="hero-anterior" aria-label="Destacado anterior">‹</button>
+          <span id="hero-contador">01 / 03</span>
+          <button type="button" id="hero-siguiente" aria-label="Destacado siguiente">›</button>
+        </div>
+      </section>
+
+      <section class="fila reveal">
+        <div class="fila-cabecera">
+          <h2>Continúa tu historia</h2>
+          <div class="fila-flechas">
+            <button type="button" data-flecha="izquierda" data-objetivo="fila-continua" aria-label="Desplazar a la izquierda">‹</button>
+            <button type="button" data-flecha="derecha" data-objetivo="fila-continua" aria-label="Desplazar a la derecha">›</button>
+          </div>
+        </div>
+        <div id="fila-continua" class="carrusel"></div>
+      </section>
+
+      <section id="descubre" class="fila reveal">
+        <p class="sobretitulo">Un universo por descubrir</p>
+        <h2>Tu próxima gran historia</h2>
+        <div id="generos" class="generos" role="group" aria-label="Géneros"></div>
+        <div class="fila-cabecera">
+          <h3>Lo que no te puedes perder</h3>
+          <div class="fila-flechas">
+            <button type="button" data-flecha="izquierda" data-objetivo="fila-genero" aria-label="Desplazar a la izquierda">‹</button>
+            <button type="button" data-flecha="derecha" data-objetivo="fila-genero" aria-label="Desplazar a la derecha">›</button>
+          </div>
+        </div>
+        <div id="fila-genero" class="carrusel"></div>
+      </section>
+
+      <section class="fila reveal">
+        <div class="fila-cabecera">
+          <h2>En boca de todos</h2>
+          <div class="fila-flechas">
+            <button type="button" data-flecha="izquierda" data-objetivo="fila-tendencias" aria-label="Desplazar a la izquierda">‹</button>
+            <button type="button" data-flecha="derecha" data-objetivo="fila-tendencias" aria-label="Desplazar a la derecha">›</button>
+          </div>
+        </div>
+        <div id="fila-tendencias" class="carrusel"></div>
+      </section>
+
+      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial"></section>
+    </div>
+
+    <!-- 3. VISTA QUÉ VER -->
+    <div id="vista-que-ver" class="vista" hidden>
+      <section class="que-ver">
+        <h2>¿Qué te apetece ver?</h2>
+        <p>Cuéntanos cómo te sientes y te sugerimos qué ver.</p>
+        <div id="que-ver-preguntas"></div>
+        <div id="que-ver-resultados" class="rejilla"></div>
+      </section>
+    </div>
+
+    <!-- 4. VISTA CATÁLOGO (Películas, Series y Mi lista) -->
+    <div id="vista-catalogo" class="vista" hidden>
+      <section class="catalogo">
+        <h2 id="catalogo-titulo"></h2>
+        <div id="catalogo-grid" class="rejilla"></div>
+      </section>
+    </div>
+
   </main>
 
-  <footer>
+  <!-- 5. MODAL DE FICHA -->
+  <dialog id="modal-ficha" class="modal" aria-labelledby="modal-titulo">
+    <button type="button" id="modal-cerrar" aria-label="Cerrar">×</button>
+    <div id="modal-trailer" class="modal-trailer"></div>
+    <div id="modal-contenido" class="modal-contenido"></div>
+
+    <section class="votos" data-solo-feminista>
+      <h3>Mirada feminista</h3>
+      <fieldset>
+        <legend>¿Pasa el test de Bechdel?</legend>
+        <button type="button" data-voto="bechdel" data-valor="si">Sí <span data-cuenta="bechdel-si">0</span></button>
+        <button type="button" data-voto="bechdel" data-valor="no">No <span data-cuenta="bechdel-no">0</span></button>
+      </fieldset>
+      <fieldset>
+        <legend>¿Sale alguna violación?</legend>
+        <button type="button" data-voto="violacion" data-valor="si">Sí <span data-cuenta="violacion-si">0</span></button>
+        <button type="button" data-voto="violacion" data-valor="no">No <span data-cuenta="violacion-no">0</span></button>
+      </fieldset>
+    </section>
+  </dialog>
+
+  <!-- 6. FOOTER -->
+  <footer class="pie">
+    <p>NoveNoBé</p>
+    <p>Una historia para cada versión de ti</p>
     <p>Datos de películas: TMDB</p>
   </footer>
 

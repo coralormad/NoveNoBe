@@ -1,80 +1,490 @@
-/* =========================================================
-   1. TOKENS: escala fija de morados + fuentes
-   ========================================================= */
-:root {
-  --purple-100: #9B719B;
-  --purple-300: #B08FB0;
-  --purple-500: #C5ADC5;
-  --purple-700: #DACBDA;
-  --purple-900: #EFE9EF;
+/* ===================================================
+   1. VARIABLES DE TEMA Y PALETAS
+   =================================================== */
 
-  --font-title: 'Playfair Display', Georgia, serif;
-  --font-body: 'Courier Prime', 'Courier New', monospace;
+/* Modo Feminista (Predeterminado - Oscuro / Púrpura) */
+:root,
+body:not([data-theme="feminista"]) {
+  --fuente-titulos: "Playfair Display", Georgia, serif;
+  --fuente-mono: "Courier Prime", monospace, sans-serif;
 
-  /* =======================================================
-     2. TOKENS DINÁMICOS: dependen de --scroll (0 a 1)
-     ======================================================= */
-  --scroll: 0;
-  --hue: calc(268 + var(--scroll) * 32);
+  --color-fondo: #0f0a18;
+  --color-superficie: #1a1228;
+  --color-tarjeta: #251b38;
+  --color-borde: #3d2c5a;
+  
+  --color-texto: #f7f4fc;
+  --color-texto-atenuado: #b3a4cb;
+  
+  --color-acento: #9333ea;
+  --color-acento-hover: #a855f7;
+  --color-destaque: #ec4899;
 
-  --bg: hsl(var(--hue) 55% calc(6% + var(--scroll) * 10%));
-  --surface: hsl(var(--hue) 45% calc(12% + var(--scroll) * 10%));
-  --border: hsl(var(--hue) 40% calc(24% + var(--scroll) * 12%));
-  --accent: hsl(var(--hue) 85% 72%);
-  --text: var(--purple-100);
-  --muted: var(--purple-300);
+  --sombra: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-/* =========================================================
-   3. BASE
-   ========================================================= */
-*, *::before, *::after {
+/* Modo No Feminista (Alternativo - Claro / Neutral) */
+body[data-theme="no-feminista"] {
+  --color-fondo: #f8fafc;
+  --color-superficie: #ffffff;
+  --color-tarjeta: #ffffff;
+  --color-borde: #e2e8f0;
+  
+  --color-texto: #0f172a;
+  --color-texto-atenuado: #64748b;
+  
+  --color-acento: #2563eb;
+  --color-acento-hover: #3b82f6;
+  --color-destaque: #0284c7;
+
+  --sombra: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* ===================================================
+   2. REINICIO Y ESTILOS GLOBALES
+   =================================================== */
+* {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-body);
+  font-family: var(--fuente-mono);
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
   line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3 {
-  font-family: var(--font-title);
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* =========================================================
-   4. LAYOUT
-   ========================================================= */
-header,
-footer {
-  padding: 1.5rem 1rem;
-  text-align: center;
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
 }
 
-header {
-  border-bottom: 4px double var(--accent);
+/* Ocultar elementos marcados con hidden */
+[hidden] {
+  display: none !important;
 }
 
-footer {
-  border-top: 1px solid var(--border);
-  color: var(--muted);
+/* ===================================================
+   3. CABECERA Y NAVEGACIÓN
+   =================================================== */
+.cabecera {
+  background-color: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+  padding: 1rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
 }
 
+.logo {
+  font-size: 1.8rem;
+  color: var(--color-destaque);
+}
+
+.menu ul {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.menu-boton {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  color: var(--color-texto-atenuado);
+  transition: all 0.2s ease;
+}
+
+.menu-boton:hover,
+.menu-boton[aria-current="page"] {
+  color: var(--color-texto);
+  background-color: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+}
+
+.herramientas {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.herramientas > button:not(.interruptor) {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  background-color: var(--color-tarjeta);
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.herramientas > button:not(.interruptor):hover {
+  border-color: var(--color-acento);
+}
+
+/* Switch Feminista / No Feminista */
+.interruptor {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 50px;
+  background-color: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+}
+
+.interruptor-texto {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.interruptor-capsula {
+  width: 44px;
+  height: 24px;
+  background-color: var(--color-borde);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  transition: background-color 0.3s ease;
+}
+
+.interruptor-bola {
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+}
+
+/* Posición y caras del interruptor según estado */
+.interruptor[aria-checked="true"] .interruptor-capsula {
+  background-color: var(--color-acento);
+}
+
+.interruptor[aria-checked="true"] .interruptor-bola {
+  transform: translateX(20px);
+}
+
+.interruptor[aria-checked="true"] .cara-triste {
+  display: none;
+}
+
+.interruptor[aria-checked="false"] .cara-feliz {
+  display: none;
+}
+
+/* ===================================================
+   4. PANELES DESPLEGABLES (BÚSQUEDA Y AVISOS)
+   =================================================== */
+.panel {
+  width: 100%;
+  background-color: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  box-shadow: var(--sombra);
+}
+
+#buscador {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  background-color: var(--color-superficie);
+  color: var(--color-texto);
+  outline: none;
+}
+
+#buscador:focus {
+  border-color: var(--color-acento);
+}
+
+#resultados-busqueda,
+#lista-avisos {
+  list-style: none;
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ===================================================
+   5. VISTAS Y CONTENEDOR PRINCIPAL
+   =================================================== */
 main {
-  max-width: 1100px;
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 1.5rem;
 }
 
-/* =========================================================
-   5. COMPONENTES
-   ========================================================= */
-h1 {
-  margin: 0;
-  font-size: clamp(2rem, 6vw, 3.5rem);
+.vista {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+/* ===================================================
+   6. SECCIÓN HERO
+   =================================================== */
+.hero {
+  position: relative;
+  background-color: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  min-height: 420px;
+  padding: 3rem 2rem;
+  display: flex;
+  align-items: flex-end;
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--sombra);
+}
+
+.hero-slide {
+  max-width: 600px;
+  z-index: 2;
+}
+
+.hero-slide h2 {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero-paginacion {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  padding: 0.4rem 0.8rem;
+  border-radius: 30px;
+}
+
+.hero-paginacion button {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+}
+
+/* ===================================================
+   7. FILAS, GÉNEROS Y CARRUSELES
+   =================================================== */
+.fila {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fila-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fila-flechas {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fila-flechas button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-borde);
+  background-color: var(--color-tarjeta);
+  border-radius: 50%;
+  font-size: 1.2rem;
+}
+
+.fila-flechas button:hover {
+  border-color: var(--color-acento);
+}
+
+.sobretitulo {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--color-destaque);
   letter-spacing: 0.08em;
-  color: var(--accent);
+}
+
+.generos {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.generos button {
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--color-borde);
+  background-color: var(--color-tarjeta);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.carrusel {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0.5rem 0;
+}
+
+.carrusel::-webkit-scrollbar {
+  height: 6px;
+}
+
+.carrusel::-webkit-scrollbar-thumb {
+  background: var(--color-borde);
+  border-radius: 4px;
+}
+
+/* Rejilla para Qué ver y Catálogo */
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* ===================================================
+   8. MODAL DE FICHA Y SECCIÓN DE VOTACIONES
+   =================================================== */
+.modal {
+  margin: auto;
+  max-width: 650px;
+  width: 90%;
+  background-color: var(--color-superficie);
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--sombra);
+  position: relative;
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+#modal-cerrar {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  font-size: 1.8rem;
+  color: var(--color-texto-atenuado);
+}
+
+#modal-cerrar:hover {
+  color: var(--color-texto);
+}
+
+.modal-trailer {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000000;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+/* Bloque de votos: se oculta automáticamente en modo no feminista */
+.votos {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+body[data-theme="no-feminista"] .votos[data-solo-feminista] {
+  display: none !important;
+}
+
+.votos h3 {
+  color: var(--color-destaque);
+  font-size: 1.1rem;
+}
+
+.votos fieldset {
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.votos legend {
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-texto-atenuado);
+}
+
+.votos button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-borde);
+  background-color: var(--color-tarjeta);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.votos button:hover {
+  border-color: var(--color-acento);
+}
+
+/* ===================================================
+   9. FOOTER
+   =================================================== */
+.pie {
+  background-color: var(--color-superficie);
+  border-top: 1px solid var(--color-borde);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--color-texto-atenuado);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
