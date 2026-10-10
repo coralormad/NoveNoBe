@@ -1,9 +1,11 @@
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
-const NO_POSTER = 'img/sin-poster.svg';
 
-/** Modelo de película: convierte el JSON crudo de TMDB en un objeto limpio e inmutable. */
+// Póster de reserva: un SVG embebido, sin archivo, así que nunca da 404
+const NO_POSTER = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 3"><rect width="2" height="3" fill="#29202D"/></svg>'
+)}`;
+
 export class Movie {
-  /** @param {object} data - Película tal como llega de TMDB (búsqueda o detalle). */
   constructor(data) {
     this.id = data.id;
     this.title = data.title || 'Sin título';
@@ -12,21 +14,18 @@ export class Movie {
     this.rating = data.vote_average ?? 0;
     this.popularity = data.popularity ?? 0;
     this.posterPath = data.poster_path || null;
-    this.adult = data.adult ?? false;
-    this.genreIds = data.genre_ids ?? data.genres?.map((g) => g.id) ?? [];
     this.genres = data.genres ?? [];
+    this.genreIds = data.genre_ids ?? this.genres.map((g) => g.id);
     this.countries = data.production_countries ?? [];
-    Object.freeze(this);
   }
 
-  /** Año como número (para filtrar) o null si no hay fecha. */
+  // Convierte el array crudo de TMDB en un array de Movie
+  static fromList(results = []) {
+    return results.map((data) => new Movie(data));
+  }
+
   get year() {
-    return Number(this.releaseDate.slice(0, 4)) || null;
-  }
-
-  /** Año listo para mostrar en pantalla. */
-  get yearText() {
-    return this.year ?? '—';
+    return this.releaseDate ? this.releaseDate.slice(0, 4) : '—';
   }
 
   get posterUrl() {
