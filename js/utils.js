@@ -12,7 +12,7 @@ const hasValue = (value) => value !== undefined && value !== null && value !== '
 export function filterMovies(movies, { genreId, year, minRating } = {}) {
   return movies.filter((movie) =>
     (!hasValue(genreId) || movie.genreIds.includes(genreId)) &&
-    (!hasValue(year) || movie.year === year) &&
+    (!hasValue(year) || movie.year === String(year)) &&
     (!hasValue(minRating) || movie.rating >= minRating)
   );
 }
