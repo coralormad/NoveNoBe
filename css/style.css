@@ -1,490 +1,197 @@
-/* ===================================================
-   1. VARIABLES DE TEMA Y PALETAS
-   =================================================== */
+/* =========================================================
+   NoveNoBé · style.css
+   1. Tokens  2. Reset  3. Base  4. Layout  5. Filas y carrusel
+   6. Tarjetas  7. Foco accesible  8. Breakpoints  9. Movimiento reducido
+   ========================================================= */
 
-/* Modo Feminista (Predeterminado - Oscuro / Púrpura) */
-:root,
-body:not([data-theme="feminista"]) {
-  --fuente-titulos: "Playfair Display", Georgia, serif;
-  --fuente-mono: "Courier Prime", monospace, sans-serif;
+/* 1. TOKENS ----------------------------------------------- */
+:root {
+  /* Tipografía híbrida */
+  --fuente-titulos: 'Playfair Display', Georgia, serif;
+  --fuente-texto: 'Manrope', system-ui, sans-serif;
+  --fuente-detalle: 'Courier Prime', 'Courier New', monospace;
 
-  --color-fondo: #0f0a18;
-  --color-superficie: #1a1228;
-  --color-tarjeta: #251b38;
-  --color-borde: #3d2c5a;
-  
-  --color-texto: #f7f4fc;
-  --color-texto-atenuado: #b3a4cb;
-  
-  --color-acento: #9333ea;
-  --color-acento-hover: #a855f7;
-  --color-destaque: #ec4899;
+  /* Escala de lavandas (compartida) */
+  --lavanda-100: #9B719B;
+  --lavanda-300: #B08FB0;
+  --lavanda-500: #C5ADC5;
+  --lavanda-700: #DACBDA;
+  --lavanda-900: #EFE9EF;
 
-  --sombra: 0 8px 24px rgba(0, 0, 0, 0.45);
+  /* Espaciado y forma */
+  --margen-lateral: 6%;
+  --gap: 12px;
+  --radio: 8px;
+  --transicion: 220ms ease;
+
+  /* Tema oscuro (por defecto) */
+  color-scheme: dark;
+  --color-fondo: #0D080F;
+  --fondo-pagina: var(--color-fondo);
+  --color-superficie: #171119;
+  --color-secundario: #29202D;
+  --color-atenuado: #1E1820;
+  --color-borde: #372F3B;
+  --color-borde-control: #7E7284;
+  --color-texto: #EFE9EF;
+  --color-texto-suave: #C5ADC5;
+  --color-primario: #DACBDA;
+  --color-sobre-primario: #211526;
+  --color-foco: var(--lavanda-300);
+  --color-exito: #85D1A4;
+  --color-overlay: #08040A;
+  --sombra: 0 24px 80px rgba(8, 4, 10, 0.5);
 }
 
-/* Modo No Feminista (Alternativo - Claro / Neutral) */
-body[data-theme="no-feminista"] {
-  --color-fondo: #f8fafc;
-  --color-superficie: #ffffff;
-  --color-tarjeta: #ffffff;
-  --color-borde: #e2e8f0;
-  
-  --color-texto: #0f172a;
-  --color-texto-atenuado: #64748b;
-  
-  --color-acento: #2563eb;
-  --color-acento-hover: #3b82f6;
-  --color-destaque: #0284c7;
-
-  --sombra: 0 4px 16px rgba(15, 23, 42, 0.08);
+/* Tema claro: solo redefine colores */
+:root[data-theme="claro"] {
+  color-scheme: light;
+  --color-fondo: #FBF9FC;
+  --fondo-pagina: linear-gradient(145deg, #FBF9FC 0%, #EFE9EF 45%, #DACBDA 100%);
+  --color-superficie: #FFFFFF;
+  --color-secundario: #EFE9EF;
+  --color-atenuado: #F1EDF3;
+  --color-borde: #D0C6D5;
+  --color-borde-control: #827489;
+  --color-texto: #2A1F30;
+  --color-texto-suave: #62516A;
+  --color-primario: #644373;
+  --color-sobre-primario: #EFE9EF;
+  --color-foco: var(--lavanda-100);
+  --color-exito: #145B39;
+  --sombra: 0 24px 80px rgba(42, 31, 48, 0.18);
 }
 
-/* ===================================================
-   2. REINICIO Y ESTILOS GLOBALES
-   =================================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* 2. RESET ------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+img { display: block; max-width: 100%; height: auto; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; }
+ul { list-style: none; }
+
+/* 3. BASE ------------------------------------------------- */
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: var(--fuente-mono);
-  background-color: var(--color-fondo);
+  min-height: 100svh;
+  background: var(--fondo-pagina);
+  background-attachment: fixed;
   color: var(--color-texto);
-  line-height: 1.6;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-h1, h2, h3 {
-  font-family: var(--fuente-titulos);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-  color: inherit;
-}
-
-/* Ocultar elementos marcados con hidden */
-[hidden] {
-  display: none !important;
-}
-
-/* ===================================================
-   3. CABECERA Y NAVEGACIÓN
-   =================================================== */
-.cabecera {
-  background-color: var(--color-superficie);
-  border-bottom: 1px solid var(--color-borde);
-  padding: 1rem 2rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.logo {
-  font-size: 1.8rem;
-  color: var(--color-destaque);
-}
-
-.menu ul {
-  list-style: none;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.menu-boton {
-  padding: 0.5rem 0.85rem;
-  font-size: 0.95rem;
-  border-radius: 6px;
-  color: var(--color-texto-atenuado);
-  transition: all 0.2s ease;
-}
-
-.menu-boton:hover,
-.menu-boton[aria-current="page"] {
-  color: var(--color-texto);
-  background-color: var(--color-tarjeta);
-  border: 1px solid var(--color-borde);
-}
-
-.herramientas {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.herramientas > button:not(.interruptor) {
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--color-borde);
-  border-radius: 6px;
-  background-color: var(--color-tarjeta);
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
-}
-
-.herramientas > button:not(.interruptor):hover {
-  border-color: var(--color-acento);
-}
-
-/* Switch Feminista / No Feminista */
-.interruptor {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: 50px;
-  background-color: var(--color-tarjeta);
-  border: 1px solid var(--color-borde);
-}
-
-.interruptor-texto {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.interruptor-capsula {
-  width: 44px;
-  height: 24px;
-  background-color: var(--color-borde);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  padding: 2px;
-  transition: background-color 0.3s ease;
-}
-
-.interruptor-bola {
-  width: 20px;
-  height: 20px;
-  background-color: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  transform: translateX(0);
-  transition: transform 0.3s ease;
-}
-
-/* Posición y caras del interruptor según estado */
-.interruptor[aria-checked="true"] .interruptor-capsula {
-  background-color: var(--color-acento);
-}
-
-.interruptor[aria-checked="true"] .interruptor-bola {
-  transform: translateX(20px);
-}
-
-.interruptor[aria-checked="true"] .cara-triste {
-  display: none;
-}
-
-.interruptor[aria-checked="false"] .cara-feliz {
-  display: none;
-}
-
-/* ===================================================
-   4. PANELES DESPLEGABLES (BÚSQUEDA Y AVISOS)
-   =================================================== */
-.panel {
-  width: 100%;
-  background-color: var(--color-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: 8px;
-  padding: 1.25rem;
-  margin-top: 1rem;
-  box-shadow: var(--sombra);
-}
-
-#buscador {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-family: inherit;
+  font-family: var(--fuente-texto);
   font-size: 1rem;
-  border: 1px solid var(--color-borde);
-  border-radius: 6px;
-  background-color: var(--color-superficie);
-  color: var(--color-texto);
-  outline: none;
+  line-height: 1.6;
+  transition: color var(--transicion);
 }
 
-#buscador:focus {
-  border-color: var(--color-acento);
-}
+h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: 1.15; }
+::selection { background: var(--lavanda-100); color: var(--lavanda-900); }
 
-#resultados-busqueda,
-#lista-avisos {
-  list-style: none;
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+/* 4. LAYOUT ----------------------------------------------- */
+main { padding: 2rem var(--margen-lateral); }
+.vista { display: flex; flex-direction: column; gap: 3rem; }
 
-/* ===================================================
-   5. VISTAS Y CONTENEDOR PRINCIPAL
-   =================================================== */
-main {
-  flex: 1;
-  max-width: 1280px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
+/* 5. FILAS Y CARRUSEL ------------------------------------- */
+.fila { display: grid; gap: 1rem; }
 
-.vista {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
-}
-
-/* ===================================================
-   6. SECCIÓN HERO
-   =================================================== */
-.hero {
-  position: relative;
-  background-color: var(--color-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: 12px;
-  min-height: 420px;
-  padding: 3rem 2rem;
-  display: flex;
-  align-items: flex-end;
-  background-size: cover;
-  background-position: center;
-  box-shadow: var(--sombra);
-}
-
-.hero-slide {
-  max-width: 600px;
-  z-index: 2;
-}
-
-.hero-slide h2 {
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.hero-paginacion {
-  position: absolute;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background-color: var(--color-superficie);
-  border: 1px solid var(--color-borde);
-  padding: 0.4rem 0.8rem;
-  border-radius: 30px;
-}
-
-.hero-paginacion button {
-  font-size: 1.25rem;
-  line-height: 1;
-  padding: 0 0.3rem;
-}
-
-/* ===================================================
-   7. FILAS, GÉNEROS Y CARRUSELES
-   =================================================== */
-.fila {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.fila-cabecera {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.fila-flechas {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.fila-flechas button {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-borde);
-  background-color: var(--color-tarjeta);
-  border-radius: 50%;
-  font-size: 1.2rem;
-}
-
-.fila-flechas button:hover {
-  border-color: var(--color-acento);
-}
+.fila-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.fila-cabecera h2 { font-size: 1.4rem; }
 
 .sobretitulo {
-  font-size: 0.85rem;
+  font-family: var(--fuente-detalle);
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: var(--color-destaque);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.15em;
+  color: var(--color-texto-suave);
 }
 
-.generos {
-  display: flex;
-  gap: 0.5rem;
+.fila-flechas { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.fila-flechas button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-borde-control);
+  font-size: 1.25rem;
+  transition: background-color var(--transicion);
+}
+.fila-flechas button:hover { background: var(--color-secundario); }
+
+.carrusel {
+  --tarjetas-visibles: 2.2;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - var(--gap) * (var(--tarjetas-visibles) - 1)) / var(--tarjetas-visibles));
+  gap: var(--gap);
   overflow-x: auto;
-  padding-bottom: 0.5rem;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-borde) transparent;
+  padding-block: 0.25rem 0.75rem;
 }
+.carrusel:has(> .fila-mensaje) { display: block; }
 
+.fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
+
+.generos { display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; }
 .generos button {
-  padding: 0.4rem 1rem;
-  border: 1px solid var(--color-borde);
-  background-color: var(--color-tarjeta);
-  border-radius: 20px;
+  min-height: 44px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-borde-control);
+  color: var(--color-texto-suave);
   font-size: 0.85rem;
   white-space: nowrap;
 }
-
-.carrusel {
-  display: flex;
-  gap: 1.25rem;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  padding: 0.5rem 0;
+.generos button[aria-pressed="true"] {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: var(--color-sobre-primario);
+  font-weight: 600;
 }
 
-.carrusel::-webkit-scrollbar {
-  height: 6px;
-}
+/* 6. TARJETAS --------------------------------------------- */
+.tarjeta { display: grid; gap: 0.35rem; min-width: 0; scroll-snap-align: start; }
 
-.carrusel::-webkit-scrollbar-thumb {
-  background: var(--color-borde);
-  border-radius: 4px;
-}
-
-/* Rejilla para Qué ver y Catálogo */
-.rejilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-/* ===================================================
-   8. MODAL DE FICHA Y SECCIÓN DE VOTACIONES
-   =================================================== */
-.modal {
-  margin: auto;
-  max-width: 650px;
-  width: 90%;
-  background-color: var(--color-superficie);
-  color: var(--color-texto);
-  border: 1px solid var(--color-borde);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: var(--sombra);
-  position: relative;
-}
-
-.modal::backdrop {
-  background: rgba(0, 0, 0, 0.75);
-}
-
-#modal-cerrar {
-  position: absolute;
-  top: 1rem;
-  right: 1.25rem;
-  font-size: 1.8rem;
-  color: var(--color-texto-atenuado);
-}
-
-#modal-cerrar:hover {
-  color: var(--color-texto);
-}
-
-.modal-trailer {
+.tarjeta img {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  background-color: #000000;
-  border-radius: 8px;
-  margin-bottom: 1.25rem;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--radio);
+  background: var(--color-atenuado);
+  transition: transform var(--transicion), box-shadow var(--transicion);
+}
+.tarjeta:hover img { transform: translateY(-4px); box-shadow: var(--sombra); }
+
+.tarjeta-titulo {
+  font-family: var(--fuente-texto);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* Bloque de votos: se oculta automáticamente en modo no feminista */
-.votos {
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--color-borde);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.tarjeta-meta { font-family: var(--fuente-detalle); font-size: 0.75rem; color: var(--color-texto-suave); }
+
+/* 7. FOCO ACCESIBLE (💡 mejora) --------------------------- */
+:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+
+/* 8. BREAKPOINTS (mobile first) --------------------------- */
+@media (min-width: 600px) {
+  :root { --margen-lateral: 5%; --gap: 16px; }
+  .carrusel { --tarjetas-visibles: 3.4; }
 }
 
-body[data-theme="no-feminista"] .votos[data-solo-feminista] {
-  display: none !important;
+@media (min-width: 850px) {
+  :root { --gap: 20px; }
+  .carrusel { --tarjetas-visibles: 5.4; }
+  .fila-cabecera h2 { font-size: 1.6rem; }
 }
 
-.votos h3 {
-  color: var(--color-destaque);
-  font-size: 1.1rem;
-}
-
-.votos fieldset {
-  border: 1px solid var(--color-borde);
-  border-radius: 8px;
-  padding: 0.85rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.votos legend {
-  padding: 0 0.5rem;
-  font-size: 0.85rem;
-  color: var(--color-texto-atenuado);
-}
-
-.votos button {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid var(--color-borde);
-  background-color: var(--color-tarjeta);
-  border-radius: 6px;
-  font-size: 0.85rem;
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.votos button:hover {
-  border-color: var(--color-acento);
-}
-
-/* ===================================================
-   9. FOOTER
-   =================================================== */
-.pie {
-  background-color: var(--color-superficie);
-  border-top: 1px solid var(--color-borde);
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  color: var(--color-texto-atenuado);
-  font-size: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+/* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }

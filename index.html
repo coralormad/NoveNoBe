@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="oscuro">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoveNoBé · CineData Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -28,15 +28,14 @@
     <div class="herramientas">
       <button type="button" id="btn-buscar" aria-expanded="false" aria-controls="panel-buscar" aria-label="Buscar">Buscar</button>
       <button type="button" id="btn-avisos" aria-expanded="false" aria-controls="panel-avisos" aria-label="Notificaciones">Avisos</button>
-      <button type="button" id="btn-feminista" class="interruptor" role="switch" aria-checked="true">
-        <span class="interruptor-texto">Versión feminista</span>
+      <button type="button" id="btn-tema" class="interruptor" role="switch" aria-checked="true" aria-label="Cambiar tema">
         <span class="interruptor-capsula" aria-hidden="true">
           <span class="interruptor-bola">
-              <span class="cara cara-feliz">🙂</span>
-               <span class="cara cara-triste">🙁</span>
-          </span>
-        </span>
-        </button>   
+          <span class="cara cara-feliz">🙂</span>
+          <span class="cara cara-triste">🙁</span>
+    </span>
+  </span>
+</button>
      </div>
 
     <div id="panel-buscar" class="panel" hidden>
@@ -129,8 +128,8 @@
     <div id="modal-trailer" class="modal-trailer"></div>
     <div id="modal-contenido" class="modal-contenido"></div>
 
-    <section class="votos" data-solo-feminista>
-      <h3>Mirada feminista</h3>
+    <section class="votos" data-revelable>
+      <h3>Lo que no se ve</h3>s
       <fieldset>
         <legend>¿Pasa el test de Bechdel?</legend>
         <button type="button" data-voto="bechdel" data-valor="si">Sí <span data-cuenta="bechdel-si">0</span></button>
