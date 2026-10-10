@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+  // Aplica el tema guardado ANTES de pintar (evita el parpadeo). Duplica la clave de storage.js a propósito.
+  try {
+    const t = localStorage.getItem('novenobe:theme');
+    if (t === 'claro' || t === 'oscuro') document.documentElement.dataset.theme = t;
+  } catch {}
+  </script>
   <title>NoveNoBé · CineData Explorer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,17 +33,25 @@
     </nav>
 
     <div class="herramientas">
-      <button type="button" id="btn-buscar" aria-expanded="false" aria-controls="panel-buscar" aria-label="Buscar">Buscar</button>
-      <button type="button" id="btn-avisos" aria-expanded="false" aria-controls="panel-avisos" aria-label="Notificaciones">Avisos</button>
+      <button type="button" id="btn-buscar" class="icono-boton" aria-expanded="false" aria-controls="panel-buscar" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
+        </svg>
+      </button>
+      <button type="button" id="btn-avisos" class="icono-boton" aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+        </svg>
+      </button>
       <button type="button" id="btn-tema" class="interruptor" role="switch" aria-checked="true" aria-label="Cambiar tema">
         <span class="interruptor-capsula" aria-hidden="true">
           <span class="interruptor-bola">
-          <span class="cara cara-feliz">🙂</span>
-          <span class="cara cara-triste">🙁</span>
-    </span>
-  </span>
-</button>
-     </div>
+           <span class="cara cara-feliz">🙂</span>
+            <span class="cara cara-triste">🙁</span>
+          </span>
+        </span>
+      </button>
+    </div>
 
     <div id="panel-buscar" class="panel" hidden>
       <input type="search" id="buscador" placeholder="Busca una película o serie" aria-label="Buscar películas y series" autocomplete="off">

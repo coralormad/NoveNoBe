@@ -1,7 +1,7 @@
-import { searchMovies } from './api.js';
+import { searchMovies, getTrending } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, getErrorMessage } from './utils.js';
-import { addQuery, clearHistory, loadHistory, saveHistory } from './storage.js';
+import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 400;
@@ -11,9 +11,23 @@ const els = {
   panel: document.querySelector('#panel-buscar'),
   input: document.querySelector('#buscador'),
   results: document.querySelector('#resultados-busqueda'),
+  trending: document.querySelector('#fila-tendencias'),
+  btnTema: document.querySelector('#btn-tema'), // NUEVO 5d
 };
 
 let controller = null; // petición en curso (variable de módulo, no global)
+
+// ---------- Tema (NUEVO 5d) ----------
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
+  applyTheme(next);
+  saveTheme(next);
+}
 
 // ---------- Pintado (sin innerHTML) ----------
 function renderMessage(text) {
@@ -55,6 +69,54 @@ function renderHistory() {
   const items = history.map((query) => createButtonItem(query, 'historial-item', { query }));
   const clearItem = createButtonItem('Borrar historial', 'historial-borrar', { action: 'clear-history' });
   els.results.replaceChildren(...items, clearItem);
+}
+
+// ---------- Tarjetas y filas ----------
+function createCard(movie) {
+  const card = document.createElement('article');
+  card.className = 'tarjeta';
+  card.dataset.id = movie.id;
+
+  const img = document.createElement('img');
+  img.src = movie.posterUrl;
+  img.alt = `Póster de ${movie.title}`;
+  img.loading = 'lazy';
+  img.width = 342;
+  img.height = 513;
+
+  const title = document.createElement('h3');
+  title.className = 'tarjeta-titulo';
+  title.textContent = movie.title;
+
+  const meta = document.createElement('p');
+  meta.className = 'tarjeta-meta';
+  meta.textContent = `${movie.yearText} · ★ ${movie.ratingText}`;
+
+  card.append(img, title, meta);
+  return card;
+}
+
+function renderRowMessage(container, text) {
+  const p = document.createElement('p');
+  p.className = 'fila-mensaje';
+  p.textContent = text;
+  container.replaceChildren(p);
+}
+
+function renderRow(container, movies) {
+  if (movies.length === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
+  container.replaceChildren(...movies.map(createCard));
+}
+
+async function loadTrending() {
+  renderRowMessage(els.trending, 'Cargando…');
+  try {
+    const data = await getTrending();
+    const movies = data.results.map((item) => new Movie(item));
+    renderRow(els.trending, movies);
+  } catch (error) {
+    renderRowMessage(els.trending, getErrorMessage(error.status ?? 0));
+  }
 }
 
 // ---------- Búsqueda ----------
@@ -125,3 +187,8 @@ els.input.addEventListener('input', debouncedSearch);
 els.input.addEventListener('keydown', handleKeydown);
 els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
+els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
+
+// ---------- Arranque ----------
+applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
+loadTrending();

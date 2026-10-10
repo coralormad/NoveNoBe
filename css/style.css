@@ -169,6 +169,7 @@ main { padding: 2rem var(--margen-lateral); }
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -194,4 +195,137 @@ main { padding: 2rem var(--margen-lateral); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* 10. CABECERA (flotante, como Lovable) ------------------- */
+.cabecera {
+  --cabecera-fondo: color-mix(in srgb, #08040A 65%, transparent);
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding: 1rem var(--margen-lateral);
+  background: var(--cabecera-fondo);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 12%, transparent);
+}
+:root[data-theme="claro"] .cabecera {
+  --cabecera-fondo: color-mix(in srgb, #FBF9FC 90%, transparent);
+}
+
+.logo { grid-column: 1; font-family: var(--fuente-titulos); font-size: 1.6rem; }
+
+.menu { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+.menu ul { display: flex; gap: 1.25rem; overflow-x: auto; scrollbar-width: none; }
+.menu-boton {
+  position: relative;
+  min-height: 44px;
+  font-size: 0.85rem;
+  color: var(--color-texto-suave);
+  white-space: nowrap;
+  transition: color var(--transicion);
+}
+.menu-boton:hover,
+.menu-boton[aria-current="page"] { color: var(--color-texto); }
+.menu-boton[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 6px;
+  width: 17px;
+  height: 2px;
+  background: var(--color-foco);
+}
+
+.herramientas { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 0.25rem; }
+
+.icono-boton {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: background-color var(--transicion);
+}
+.icono-boton:hover { background: var(--color-secundario); }
+.icono-boton svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 11. INTERRUPTOR DE TEMA --------------------------------- */
+.interruptor { display: grid; place-items: center; min-width: 44px; min-height: 44px; }
+.interruptor-capsula {
+  display: flex;
+  align-items: center;
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+  border: 1px solid var(--color-borde-control);
+  border-radius: 999px;
+  background: var(--color-atenuado);
+}
+.interruptor-bola {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-primario);
+  font-size: 0.7rem;
+  line-height: 1;
+  transition: transform var(--transicion);
+}
+.interruptor[aria-checked="true"] .interruptor-bola { transform: translateX(18px); }
+.interruptor[aria-checked="true"] .cara-triste,
+.interruptor[aria-checked="false"] .cara-feliz { display: none; }
+
+/* 12. PANEL DE BÚSQUEDA FLOTANTE (estilo Luma) ------------ */
+.panel {
+  position: absolute;
+  top: 100%;
+  right: var(--margen-lateral);
+  width: min(370px, 100% - 2 * var(--margen-lateral));
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+  box-shadow: var(--sombra);
+}
+
+#buscador {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-borde-control);
+  border-radius: 4px;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: 1rem;
+}
+#buscador::placeholder { color: var(--color-texto-suave); }
+
+#resultados-busqueda { display: grid; gap: 0.25rem; margin-top: 0.5rem; max-height: 60svh; overflow-y: auto; }
+#resultados-busqueda li[data-id] { padding: 0.5rem; font-size: 0.9rem; }
+
+.historial-item { width: 100%; min-height: 44px; padding: 0 0.5rem; border-radius: 4px; text-align: left; }
+.historial-item:hover { background: var(--color-secundario); }
+.historial-borrar {
+  padding: 0.5rem;
+  font-family: var(--fuente-detalle);
+  font-size: 0.8rem;
+  color: var(--color-texto-suave);
+  text-decoration: underline;
+}
+
+/* TEMPORAL: espacio bajo la cabecera hasta el hero del paso 5e */
+.hero { min-height: 420px; }
+
+@media (min-width: 850px) {
+  .cabecera { grid-template-columns: auto 1fr auto; gap: 2.5rem; padding-block: 1.5rem; }
+  .logo { font-size: 2rem; }
+  .menu { grid-column: 2; grid-row: 1; }
+  .menu ul { gap: 1.8rem; }
+  .herramientas { grid-column: 3; gap: 0.75rem; }
 }

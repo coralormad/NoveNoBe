@@ -56,3 +56,35 @@ export function clearHistory() {
     // localStorage bloqueado: no hay nada que borrar
   }
 }
+
+// ---------- Tema ----------
+const THEME_KEY = 'novenobe:theme';
+const THEMES = ['oscuro', 'claro'];
+export const DEFAULT_THEME = 'oscuro';
+
+/**
+ * Lee el tema guardado. Si no existe o no es válido, devuelve 'oscuro'. Nunca lanza.
+ * @returns {'oscuro'|'claro'}
+ */
+export function loadTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    return THEMES.includes(saved) ? saved : DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+/**
+ * Guarda el tema.
+ * @param {'oscuro'|'claro'} theme
+ * @returns {boolean} true si se guardó.
+ */
+export function saveTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+    return true;
+  } catch {
+    return false;
+  }
+}
