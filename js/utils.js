@@ -68,8 +68,10 @@ export const getErrorMessage = (status) => ERROR_MESSAGES[status] ?? ERROR_MESSA
  */
 export function debounce(fn, ms = 400) {
   let timerId;
-  return (...args) => {
+  const debounced = (...args) => {
     clearTimeout(timerId);
     timerId = setTimeout(() => fn(...args), ms);
   };
+  debounced.cancel = () => clearTimeout(timerId);
+  return debounced;
 }
