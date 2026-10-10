@@ -193,27 +193,34 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
+  html { scroll-behavior: smooth; background-color: var(--color-fondo); }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
 /* 10. CABECERA (flotante, como Lovable) ------------------- */
 .cabecera {
-  --cabecera-fondo: color-mix(in srgb, #08040A 65%, transparent);
-  position: absolute;
-  inset: 0 0 auto 0;
+  --cristal-tinte: var(--color-superficie);
+  --cristal-opacidad: 55%;
+  position: sticky;
+  top: 0;
   z-index: 20;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem 1.5rem;
   padding: 1rem var(--margen-lateral);
-  background: var(--cabecera-fondo);
-  backdrop-filter: blur(8px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--lavanda-700) 10%, transparent), transparent),
+    color-mix(in srgb, var(--cristal-tinte) var(--cristal-opacidad), transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
   border-bottom: 1px solid color-mix(in srgb, var(--color-texto) 12%, transparent);
 }
+
+/* Tema claro: cristal lavanda */
 :root[data-theme="claro"] .cabecera {
-  --cabecera-fondo: color-mix(in srgb, #FBF9FC 90%, transparent);
+  --cristal-tinte: var(--lavanda-700);
+  --cristal-opacidad: 45%;
 }
 
 .logo { grid-column: 1; font-family: var(--fuente-titulos); font-size: 1.6rem; }
