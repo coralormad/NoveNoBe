@@ -58,3 +58,18 @@ export const ERROR_MESSAGES = Object.freeze({
  * @returns {string}
  */
 export const getErrorMessage = (status) => ERROR_MESSAGES[status] ?? ERROR_MESSAGES.DEFAULT;
+
+/**
+ * Devuelve una versión de fn que solo se ejecuta tras `ms` sin nuevas llamadas.
+ * Ojo: no es pura (guarda un temporizador), es una función de orden superior.
+ * @param {Function} fn
+ * @param {number} [ms=400]
+ * @returns {Function}
+ */
+export function debounce(fn, ms = 400) {
+  let timerId;
+  return (...args) => {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), ms);
+  };
+}
