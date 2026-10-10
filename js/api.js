@@ -2,6 +2,15 @@ import { ACCESS_TOKEN, TMDB_BASE_URL } from './config.js';
 
 const DEFAULT_LANGUAGE = 'es-ES';
 
+// 1️⃣ NUEVO: error personalizado con el código HTTP
+export class ApiError extends Error {
+  constructor(status) {
+    super(`TMDB ${status}`);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 // Helper privado: todas las peticiones a TMDB pasan por aquí
 async function request(endpoint, params = {}, signal) {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
@@ -15,8 +24,9 @@ async function request(endpoint, params = {}, signal) {
     signal,
   });
 
+  // 2️⃣ CAMBIADO: antes era throw new Error(`TMDB ${response.status}: ${response.statusText}`)
   if (!response.ok) {
-    throw new Error(`TMDB ${response.status}: ${response.statusText}`);
+    throw new ApiError(response.status);
   }
 
   return response.json();
