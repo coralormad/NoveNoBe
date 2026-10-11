@@ -161,3 +161,38 @@ export class HeroCarousel {
     });
   }
 }
+
+// ---------- Emblema del 9ºB ----------
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Coloca hasta 12 pósters en rejilla 4×3 dentro del 9 (recortados por el clipPath). */
+export function fillEmblem(movies, container = document.querySelector('#emblema-posters')) {
+  if (!container) return;
+  const COLS = 4;
+  const W = 75;
+  const H = 112;
+
+  const images = movies
+    .filter((movie) => movie.posterPath)
+    .slice(0, 12)
+    .map((movie, i) => {
+      const image = document.createElementNS(SVG_NS, 'image');
+      image.setAttribute('href', movie.posterUrl);
+      image.setAttribute('x', (i % COLS) * W);
+      image.setAttribute('y', Math.floor(i / COLS) * H);
+      image.setAttribute('width', W);
+      image.setAttribute('height', H);
+      image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+      return image;
+    });
+
+  container.replaceChildren(...images);
+}
+
+/** Usa el backdrop de la primera película con imagen como fondo ambiental difuminado. */
+export function setAmbient(movies, img = document.querySelector('#concepto-ambiente')) {
+  const movie = movies.find((item) => item.backdropPath);
+  if (!img || !movie) return;
+  img.addEventListener('load', () => img.classList.add('cargado'), { once: true });
+  img.src = movie.backdropUrl;
+}
