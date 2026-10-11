@@ -41,9 +41,12 @@ export function searchMovies(query, { page = 1, signal } = {}) {
   return request('/search/movie', { query, page, include_adult: false }, signal);
 }
 
+// Una sola petición trae detalles + reparto + recomendadas + clasificación + plataformas + vídeos + palabras clave
+const DETAIL_EXTRAS = 'credits,recommendations,release_dates,watch/providers,videos,keywords';
+
 export function getMovieDetails(id, { signal } = {}) {
   return request(`/movie/${id}`, {
-    append_to_response: 'videos',
+    append_to_response: DETAIL_EXTRAS,
     include_video_language: 'es,en',
   }, signal);
 }

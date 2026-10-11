@@ -97,3 +97,57 @@ export function toUserMessage(error) {
  */
 export const filterActive = (avisos, today) =>
   avisos.filter(({ hasta }) => !hasta || new Date(`${hasta}T23:59:59`) >= today);
+
+/**
+ * Las N primeras personas del reparto, en el orden de créditos de TMDB.
+ * @param {Array} cast - credits.cast crudo
+ * @param {number} max
+ * @returns {Array<{id, name, character, profilePath}>} Array nuevo (no muta `cast`).
+ */
+export const pickCast = (cast = [], max = 15) =>
+  [...cast]
+    .sort((a, b) => a.order - b.order)
+    .slice(0, max)
+    .map(({ id, name, character, profile_path }) => ({
+      id,
+      name,
+      character: character || '',
+      profilePath: profile_path ?? null,
+    }));
+
+// Puestos que mostramos, con los nombres de `job` que usa TMDB
+const CREW_ROLES = Object.freeze([
+  { label: 'Dirección', jobs: ['Director'] },
+  { label: 'Guion', jobs: ['Screenplay', 'Writer'] },
+  { label: 'Música', jobs: ['Original Music Composer', 'Music'] },
+  { label: 'Fotografía', jobs: ['Director of Photography'] },
+]);
+
+/**
+ * Agrupa el equipo técnico por puesto, sin nombres repetidos y sin puestos vacíos.
+ * @param {Array} crew - credits.crew crudo
+ * @returns {Array<{label: string, names: string[]}>}
+ */
+export function pickCrew(crew = []) {
+  return CREW_ROLES
+    .map(({ label, jobs }) => ({
+      label,
+      names: [...new Set(crew.filter((p) => jobs.includes(p.job)).map((p) => p.name))],
+    }))
+    .filter((role) => role.names.length > 0);
+}
+
+/**
+ * Clasificación por edad: la del primer país de la lista que la tenga.
+ * @param {Array} releaseDates - release_dates.results crudo
+ * @param {string[]} countries - Orden de preferencia (ISO 3166-1)
+ * @returns {{country: string, certification: string} | null}
+ */
+export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
+  for (const code of countries) {
+    const entry = releaseDates.find((r) => r.iso_3166_1 === code);
+    const certification = entry?.release_dates.find((d) => d.certification)?.certification;
+    if (certification) return { country: code, certification };
+  }
+  return null;
+}
