@@ -1,6 +1,9 @@
-import { searchMovies, getTrending, getGenres, discoverMovies } from './api.js';
-import { debounce, getErrorMessage } from './utils.js';
+import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList } from './api.js';
+import { Movie } from './Movie.js';
+import { debounce, toUserMessage, filterActive } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
+import { HeroCarousel, pickHeroMovies, buildSlides, createSlide } from './hero.js';
+import { AVISOS } from '../data/avisos.js';
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 400;
@@ -157,6 +160,32 @@ async function initGenres() {
   }
 }
 
+// ---------- Hero ----------
+async function loadHero(hero) {
+  const today = new Date();
+  let picks = {};
+  try {
+    const [nowPlaying, upcoming] = await Promise.all([
+      getMovieList('now_playing'),
+      getMovieList('upcoming'),
+    ]);
+    picks = pickHeroMovies({
+      nowPlaying: Movie.fromList(nowPlaying.results),
+      upcoming: Movie.fromList(upcoming.results),
+      today,
+    });
+  } catch (error) {
+    console.warn('Hero sin novedades; se muestran presentación y avisos.', error);
+  }
+  const slides = buildSlides({ ...picks, avisos: filterActive(AVISOS, today) });
+  hero.addSlides(slides.map(createSlide));
+}
+
+function handleHeroAction(button) {
+  if (button.dataset.accion === 'buscar' && els.panel.hidden) togglePanel();
+  if (button.dataset.accion === 'ficha') openFicha(button.dataset.id);
+}
+
 // ---------- Búsqueda ----------
 async function handleSearch(rawQuery, { save = false } = {}) {
   const query = rawQuery.trim();
@@ -290,7 +319,10 @@ document.addEventListener('click', handleOutsideClick);
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
+const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
+
 Promise.allSettled([
+  loadHero(hero),
   loadRow(els.trending, () => getTrending()),
   initGenres(),
 ]);

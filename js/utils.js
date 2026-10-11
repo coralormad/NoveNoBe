@@ -75,3 +75,25 @@ export function debounce(fn, ms = 400) {
   debounced.cancel = () => clearTimeout(timerId);
   return debounced;
 }
+
+/**
+ * Traduce cualquier error a un mensaje para el usuario.
+ * Errores de la API → mensaje según su código HTTP.
+ * Errores de programación → se muestran en consola y mensaje genérico.
+ * @param {Error} error
+ * @returns {string}
+ */
+export function toUserMessage(error) {
+  if (error.name === 'ApiError') return getErrorMessage(error.status);
+  console.error(error);
+  return ERROR_MESSAGES.DEFAULT;
+}
+
+/**
+ * Devuelve los avisos vigentes en una fecha. Los que no tienen `hasta` no caducan.
+ * @param {Array<{hasta?: string}>} avisos
+ * @param {Date} today - Se pasa desde fuera para que la función sea pura.
+ * @returns {Array} Array nuevo con los avisos vigentes.
+ */
+export const filterActive = (avisos, today) =>
+  avisos.filter(({ hasta }) => !hasta || new Date(`${hasta}T23:59:59`) >= today);

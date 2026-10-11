@@ -13,7 +13,7 @@
   <title> NoveNoBé </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&family=Schibsted+Grotesk:wght@800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="img/favicon-c.svg">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -69,12 +69,39 @@
     <!-- 2. VISTA INICIO -->
     <div id="vista-inicio" class="vista">
 
-      <section id="hero" class="hero" aria-label="Destacados">
-        <div id="hero-slide" class="hero-slide"></div>
-        <div class="hero-paginacion">
-          <button type="button" id="hero-anterior" aria-label="Destacado anterior">‹</button>
-          <span id="hero-contador">01 / 03</span>
-          <button type="button" id="hero-siguiente" aria-label="Destacado siguiente">›</button>
+        <section id="hero" class="hero" aria-roledescription="carrusel" aria-label="Destacados">
+
+        <div id="hero-diapositivas" class="hero-diapositivas" aria-live="off">
+          <!-- Diapositiva fija: presentación del concepto -->
+          <article class="diapositiva diapositiva--concepto" aria-roledescription="diapositiva">
+            <div class="diapositiva-texto">
+              <p class="sobretitulo">Cine con otra mirada</p>
+              <p class="hero-logo">
+                <span class="sr-only">NoveNoBé</span>
+                <span aria-hidden="true"><b>No</b>ve<b>No</b>Bé</span>
+              </p>
+              <p class="diapositiva-desc">No hay más ciego que el que no quiere ver. Busca películas, míralas y cuenta lo que no se ve.</p>
+              <button type="button" class="diapositiva-boton" data-accion="buscar">Empieza a buscar</button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Persianas: 8 lamas que tapan el cambio de diapositiva -->
+        <div class="hero-persianas" aria-hidden="true">
+          <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span>
+          <span style="--i:4"></span><span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span>
+        </div>
+
+        <div id="hero-progreso" class="hero-progreso" aria-hidden="true"></div>
+
+        <div class="hero-controles">
+          <button type="button" id="hero-anterior" aria-label="Diapositiva anterior">‹</button>
+          <span id="hero-contador" aria-hidden="true">01 / 01</span>
+          <button type="button" id="hero-siguiente" aria-label="Diapositiva siguiente">›</button>
+          <button type="button" id="hero-pausa" aria-label="Pausar el carrusel" aria-pressed="false">
+            <svg class="icono-pausa" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14"/></svg>
+            <svg class="icono-play" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M7 5l12 7-12 7z"/></svg>
+          </button>
         </div>
       </section>
 
@@ -185,6 +212,18 @@
         </span>
       </button>
       <h3 class="tarjeta-titulo"></h3>
+    </article>
+  </template>
+    <!-- Plantilla de diapositiva del hero (novedades y avisos) -->
+  <template id="plantilla-diapositiva">
+    <article class="diapositiva" aria-roledescription="diapositiva" hidden>
+      <img class="diapositiva-fondo" alt="" decoding="async">
+      <div class="diapositiva-texto">
+        <p class="sobretitulo diapositiva-etiqueta"></p>
+        <h2 class="diapositiva-titulo"></h2>
+        <p class="diapositiva-desc"></p>
+        <button type="button" class="diapositiva-boton"></button>
+      </div>
     </article>
   </template>
   <script type="module" src="js/main.js"></script>

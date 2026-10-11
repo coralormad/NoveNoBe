@@ -1,4 +1,5 @@
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
 
 // Póster de reserva: un SVG embebido, sin archivo, así que nunca da 404
 const NO_POSTER = `data:image/svg+xml,${encodeURIComponent(
@@ -14,6 +15,7 @@ export class Movie {
     this.rating = data.vote_average ?? 0;
     this.popularity = data.popularity ?? 0;
     this.posterPath = data.poster_path || null;
+    this.backdropPath = data.backdrop_path || null;
     this.genres = data.genres ?? [];
     this.genreIds = data.genre_ids ?? this.genres.map((g) => g.id);
     this.countries = data.production_countries ?? [];
@@ -30,6 +32,17 @@ export class Movie {
 
   get posterUrl() {
     return this.posterPath ? `${IMG_BASE}${this.posterPath}` : NO_POSTER;
+  }
+
+  get backdropUrl() {
+    return this.backdropPath ? `${BACKDROP_BASE}${this.backdropPath}` : null;
+  }
+
+
+  get releaseText() {
+    if (!this.releaseDate) return '';
+    return new Date(`${this.releaseDate}T00:00`)
+      .toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   }
 
   get ratingText() {
