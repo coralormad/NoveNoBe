@@ -6,6 +6,7 @@ import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, set
 import { CountryMap, toMarkers, countryName } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
+import { enableCardTilt } from './tilt.js';
 
 import { AVISOS } from '../data/avisos.js';
 
@@ -105,8 +106,10 @@ function createCard(movie) {
   const card = cardTemplate.content.firstElementChild.cloneNode(true);
   card.dataset.id = movie.id;
 
-  card.querySelector('.tarjeta-boton')
-    .setAttribute('aria-label', `${movie.title}, ${movie.year}. Nota ${movie.ratingText}`);
+  const link = card.querySelector('.tarjeta-enlace');
+  link.href = movieHref(movie.id);
+  link.setAttribute('aria-label', `${movie.title}, ${movie.year}. Nota ${movie.ratingText}`);
+
   card.querySelector('.tarjeta-img').src = movie.posterUrl;
   card.querySelector('.capsula-anio').textContent = movie.year;
   card.querySelector('.capsula-nota').textContent = `★ ${movie.ratingText}`;
@@ -137,7 +140,7 @@ async function loadRow(container, fetcher) {
     return movies;
   } catch (error) {
     if (error.name === 'AbortError') return [];
-    renderRowMessage(container, getErrorMessage(error.status ?? 0));
+    renderRowMessage(container, toUserMessage(error));
     return [];
   }
 }
@@ -177,7 +180,8 @@ async function initGenres() {
     renderGenreChips(genres, firstId);
     return firstId ? loadGenreRow(firstId) : [];
   } catch (error) {
-    renderRowMessage(els.genreRow, getErrorMessage(error.status ?? 0));
+    if (error.name === 'AbortError') return [];
+    renderRowMessage(container, toUserMessage(error));
     return [];
   }
 }
@@ -231,7 +235,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
   } catch (error) {
     if (error.name === 'AbortError') return;
-    renderMessage(getErrorMessage(error.status ?? 0));
+    renderMessage(toUserMessage(error));
   }
 }
 
@@ -410,7 +414,9 @@ els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
 document.addEventListener('click', handleOutsideClick);
-
+enableCardTilt(document);
+document.querySelectorAll('.fila-flechas')
+  .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
