@@ -1,8 +1,11 @@
-import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList } from './api.js';
+import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, toUserMessage, filterActive } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
+import { CountryMap, toMarkers, countryName } from './map.js';
+import { COORDENADAS_PAISES } from '../data/paises.js';
+import { startRouter, movieHref } from './router.js';
 
 import { AVISOS } from '../data/avisos.js';
 
@@ -20,6 +23,23 @@ const els = {
   genreRow: document.querySelector('#fila-genero'),
 };
 
+// Ficha: referencias y estado propio del modal (ámbito de módulo, no globales)
+const ficha = {
+  vista: document.querySelector('#vista-ficha'),
+  estado: document.querySelector('#ficha-estado'),
+  contenido: document.querySelector('#ficha-contenido'),
+  fondo: document.querySelector('#ficha-fondo'),
+  titulo: document.querySelector('#ficha-titulo'),
+  meta: document.querySelector('#ficha-meta'),
+  generos: document.querySelector('#ficha-generos'),
+  sinopsis: document.querySelector('#ficha-sinopsis'),
+  mapa: document.querySelector('#ficha-mapa'),
+  paises: document.querySelector('#ficha-paises'),
+};
+let fichaController = null;
+let countryMap = null; // se crea la primera vez que se abre una ficha
+let scrollInicio = 0; // para volver al mismo punto del inicio
+
 let controller = null; // petición en curso (variable de módulo, no global)
 let genreController = null; // petición de género en curso
 
@@ -33,6 +53,7 @@ function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
   applyTheme(next);
   saveTheme(next);
+  if (!ficha.vista.hidden) countryMap?.refresh();
 }
 
 // ---------- Pintado (sin innerHTML) ----------
@@ -273,9 +294,79 @@ function selectCard(row, button) {
   });
 }
 
+// ---------- Navegación ----------
+/** Abrir una ficha = cambiar la URL; el router hace el resto. */
 function openFicha(id) {
-  // Fase 6: aquí abriremos el modal con getMovieDetails(id) y el mapa.
+  window.location.hash = movieHref(id);
 }
+
+function showView(nombre) {
+  document.querySelectorAll('.vista').forEach((vista) => {
+    vista.hidden = vista.id !== `vista-${nombre}`;
+  });
+}
+
+function handleRoute(route) {
+  if (route.vista === 'ficha') {
+    if (ficha.vista.hidden) scrollInicio = window.scrollY; // venimos del inicio: recordar dónde estaba
+    showView('ficha');
+    window.scrollTo(0, 0);
+    loadFicha(route.id);
+    return;
+  }
+
+  fichaController?.abort();
+  showView('inicio');
+  window.scrollTo(0, scrollInicio);
+}
+
+// ---------- Ficha ----------
+async function loadFicha(id) {
+  fichaController?.abort(); // si había otra ficha cargando, se cancela
+  fichaController = new AbortController();
+
+  ficha.contenido.hidden = true;
+  ficha.estado.textContent = 'Subiendo la persiana…';
+
+  try {
+    const data = await getMovieDetails(id, { signal: fichaController.signal });
+    const movie = new Movie(data);
+    renderFicha(movie);
+    document.title = `${movie.title} · NoveNoBé`;
+    ficha.estado.textContent = '';
+    ficha.contenido.hidden = false; // primero visible: Leaflet necesita medir el contenedor
+    ficha.titulo.focus({ preventScroll: true });
+
+    countryMap ??= new CountryMap(ficha.mapa);
+    countryMap.show(toMarkers(movie.countries, COORDENADAS_PAISES));
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    ficha.estado.textContent = error.status === 404
+      ? 'Aquí no hay nada que ver: esta película no existe.'
+      : toUserMessage(error);
+  }
+}
+
+function renderFicha(movie) {
+  ficha.fondo.src = movie.backdropUrl ?? movie.posterUrl;
+  ficha.titulo.textContent = movie.title;
+  ficha.meta.textContent = [movie.year, `★ ${movie.ratingText}`, movie.runtimeText]
+    .filter(Boolean)
+    .join(' · ');
+  ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
+    const li = document.createElement('li');
+    li.textContent = name;
+    return li;
+  }));
+  ficha.sinopsis.textContent = movie.overview;
+
+  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
+  ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
+  ficha.mapa.setAttribute('aria-label', nombres.length
+    ? `Mapa de los países de producción: ${nombres.join(', ')}`
+    : 'Mapa sin países de producción');
+}
+
 
 function handleRowClick(event) {
   const button = event.target.closest('.tarjeta-boton');
@@ -326,7 +417,9 @@ applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guar
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
 
 Promise.allSettled([
+  startRouter(handleRoute),
   loadHero(hero),
   loadRow(els.trending, () => getTrending()).then(fillEmblem),
   initGenres(),
 ]);
+

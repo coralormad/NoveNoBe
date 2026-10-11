@@ -20,6 +20,7 @@ export class Movie {
     this.genres = data.genres ?? [];
     this.genreIds = data.genre_ids ?? this.genres.map((g) => g.id);
     this.countries = data.production_countries ?? [];
+    this.runtime = data.runtime ?? null; // solo llega en getMovieDetails
   }
 
   // Convierte el array crudo de TMDB en un array de Movie
@@ -51,6 +52,13 @@ export class Movie {
 
   get ratingText() {
     return this.rating.toFixed(1);
+  }
+
+    get runtimeText() {
+    if (!this.runtime) return '';
+    const h = Math.floor(this.runtime / 60);
+    const m = this.runtime % 60;
+    return h ? `${h} h ${m} min` : `${m} min`;
   }
 
   get genreNames() {

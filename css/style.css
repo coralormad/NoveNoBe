@@ -794,3 +794,8 @@ main { padding: 2rem var(--margen-lateral); }
 @media (prefers-reduced-motion: reduce) {
   .entrada-talon { transition: none; }
 }
+
+/* 16. FICHA (mínimo provisional; se completa en el paso 3) -------------------- */
+.ficha-mapa { height: 180px; border-radius: var(--radio); }
+.ficha-fondo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.vista[hidden] { display: none; }

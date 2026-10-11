@@ -16,6 +16,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&family=Schibsted+Grotesk:wght@800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="img/favicon-c.svg">
   <link rel="stylesheet" href="css/style.css">
+    <!-- Leaflet 1.9.4 (mapa de la ficha) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
 
@@ -186,30 +191,60 @@
         <div id="catalogo-grid" class="rejilla"></div>
       </section>
     </div>
+  
+    <!-- 5. VISTA FICHA (#/pelicula/:id) -->
+    <div id="vista-ficha" class="vista" hidden>
+      <article class="ficha" aria-labelledby="ficha-titulo">
+        <a class="ficha-volver" href="#/">Volver al inicio</a>
+        <p id="ficha-estado" class="ficha-estado" role="status"></p>
 
+        <div id="ficha-contenido" class="ficha-contenido" hidden>
+          <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
+          <div class="ficha-cuerpo">
+            <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
+            <p id="ficha-meta" class="ficha-meta"></p>
+            <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
+            <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
+
+            <!-- Pasos 3-5: reparto, «Lo que no se ve», recomendadas -->
+
+            <section class="ficha-seccion" aria-labelledby="ficha-mapa-titulo">
+              <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
+              <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
+              <p id="ficha-paises" class="ficha-paises"></p>
+            </section>
+          </div>
+        </div>
+      </article>
+    </div>
   </main>
 
-  <!-- 5. MODAL DE FICHA -->
-  <dialog id="modal-ficha" class="modal" aria-labelledby="modal-titulo">
-    <button type="button" id="modal-cerrar" aria-label="Cerrar">×</button>
-    <div id="modal-trailer" class="modal-trailer"></div>
-    <div id="modal-contenido" class="modal-contenido"></div>
+    <!-- 5. MODAL DE FICHA -->
+  <dialog id="modal-ficha" class="modal" aria-labelledby="ficha-titulo">
+    <div class="ficha">
+      <button type="button" id="modal-cerrar" class="modal-cerrar" aria-label="Cerrar ficha">×</button>
+      <p id="ficha-estado" class="ficha-estado" role="status"></p>
 
-    <section class="votos" data-revelable>
-      <h3>Lo que no se ve</h3>
-      <fieldset>
-        <legend>¿Pasa el test de Bechdel?</legend>
-        <button type="button" data-voto="bechdel" data-valor="si">Sí <span data-cuenta="bechdel-si">0</span></button>
-        <button type="button" data-voto="bechdel" data-valor="no">No <span data-cuenta="bechdel-no">0</span></button>
-      </fieldset>
-      <fieldset>
-        <legend>¿Sale alguna violación?</legend>
-        <button type="button" data-voto="violacion" data-valor="si">Sí <span data-cuenta="violacion-si">0</span></button>
-        <button type="button" data-voto="violacion" data-valor="no">No <span data-cuenta="violacion-no">0</span></button>
-      </fieldset>
-    </section>
+      <article id="ficha-contenido" class="ficha-contenido" hidden>
+        <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
+        <div class="ficha-cuerpo">
+          <h2 id="ficha-titulo" class="ficha-titulo"></h2>
+          <p id="ficha-meta" class="ficha-meta"></p>
+          <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
+          <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
+
+          <!-- Paso 4: «Lo que no se ve» irá aquí -->
+
+          <section class="ficha-seccion" aria-labelledby="ficha-mapa-titulo">
+            <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
+            <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
+            <p id="ficha-paises" class="ficha-paises"></p>
+          </section>
+        </div>
+      </article>
+    </div>
   </dialog>
-
+  
   <!-- 6. FOOTER -->
   <footer class="pie">
     <p>NoveNoBé</p>
