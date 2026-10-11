@@ -108,12 +108,24 @@ export function fillEmblem(movies, container = document.querySelector('#emblema-
   container.replaceChildren(...images);
 }
 
-/** Fondo ambiental difuminado: imagen pequeña (w300), basta tras el desenfoque. */
-export function setAmbient(movies, img = document.querySelector('#concepto-ambiente')) {
-  const movie = movies.find((item) => item.backdropPath);
-  if (!img || !movie) return;
-  img.addEventListener('load', () => img.classList.add('cargado'), { once: true });
-  img.src = movie.backdropSmallUrl;
+/** Fondo de la presentación: 3 estrenos difuminados que se funden en un degradado. */
+export async function setAmbient(movies, container = document.querySelector('#concepto-ambiente')) {
+  if (!container) return;
+  const images = movies
+    .filter((movie) => movie.backdropPath)
+    .slice(0, 3)
+    .map((movie) => {
+      const img = new Image();
+      img.alt = '';
+      img.decoding = 'async';
+      img.src = movie.backdropSmallUrl;
+      return img;
+    });
+  if (images.length === 0) return;
+
+  container.replaceChildren(...images);
+  await Promise.allSettled(images.map((img) => img.decode()));
+  container.classList.add('cargado');
 }
 
 // ---------- Clase ----------

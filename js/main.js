@@ -2,7 +2,7 @@ import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList } fr
 import { Movie } from './Movie.js';
 import { debounce, toUserMessage, filterActive } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
-import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient} from './hero.js';
+import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 
 import { AVISOS } from '../data/avisos.js';
 
@@ -170,8 +170,10 @@ async function loadHero(hero) {
       getMovieList('now_playing'),
       getMovieList('upcoming'),
     ]);
+    const enCines = Movie.fromList(nowPlaying.results);
+    setAmbient(enCines);
     picks = pickHeroMovies({
-      nowPlaying: Movie.fromList(nowPlaying.results),
+      nowPlaying: enCines,
       upcoming: Movie.fromList(upcoming.results),
       today,
     });
@@ -325,9 +327,6 @@ const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handl
 
 Promise.allSettled([
   loadHero(hero),
-  loadRow(els.trending, () => getTrending()).then((movies) => {
-    fillEmblem(movies);
-    setAmbient(movies);
-  }),
+  loadRow(els.trending, () => getTrending()).then(fillEmblem),
   initGenres(),
 ]);
