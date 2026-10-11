@@ -1,11 +1,15 @@
 // Hero: presentación, novedades y avisos con transición de persiana.
-const PERSIANA_MS = 560; // debe coincidir con la duración de las lamas en CSS (paso 4)
+const PERSIANA_MS = 560; // = 315 ms por lama + 7 × 35 ms de retraso (CSS)
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const pad = (n) => String(n).padStart(2, '0');
 
 // ---------- Funciones puras ----------
+
+/** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
+export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
 
 /**
  * Elige la película en cines y el próximo estreno (ambas con imagen panorámica).
@@ -21,14 +25,12 @@ export function pickHeroMovies({ nowPlaying = [], upcoming = [], today }) {
   return { estreno, proximo };
 }
 
-/**
- * Convierte películas y avisos en datos de diapositiva (objetos planos, sin DOM).
- * @returns {Array<{tipo: string, id: (number|string), etiqueta: string, titulo: string, texto: string, imagen: (string|null), accion: string}>}
- */
+/** Convierte películas y avisos en datos de diapositiva (objetos planos, sin DOM). */
 export function buildSlides({ estreno, proximo, avisos = [] }) {
-  const fromMovie = (movie, etiqueta) => movie && {
+  const fromMovie = (movie, etiqueta, nav) => movie && {
     tipo: 'pelicula',
     id: movie.id,
+    nav,
     etiqueta,
     titulo: movie.title,
     texto: movie.overview,
@@ -38,6 +40,7 @@ export function buildSlides({ estreno, proximo, avisos = [] }) {
   const fromAviso = (aviso) => ({
     tipo: 'aviso',
     id: aviso.id,
+    nav: 'Aviso',
     etiqueta: aviso.etiqueta,
     titulo: aviso.titulo,
     texto: aviso.texto,
@@ -46,8 +49,8 @@ export function buildSlides({ estreno, proximo, avisos = [] }) {
   });
 
   return [
-    fromMovie(estreno, 'En cines esta semana'),
-    fromMovie(proximo, `Próximo estreno · ${proximo?.releaseText ?? ''}`),
+    fromMovie(estreno, 'En cines esta semana', 'En cines'),
+    fromMovie(proximo, `Próximo estreno · ${proximo?.releaseText ?? ''}`, 'Próximo estreno'),
     ...avisos.map(fromAviso),
   ].filter(Boolean);
 }
@@ -58,6 +61,7 @@ export function buildSlides({ estreno, proximo, avisos = [] }) {
 export function createSlide(slide) {
   const node = document.querySelector('#plantilla-diapositiva').content.firstElementChild.cloneNode(true);
   node.classList.add(`diapositiva--${slide.tipo}`);
+  node.dataset.nav = slide.nav;
   node.querySelector('.diapositiva-etiqueta').textContent = slide.etiqueta;
   node.querySelector('.diapositiva-titulo').textContent = slide.titulo;
   node.querySelector('.diapositiva-desc').textContent = slide.texto;
@@ -74,96 +78,6 @@ export function createSlide(slide) {
 
   return node;
 }
-
-// ---------- Clase ----------
-
-export class HeroCarousel {
-  #els;
-  #slides = [];
-  #index = 0;
-  #busy = false;
-  #onAction;
-
-  constructor(root, { onAction = () => {} } = {}) {
-    this.#onAction = onAction;
-    this.#els = {
-      root,
-      track: root.querySelector('#hero-diapositivas'),
-      progress: root.querySelector('#hero-progreso'),
-      counter: root.querySelector('#hero-contador'),
-      pause: root.querySelector('#hero-pausa'),
-    };
-
-    root.querySelector('#hero-anterior').addEventListener('click', () => this.go(this.#index - 1));
-    root.querySelector('#hero-siguiente').addEventListener('click', () => this.go(this.#index + 1));
-    this.#els.pause.addEventListener('click', () => this.togglePause());
-    this.#els.progress.addEventListener('animationend', () => this.go(this.#index + 1));
-    this.#els.track.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-accion]');
-      if (button) this.#onAction(button);
-    });
-
-    this.#sync();
-  }
-
-  /** Añade diapositivas nuevas (las que llegan de la API) detrás de la presentación. */
-  addSlides(nodes) {
-    this.#els.track.append(...nodes);
-    this.#sync();
-  }
-
-  /** Cambia de diapositiva: cierra la persiana, intercambia y la abre. */
-  async go(target) {
-    const total = this.#slides.length;
-    if (this.#busy || total < 2) return;
-    this.#busy = true;
-
-    const ms = prefersReducedMotion() ? 0 : PERSIANA_MS;
-    this.#els.root.dataset.persiana = 'cerrada';
-    await wait(ms);
-
-    this.#index = (target + total) % total;
-    this.#render();
-
-    delete this.#els.root.dataset.persiana;
-    await wait(ms);
-    this.#busy = false;
-  }
-
-  togglePause() {
-    const paused = this.#els.pause.getAttribute('aria-pressed') !== 'true';
-    this.#els.pause.setAttribute('aria-pressed', String(paused));
-    this.#els.pause.setAttribute('aria-label', paused ? 'Reanudar el carrusel' : 'Pausar el carrusel');
-    this.#els.root.toggleAttribute('data-pausado', paused);
-    this.#els.track.setAttribute('aria-live', paused ? 'polite' : 'off');
-  }
-
-  #sync() {
-    this.#slides = [...this.#els.track.children];
-    this.#els.progress.replaceChildren(...this.#slides.map(() => document.createElement('span')));
-    this.#render();
-  }
-
-  #render() {
-    const total = this.#slides.length;
-    this.#slides.forEach((slide, i) => {
-      slide.hidden = i !== this.#index;
-      slide.setAttribute('aria-label', `${i + 1} de ${total}`);
-    });
-    this.#els.counter.textContent = `${pad(this.#index + 1)} / ${pad(total)}`;
-
-    [...this.#els.progress.children].forEach((bar, i) => {
-      bar.classList.remove('activa');
-      if (i === this.#index) {
-        void bar.offsetWidth; // fuerza un reflow para reiniciar la animación CSS
-        bar.classList.add('activa');
-      }
-    });
-  }
-}
-
-// ---------- Emblema del 9ºB ----------
-const SVG_NS = 'http://www.w3.org/2000/svg';
 
 /** Coloca hasta 12 pósters en rejilla 4×3 dentro del 9 (recortados por el clipPath). */
 export function fillEmblem(movies, container = document.querySelector('#emblema-posters')) {
@@ -189,10 +103,124 @@ export function fillEmblem(movies, container = document.querySelector('#emblema-
   container.replaceChildren(...images);
 }
 
-/** Usa el backdrop de la primera película con imagen como fondo ambiental difuminado. */
+/** Fondo ambiental difuminado: imagen pequeña (w300), basta tras el desenfoque. */
 export function setAmbient(movies, img = document.querySelector('#concepto-ambiente')) {
   const movie = movies.find((item) => item.backdropPath);
   if (!img || !movie) return;
   img.addEventListener('load', () => img.classList.add('cargado'), { once: true });
-  img.src = movie.backdropUrl;
+  img.src = movie.backdropSmallUrl;
+}
+
+// ---------- Clase ----------
+
+export class HeroCarousel {
+  #els;
+  #slides = [];
+  #index = 0;
+  #busy = false;
+  #onAction;
+  #pointerX = 0;
+  #frame = 0;
+
+  constructor(root, { onAction = () => {} } = {}) {
+    this.#onAction = onAction;
+    this.#els = {
+      root,
+      track: root.querySelector('#hero-diapositivas'),
+      nav: root.querySelector('#hero-indice'),
+      clock: root.querySelector('#hero-reloj'),
+    };
+
+    root.querySelector('#hero-anterior').addEventListener('click', () => this.go(this.#index - 1));
+    root.querySelector('#hero-siguiente').addEventListener('click', () => this.go(this.#index + 1));
+    this.#els.clock.addEventListener('animationend', () => this.go(this.#index + 1));
+
+    this.#els.nav.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-indice]');
+      if (button) this.go(Number(button.dataset.indice));
+    });
+    this.#els.track.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-accion]');
+      if (button) this.#onAction(button);
+    });
+
+    root.addEventListener('pointermove', (event) => this.#trackPointer(event));
+    root.addEventListener('pointerleave', () => this.#setProximity(0, 0));
+
+    this.#sync();
+  }
+
+  /** Añade diapositivas nuevas (las que llegan de la API) detrás de la presentación. */
+  addSlides(nodes) {
+    this.#els.track.append(...nodes);
+    this.#sync();
+  }
+
+  /** Cambia de diapositiva: cierra la persiana, intercambia y la abre. */
+  async go(target) {
+    const total = this.#slides.length;
+    const next = (target + total) % total;
+    if (this.#busy || total < 2 || next === this.#index) return;
+    this.#busy = true;
+
+    const ms = prefersReducedMotion() ? 0 : PERSIANA_MS;
+    this.#els.root.dataset.persiana = 'cerrada';
+    await wait(ms);
+
+    this.#index = next;
+    this.#render();
+
+    delete this.#els.root.dataset.persiana;
+    await wait(ms);
+    this.#busy = false;
+  }
+
+  // Calcula la cercanía del cursor a cada borde, como mucho una vez por fotograma
+  #trackPointer(event) {
+    this.#pointerX = event.clientX;
+    if (this.#frame) return;
+    this.#frame = requestAnimationFrame(() => {
+      this.#frame = 0;
+      const { left, width } = this.#els.root.getBoundingClientRect();
+      const x = (this.#pointerX - left) / width;
+      this.#setProximity(proximity(x), proximity(1 - x));
+    });
+  }
+
+  #setProximity(prev, next) {
+    this.#els.root.style.setProperty('--prox-anterior', prev.toFixed(3));
+    this.#els.root.style.setProperty('--prox-siguiente', next.toFixed(3));
+  }
+
+  #sync() {
+    this.#slides = [...this.#els.track.children];
+    const items = this.#slides.map((slide, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'hero-indice-item';
+      button.dataset.indice = i;
+      button.setAttribute('aria-label', `Diapositiva ${i + 1}: ${slide.dataset.nav ?? ''}`);
+      return button;
+    });
+    this.#els.nav.replaceChildren(...items);
+    this.#render();
+  }
+
+  #render() {
+    const total = this.#slides.length;
+    this.#slides.forEach((slide, i) => {
+      slide.hidden = i !== this.#index;
+      slide.setAttribute('aria-label', `${i + 1} de ${total}`);
+    });
+    [...this.#els.nav.children].forEach((item, i) => {
+      if (i === this.#index) item.setAttribute('aria-current', 'true');
+      else item.removeAttribute('aria-current');
+    });
+
+    // Reinicia el temporizador invisible (animación CSS de 7 s)
+    const { clock } = this.#els;
+    clock.classList.remove('activo');
+    void clock.offsetWidth;
+    clock.classList.add('activo');
+  }
 }

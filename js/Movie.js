@@ -1,5 +1,5 @@
 const IMG_BASE = 'https://image.tmdb.org/t/p/w342';
-const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w1280';
+const BACKDROP_BASE = 'https://image.tmdb.org/t/p/w300';
 
 // Póster de reserva: un SVG embebido, sin archivo, así que nunca da 404
 const NO_POSTER = `data:image/svg+xml,${encodeURIComponent(
@@ -38,6 +38,9 @@ export class Movie {
     return this.backdropPath ? `${BACKDROP_BASE}${this.backdropPath}` : null;
   }
 
+  get backdropSmallUrl() {
+    return this.backdropPath ? `${BACKDROP_SMALL}${this.backdropPath}` : null;
+  }
 
   get releaseText() {
     if (!this.releaseDate) return '';
