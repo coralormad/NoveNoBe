@@ -182,7 +182,6 @@ async function loadHero(hero) {
   }
   const slides = buildSlides({ ...picks, avisos: filterActive(AVISOS, today) });
   hero.addSlides(slides.map(createSlide));
-  setAmbient(picks.nowPlaying);
 }
 
 function handleHeroAction(button) {
