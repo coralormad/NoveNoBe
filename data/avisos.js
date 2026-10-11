@@ -1,12 +1,22 @@
-// Avisos y eventos propios de NoveNoBé (TMDB no tiene eventos).
-// Alimentan el hero y el panel de la campana: una sola fuente de datos.
+// Avisos propios de NoveNoBé (TMDB no tiene eventos).
+// Cada aviso tiene versión de día (tema claro) y de noche (tema oscuro): La ventana indiscreta.
 export const AVISOS = Object.freeze([
   {
     id: 'lo-que-no-se-ve',
-    etiqueta: 'Aviso de NoveNoBé',
-    titulo: 'Ya puedes contar lo que no se ve',
-    texto: 'Tras ver una película, responde a «Lo que no se ve» y suma tu mirada a la comunidad.',
-    accion: 'Cómo funciona',
-    hasta: '2026-10-31', // formato AAAA-MM-DD; sin este campo, el aviso no caduca
+    hasta: '2026-10-31', // AAAA-MM-DD; sin este campo, el aviso no caduca
+    dia: {
+      etiqueta: 'Aviso de día',
+      titulo: 'De día, las persianas están bajadas',
+      texto: 'Lo que pasa en el 9ºB se ve cuando apagas la luz.',
+      accion: 'Apaga la luz',
+      destino: 'tema',
+    },
+    noche: {
+      etiqueta: 'Aviso de noche',
+      titulo: 'Ya es de noche en el 9ºB',
+      texto: 'Tras ver una película, cuenta lo que no se ve y lee lo que vieron las demás.',
+      accion: 'Busca una película',
+      destino: 'buscar',
+    },
   },
 ].map(Object.freeze));

@@ -21,7 +21,7 @@
 
   <!-- 1. CABECERA -->
   <header class="cabecera">
-    <h1 class="logo">NoveNoBé</h1>
+    <h1 class="logo"> NoveNoBé </h1>
 
     <nav class="menu" aria-label="Principal">
       <ul>
@@ -250,6 +250,20 @@
         <button type="button" class="diapositiva-boton"></button>
       </div>
     </article>
+  </template>
+  <!-- Entrada de cine: aviso del hero y, más adelante, «Lo que no se ve» -->
+  <template id="plantilla-entrada">
+    <figure class="entrada" aria-hidden="true">
+      <div class="entrada-cuerpo">
+        <p class="entrada-sesion"><span class="solo-noche">Sesión de noche</span><span class="solo-dia">Sesión matinal</span></p>
+        <p class="entrada-titulo">Lo que no se ve</p>
+        <dl class="entrada-datos">
+          <div><dt>Fila</dt><dd>9</dd></div>
+          <div><dt>Butaca</dt><dd>B</dd></div>
+        </dl>
+      </div>
+      <div class="entrada-talon"><span class="entrada-sello">No ve</span></div>
+    </figure>
   </template>
   <script type="module" src="js/main.js"></script>
 </body>

@@ -41,16 +41,18 @@ export function buildSlides({ estreno, proximo, avisos = [] }) {
     texto: movie.overview,
     imagen: movie.backdropUrl,
     accion: 'Ver ficha',
+    destino: 'ficha',
   };
+  // Un aviso = una diapositiva con dos variantes; el CSS muestra la del tema activo
   const fromAviso = (aviso) => ({
     tipo: 'aviso',
     id: aviso.id,
     nav: 'Aviso',
-    etiqueta: aviso.etiqueta,
-    titulo: aviso.titulo,
-    texto: aviso.texto,
     imagen: null,
-    accion: aviso.accion,
+    variantes: [
+      { tema: 'dia', ...aviso.dia },
+      { tema: 'noche', ...aviso.noche },
+    ],
   });
 
   return [
@@ -62,20 +64,39 @@ export function buildSlides({ estreno, proximo, avisos = [] }) {
 
 // ---------- DOM ----------
 
-/** Clona la plantilla y la rellena con textContent (sin innerHTML). */
+/** Rellena un bloque de texto de diapositiva (textContent, sin innerHTML). */
+function fillText(block, data) {
+  block.querySelector('.diapositiva-etiqueta').textContent = data.etiqueta;
+  block.querySelector('.diapositiva-titulo').textContent = data.titulo;
+  block.querySelector('.diapositiva-desc').textContent = data.texto;
+  const button = block.querySelector('.diapositiva-boton');
+  button.textContent = data.accion;
+  button.dataset.accion = data.destino;
+  return button;
+}
+
+/** Clona la plantilla y la rellena según el tipo de diapositiva. */
 export function createSlide(slide) {
   const node = document.querySelector('#plantilla-diapositiva').content.firstElementChild.cloneNode(true);
   node.classList.add(`diapositiva--${slide.tipo}`);
   node.dataset.nav = slide.nav;
-  node.querySelector('.diapositiva-etiqueta').textContent = slide.etiqueta;
-  node.querySelector('.diapositiva-titulo').textContent = slide.titulo;
-  node.querySelector('.diapositiva-desc').textContent = slide.texto;
+  const text = node.querySelector('.diapositiva-texto');
 
-  const button = node.querySelector('.diapositiva-boton');
-  button.textContent = slide.accion;
-  button.dataset.accion = slide.tipo === 'pelicula' ? 'ficha' : 'aviso';
-  button.dataset.id = slide.id;
-  if (slide.tipo === 'pelicula') button.setAttribute('aria-label', `Ver ficha de ${slide.titulo}`);
+  if (slide.tipo === 'pelicula') {
+    const button = fillText(text, slide);
+    button.dataset.id = slide.id;
+    button.setAttribute('aria-label', `Ver ficha de ${slide.titulo}`);
+  } else {
+    const blocks = slide.variantes.map((variante) => {
+      const block = text.cloneNode(true);
+      block.classList.add(`solo-${variante.tema}`);
+      fillText(block, variante);
+      return block;
+    });
+    text.replaceWith(...blocks);
+    const entrada = document.querySelector('#plantilla-entrada')?.content.firstElementChild;
+    if (entrada) node.append(entrada.cloneNode(true));
+  }
 
   const img = node.querySelector('.diapositiva-fondo');
   if (slide.imagen) img.src = slide.imagen;

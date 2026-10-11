@@ -185,6 +185,7 @@ async function loadHero(hero) {
 }
 
 function handleHeroAction(button) {
+  if (button.dataset.accion === 'tema') toggleTheme();
   if (button.dataset.accion === 'buscar' && els.panel.hidden) togglePanel();
   if (button.dataset.accion === 'ficha') openFicha(button.dataset.id);
 }

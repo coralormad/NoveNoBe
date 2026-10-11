@@ -443,12 +443,8 @@ main { padding: 2rem var(--margen-lateral); }
     linear-gradient(0deg, var(--color-fondo) 0%, transparent 45%);
 }
 
-/* Aviso: luz de persiana (sin imagen) */
-.diapositiva--aviso {
-  background:
-    repeating-linear-gradient(170deg, transparent 0 28px, color-mix(in srgb, var(--color-primario) 10%, transparent) 28px 46px),
-    var(--color-superficie);
-}
+/* Aviso: misma luz de rellano que la presentación + entrada de cine (sección 14) */
+.diapositiva--aviso { background: var(--color-superficie); isolation: isolate; }
 
 /* Texto */
 .diapositiva-texto { max-width: 34rem; display: grid; gap: 0.75rem; justify-items: start; }
@@ -698,33 +694,103 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* 14. LUZ DE RELLANO: puerta entreabierta en un pasillo a oscuras ---------- */
 /* Tokens de la luz: oscuro ilumina, claro sombrea (solo cambian estos 3) */
-.diapositiva--concepto {
+:is(.diapositiva--concepto, .diapositiva--aviso) {
   --luz-inicio: color-mix(in srgb, var(--lavanda-300) 20%, transparent);
   --luz-fin: color-mix(in srgb, var(--lavanda-300) 3%, transparent);
   --luz-mezcla: screen;
 }
-:root[data-theme="claro"] .diapositiva--concepto {
+:root[data-theme="claro"] :is(.diapositiva--concepto, .diapositiva--aviso) {
   --luz-inicio: color-mix(in srgb, var(--lavanda-100) 18%, transparent);
   --luz-fin: color-mix(in srgb, var(--lavanda-100) 2%, transparent);
   --luz-mezcla: multiply;
 }
-
-/* La cuña: estrecha arriba (la puerta), ancha abajo (el suelo) */
-.diapositiva--concepto::after {
+/* (::after va fuera del :is: los pseudoelementos no pueden ir dentro) */
+.diapositiva--concepto::after,
+.diapositiva--aviso::after {
   content: "";
   position: absolute; inset: 0; z-index: -1;
   pointer-events: none;
   clip-path: polygon(6% 0, 24% 0, 64% 100%, 10% 100%);
   background: linear-gradient(to bottom, var(--luz-inicio), var(--luz-fin));
   mix-blend-mode: var(--luz-mezcla);
-  /* Borde izquierdo nítido, borde derecho que se deshace como la luz real */
   -webkit-mask-image: linear-gradient(100deg, #000 50%, transparent 85%);
           mask-image: linear-gradient(100deg, #000 50%, transparent 85%);
 }
-
-/* Móvil: el texto ocupa todo el ancho, la cuña se abre más */
 @media (max-width: 849px) {
-  .diapositiva--concepto::after {
-    clip-path: polygon(10% 0, 38% 0, 92% 100%, 14% 100%);
+  .diapositiva--concepto::after,
+  .diapositiva--aviso::after { clip-path: polygon(10% 0, 38% 0, 92% 100%, 14% 100%); }
+}
+
+/* 15. ENTRADA DE CINE Y AVISOS DÍA / NOCHE ---------------------------------- */
+/* Cada tema solo ve su versión (display: none también la oculta al lector de pantalla) */
+:root[data-theme="claro"] .solo-noche,
+:root[data-theme="oscuro"] .solo-dia { display: none; }
+
+.entrada { display: none; margin: 0; }
+
+@media (min-width: 850px) {
+  .diapositiva--aviso {
+    display: grid; align-items: center; gap: 2rem;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   }
+  .entrada {
+    --talon: 84px;
+    display: grid; grid-template-columns: 1fr var(--talon);
+    justify-self: center; width: min(100%, 340px);
+    rotate: -4deg;
+  }
+}
+
+/* Cuerpo y talón son piezas separadas: cada una lleva sus medias muescas,
+   así el talón puede soltarse sin que la máscara lo recorte */
+.entrada-cuerpo,
+.entrada-talon { background: var(--color-secundario); }
+
+.entrada-cuerpo {
+  padding: 1.25rem 1.5rem; display: grid; gap: 0.35rem;
+  border-radius: 10px 0 0 10px;
+  -webkit-mask:
+    radial-gradient(circle 10px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 10px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+          mask:
+    radial-gradient(circle 10px at 100% 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 10px at 100% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+}
+.entrada-talon {
+  display: grid; place-items: center;
+  border-left: 2px dashed var(--color-borde-control);
+  border-radius: 0 10px 10px 0;
+  transform-origin: 0 100%; /* se rasga desde arriba, como al cortarla a mano */
+  transition: translate var(--dur-media) var(--curva-cine), rotate var(--dur-media) var(--curva-cine);
+  -webkit-mask:
+    radial-gradient(circle 10px at 0 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 10px at 0 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+          mask:
+    radial-gradient(circle 10px at 0 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle 10px at 0 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+}
+/* Cortar la entrada = pasar a la sala (ratón o teclado) */
+.diapositiva--aviso:is(:hover, :focus-within) .entrada-talon { translate: 14px 4px; rotate: 10deg; }
+
+.entrada-sesion,
+.entrada-datos dt {
+  font-family: var(--fuente-detalle); font-size: 0.75rem;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-texto-suave);
+}
+.entrada-titulo { font-family: var(--fuente-titulos); font-size: 1.6rem; line-height: 1.1; }
+.entrada-datos { display: flex; gap: 2rem; margin: 0.5rem 0 0; }
+.entrada-datos dd {
+  margin: 0; font-family: 'Schibsted Grotesk', var(--fuente-texto);
+  font-weight: 800; font-size: 2.6rem; line-height: 1; color: var(--lavanda-300);
+}
+.entrada-sello {
+  rotate: -14deg;
+  padding: 0.3rem 0.5rem; border: 2px solid currentColor; border-radius: 4px;
+  font-family: var(--fuente-detalle); font-weight: 700; font-size: 0.85rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--lavanda-300);
+}
+:root[data-theme="claro"] :is(.entrada-datos dd, .entrada-sello) { color: var(--lavanda-100); }
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada-talon { transition: none; }
 }
