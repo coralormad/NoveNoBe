@@ -48,8 +48,30 @@ export function getMovieDetails(id, { signal } = {}) {
   }, signal);
 }
 
-export function getTrending() {
-  return request('/trending/movie/week');
+// Listas "fijas" de TMDB que sirven con la misma función
+const MOVIE_LISTS = Object.freeze(['popular', 'top_rated', 'upcoming', 'now_playing']);
+
+export function getTrending(timeWindow = 'week') {
+  return request(`/trending/movie/${timeWindow}`);
+}
+
+export async function getMovieList(type, { page = 1, signal } = {}) {
+  if (!MOVIE_LISTS.includes(type)) throw new Error(`Lista no válida: ${type}`);
+  return request(`/movie/${type}`, { page, region: 'ES' }, signal);
+}
+
+export function discoverMovies({ genreId, page = 1, signal } = {}) {
+  return request('/discover/movie', {
+    page,
+    sort_by: 'popularity.desc',
+    include_adult: false,
+    'vote_count.gte': 100,
+    ...(genreId && { with_genres: genreId }),
+  }, signal);
+}
+
+export function getRecommendations(id, { signal } = {}) {
+  return request(`/movie/${id}/recommendations`, {}, signal);
 }
 
 export async function getGenres() {

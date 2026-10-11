@@ -11,7 +11,6 @@
   } catch {}
   </script>
   <title> NoveNoBé </title>
-  <link 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
@@ -48,7 +47,7 @@
       <button type="button" id="btn-tema" class="interruptor" role="switch" aria-checked="true" aria-label="Cambiar tema">
         <span class="interruptor-capsula" aria-hidden="true">
           <span class="interruptor-bola">
-            
+
           </span>
         </span>
       </button>
@@ -145,7 +144,7 @@
     <div id="modal-contenido" class="modal-contenido"></div>
 
     <section class="votos" data-revelable>
-      <h3>Lo que no se ve</h3>s
+      <h3>Lo que no se ve</h3>
       <fieldset>
         <legend>¿Pasa el test de Bechdel?</legend>
         <button type="button" data-voto="bechdel" data-valor="si">Sí <span data-cuenta="bechdel-si">0</span></button>
@@ -166,6 +165,28 @@
     <p>Datos de películas: TMDB</p>
   </footer>
 
+  <!-- Plantilla de tarjeta: main.js la clona por cada película -->
+  <template id="plantilla-tarjeta">
+    <article class="tarjeta">
+      <button type="button" class="tarjeta-boton" aria-pressed="false">
+        <span class="tarjeta-poster">
+          <img class="tarjeta-img" alt="" loading="lazy" width="342" height="513">
+          <span class="tarjeta-velo" aria-hidden="true"></span>
+          <svg class="tarjeta-play" viewBox="0 0 56 56" aria-hidden="true" focusable="false">
+            <circle class="play-fondo" cx="28" cy="28" r="26"/>
+            <circle class="play-anillo" cx="28" cy="28" r="26" pathLength="100"/>
+            <path class="play-triangulo" d="M23 19 L38 28 L23 37 Z"/>
+          </svg>
+          <span class="tarjeta-accion" aria-hidden="true">Ver ficha</span>
+          <span class="tarjeta-capsula" aria-hidden="true">
+            <span class="capsula-anio"></span>
+            <span class="capsula-nota"></span>
+          </span>
+        </span>
+      </button>
+      <h3 class="tarjeta-titulo"></h3>
+    </article>
+  </template>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

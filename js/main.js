@@ -1,5 +1,4 @@
-import { searchMovies, getTrending } from './api.js';
-import { Movie } from './Movie.js';
+import { searchMovies, getTrending, getGenres, discoverMovies } from './api.js';
 import { debounce, getErrorMessage } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 
@@ -13,9 +12,12 @@ const els = {
   results: document.querySelector('#resultados-busqueda'),
   trending: document.querySelector('#fila-tendencias'),
   btnTema: document.querySelector('#btn-tema'), // NUEVO 5d
+  genres: document.querySelector('#generos'),
+  genreRow: document.querySelector('#fila-genero'),
 };
 
 let controller = null; // petición en curso (variable de módulo, no global)
+let genreController = null; // petición de género en curso
 
 // ---------- Tema (NUEVO 5d) ----------
 function applyTheme(theme) {
@@ -41,7 +43,7 @@ function renderResults(movies) {
 
   const items = movies.map((movie) => {
     const li = document.createElement('li');
-    li.textContent = `${movie.title} (${movie.yearText}) · ★ ${movie.ratingText}`;
+    li.textContent = `${movie.title} (${movie.year}) · ★ ${movie.ratingText}`;
     li.dataset.id = movie.id;
     return li;
   });
@@ -72,27 +74,19 @@ function renderHistory() {
 }
 
 // ---------- Tarjetas y filas ----------
+const cardTemplate = document.querySelector('#plantilla-tarjeta');
+
 function createCard(movie) {
-  const card = document.createElement('article');
-  card.className = 'tarjeta';
+  const card = cardTemplate.content.firstElementChild.cloneNode(true);
   card.dataset.id = movie.id;
 
-  const img = document.createElement('img');
-  img.src = movie.posterUrl;
-  img.alt = `Póster de ${movie.title}`;
-  img.loading = 'lazy';
-  img.width = 342;
-  img.height = 513;
+  card.querySelector('.tarjeta-boton')
+    .setAttribute('aria-label', `${movie.title}, ${movie.year}. Nota ${movie.ratingText}`);
+  card.querySelector('.tarjeta-img').src = movie.posterUrl;
+  card.querySelector('.capsula-anio').textContent = movie.year;
+  card.querySelector('.capsula-nota').textContent = `★ ${movie.ratingText}`;
+  card.querySelector('.tarjeta-titulo').textContent = movie.title;
 
-  const title = document.createElement('h3');
-  title.className = 'tarjeta-titulo';
-  title.textContent = movie.title;
-
-  const meta = document.createElement('p');
-  meta.className = 'tarjeta-meta';
-  meta.textContent = `${movie.yearText} · ★ ${movie.ratingText}`;
-
-  card.append(img, title, meta);
   return card;
 }
 
@@ -108,14 +102,58 @@ function renderRow(container, movies) {
   container.replaceChildren(...movies.map(createCard));
 }
 
-async function loadTrending() {
-  renderRowMessage(els.trending, 'Cargando…');
+// Carga cualquier fila: recibe dónde pintar y una función que pide los datos
+async function loadRow(container, fetcher) {
+  renderRowMessage(container, 'Cargando…');
   try {
-    const data = await getTrending();
-    const movies = data.results.map((item) => new Movie(item));
-    renderRow(els.trending, movies);
+    const data = await fetcher();
+    const movies = Movie.fromList(data.results);
+    renderRow(container, movies);
+    return movies;
   } catch (error) {
-    renderRowMessage(els.trending, getErrorMessage(error.status ?? 0));
+    if (error.name === 'AbortError') return [];
+    renderRowMessage(container, getErrorMessage(error.status ?? 0));
+    return [];
+  }
+}
+
+// ---------- Géneros ----------
+function renderGenreChips(genres, activeId) {
+  const buttons = genres.map(({ id, name }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = name;
+    button.dataset.genreId = id;
+    button.setAttribute('aria-pressed', String(id === activeId));
+    return button;
+  });
+  els.genres.replaceChildren(...buttons);
+}
+
+function loadGenreRow(genreId) {
+  genreController?.abort();
+  genreController = new AbortController();
+  const { signal } = genreController;
+  return loadRow(els.genreRow, () => discoverMovies({ genreId, signal }));
+}
+
+function handleGenreClick(event) {
+  const button = event.target.closest('[data-genre-id]');
+  if (!button || button.getAttribute('aria-pressed') === 'true') return;
+  els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-pressed', 'true');
+  loadGenreRow(Number(button.dataset.genreId));
+}
+
+async function initGenres() {
+  try {
+    const genres = await getGenres();
+    const firstId = genres[0]?.id;
+    renderGenreChips(genres, firstId);
+    return firstId ? loadGenreRow(firstId) : [];
+  } catch (error) {
+    renderRowMessage(els.genreRow, getErrorMessage(error.status ?? 0));
+    return [];
   }
 }
 
@@ -181,6 +219,64 @@ function handleResultsClick(event) {
   }
 }
 
+// ---------- Carrusel: selección y flechas ----------
+const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function deselectRow(row) {
+  row.querySelectorAll('.tarjeta-boton[aria-pressed="true"]')
+    .forEach((button) => button.setAttribute('aria-pressed', 'false'));
+  delete row.dataset.seleccion;
+}
+
+function selectCard(row, button) {
+  deselectRow(row);
+  button.setAttribute('aria-pressed', 'true');
+  row.dataset.seleccion = 'true';
+  button.closest('.tarjeta').scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    inline: 'center',
+    block: 'nearest',
+  });
+}
+
+function openFicha(id) {
+  // Fase 6: aquí abriremos el modal con getMovieDetails(id) y el mapa.
+}
+
+function handleRowClick(event) {
+  const button = event.target.closest('.tarjeta-boton');
+  if (!button) return;
+
+  if (button.getAttribute('aria-pressed') === 'true') {
+    openFicha(button.closest('.tarjeta').dataset.id);
+    return;
+  }
+  selectCard(event.currentTarget, button);
+}
+
+function handleRowKeydown(event) {
+  if (event.key === 'Escape') deselectRow(event.currentTarget);
+}
+
+function handleArrowClick(event) {
+  const arrow = event.target.closest('[data-flecha]');
+  if (!arrow) return;
+  const row = document.getElementById(arrow.dataset.objetivo);
+  const direction = arrow.dataset.flecha === 'izquierda' ? -1 : 1;
+  row.scrollBy({
+    left: direction * row.clientWidth * 0.8,
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+  });
+}
+
+function handleOutsideClick(event) {
+  if (event.target.closest('.fila-flechas')) return; // las flechas no cuentan como "fuera"
+  document.querySelectorAll('.carrusel[data-seleccion]').forEach((row) => {
+    if (!row.contains(event.target)) deselectRow(row);
+  });
+}
+
 // ---------- Eventos ----------
 els.btnBuscar.addEventListener('click', togglePanel);
 els.input.addEventListener('input', debouncedSearch);
@@ -188,7 +284,13 @@ els.input.addEventListener('keydown', handleKeydown);
 els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
+els.genres.addEventListener('click', handleGenreClick);
+document.addEventListener('click', handleOutsideClick);
+
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
-loadTrending();
+Promise.allSettled([
+  loadRow(els.trending, () => getTrending()),
+  initGenres(),
+]);
