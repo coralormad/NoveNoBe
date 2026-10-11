@@ -10,6 +10,11 @@ const pad = (n) => String(n).padStart(2, '0');
 
 /** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
 export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
+/** Dirección de un deslizamiento: 1 = siguiente, -1 = anterior, 0 = no cuenta. */
+export function swipeDirection(dx, dy, min = 50) {
+  if (Math.abs(dx) < min || Math.abs(dx) < Math.abs(dy)) return 0;
+  return dx < 0 ? 1 : -1;
+}
 
 /**
  * Elige la película en cines y el próximo estreno (ambas con imagen panorámica).
@@ -121,6 +126,7 @@ export class HeroCarousel {
   #onAction;
   #pointerX = 0;
   #frame = 0;
+  #swipe = null;
 
   constructor(root, { onAction = () => {} } = {}) {
     this.#onAction = onAction;
@@ -146,6 +152,11 @@ export class HeroCarousel {
 
     root.addEventListener('pointermove', (event) => this.#trackPointer(event));
     root.addEventListener('pointerleave', () => this.#setProximity(0, 0));
+    root.addEventListener('keydown', (event) => this.#handleKey(event));
+    root.addEventListener('pointerdown', (event) => this.#startSwipe(event));
+    root.addEventListener('pointerup', (event) => this.#endSwipe(event));
+    this.#els.nav.addEventListener('pointerover', (event) => this.#showName(event.target));
+    this.#els.nav.addEventListener('focusin', (event) => this.#showName(event.target));
 
     this.#sync();
   }
@@ -192,17 +203,58 @@ export class HeroCarousel {
     this.#els.root.style.setProperty('--prox-siguiente', next.toFixed(3));
   }
 
+  #handleKey(event) {
+    const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    this.go(this.#index + step);
+  }
+
+  #startSwipe(event) {
+    if (event.pointerType === 'mouse') return;
+    this.#swipe = { x: event.clientX, y: event.clientY };
+  }
+
+  #endSwipe(event) {
+    if (!this.#swipe) return;
+    const direction = swipeDirection(event.clientX - this.#swipe.x, event.clientY - this.#swipe.y);
+    this.#swipe = null;
+    if (direction) this.go(this.#index + direction);
+  }
+
+  #showName(target) {
+    const button = target.closest('[data-indice]');
+    if (button) this.#els.name.textContent = button.dataset.nombre;
+  }
+
   #sync() {
     this.#slides = [...this.#els.track.children];
     const items = this.#slides.map((slide, i) => {
+      const nombre = slide.dataset.nav ?? '';
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'hero-indice-item';
+      button.className = 'mirilla';
       button.dataset.indice = i;
-      button.setAttribute('aria-label', `Diapositiva ${i + 1}: ${slide.dataset.nav ?? ''}`);
+      button.dataset.nombre = nombre;
+      button.setAttribute('aria-label', `Diapositiva ${i + 1}: ${nombre}`);
+
+      const lente = document.createElement('span');
+      lente.className = 'mirilla-lente';
+      const imagen = slide.querySelector('.diapositiva-fondo')?.getAttribute('src');
+      if (imagen) lente.style.backgroundImage = `url("${imagen}")`;
+
+      const tapa = document.createElement('span');
+      tapa.className = 'mirilla-tapa';
+
+      button.append(lente, tapa);
       return button;
     });
-    this.#els.nav.replaceChildren(...items);
+
+    const name = document.createElement('span');
+    name.className = 'hero-indice-nombre';
+    name.setAttribute('aria-hidden', 'true');
+    this.#els.name = name;
+    this.#els.nav.replaceChildren(...items, name);
     this.#render();
   }
 
@@ -213,7 +265,8 @@ export class HeroCarousel {
       slide.setAttribute('aria-label', `${i + 1} de ${total}`);
     });
     [...this.#els.nav.children].forEach((item, i) => {
-      if (i === this.#index) item.setAttribute('aria-current', 'true');
+        this.#els.nav.style.setProperty('--progreso', (this.#index + 1) / total);
+        if (i === this.#index) item.setAttribute('aria-current', 'true');
       else item.removeAttribute('aria-current');
     });
 
