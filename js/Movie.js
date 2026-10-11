@@ -15,6 +15,7 @@ export class Movie {
     this.title = data.title || 'Sin título';
     this.overview = data.overview || 'Sin descripción disponible.';
     this.releaseDate = data.release_date || '';
+    this.imdbId = data.imdb_id ?? null; // para Bechdel (busca por imdbid); solo llega en los detalles
     this.rating = data.vote_average ?? 0;
     this.popularity = data.popularity ?? 0;
     this.posterPath = data.poster_path || null;

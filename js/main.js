@@ -1,13 +1,12 @@
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive } from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCrew, pickCertification } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt } from './tilt.js';
-
 import { AVISOS } from '../data/avisos.js';
 
 const MIN_QUERY = 2;
@@ -30,13 +29,21 @@ const ficha = {
   estado: document.querySelector('#ficha-estado'),
   contenido: document.querySelector('#ficha-contenido'),
   fondo: document.querySelector('#ficha-fondo'),
+  poster: document.querySelector('#ficha-poster'),
   titulo: document.querySelector('#ficha-titulo'),
+  original: document.querySelector('#ficha-original'),
   meta: document.querySelector('#ficha-meta'),
+  nota: document.querySelector('#ficha-nota'),
   generos: document.querySelector('#ficha-generos'),
+  eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
+  equipo: document.querySelector('#ficha-equipo'),
+  nav: document.querySelector('#ficha-nav'),
   mapa: document.querySelector('#ficha-mapa'),
   paises: document.querySelector('#ficha-paises'),
 };
+
+let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
 let countryMap = null; // se crea la primera vez que se abre una ficha
 let scrollInicio = 0; // para volver al mismo punto del inicio
@@ -310,21 +317,39 @@ function showView(nombre) {
   });
 }
 
-function handleRoute(route) {
+async function handleRoute(route) {
   if (route.vista === 'ficha') {
     if (ficha.vista.hidden) scrollInicio = window.scrollY; // venimos del inicio: recordar dónde estaba
     showView('ficha');
-    window.scrollTo(0, 0);
-    loadFicha(route.id);
+
+    if (route.id !== fichaActual) {   // otra película → pedirla
+      fichaActual = route.id;
+      window.scrollTo(0, 0);
+      const ok = await loadFicha(route.id);
+      if (!ok) return;                // error o cancelada: no hay sección a la que ir
+    }
+    goToSection(route.seccion);       // misma película → solo desplazarse
     return;
   }
 
   fichaController?.abort();
+  fichaActual = null;
   showView('inicio');
   window.scrollTo(0, scrollInicio);
 }
 
-// ---------- Ficha ----------
+/** Lleva a una sección de la ficha; sin sección (o desconocida), al principio. */
+function goToSection(seccion) {
+  const destino = seccion && document.getElementById(`seccion-${seccion}`);
+  if (!destino) {
+    window.scrollTo(0, 0);
+    ficha.titulo.focus({ preventScroll: true });
+    return;
+  }
+  destino.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  destino.focus({ preventScroll: true });
+}
+
 async function loadFicha(id) {
   fichaController?.abort(); // si había otra ficha cargando, se cancela
   fichaController = new AbortController();
@@ -343,26 +368,44 @@ async function loadFicha(id) {
 
     countryMap ??= new CountryMap(ficha.mapa);
     countryMap.show(toMarkers(movie.countries, COORDENADAS_PAISES));
+    return true;
   } catch (error) {
-    if (error.name === 'AbortError') return;
+    if (error.name === 'AbortError') return false;
+    fichaActual = null; // para poder reintentar la misma película
     ficha.estado.textContent = error.status === 404
       ? 'Aquí no hay nada que ver: esta película no existe.'
       : toUserMessage(error);
+    return false;
   }
 }
 
 function renderFicha(movie) {
   ficha.fondo.src = movie.backdropUrl ?? movie.posterUrl;
+  ficha.poster.src = movie.posterUrl;
   ficha.titulo.textContent = movie.title;
-  ficha.meta.textContent = [movie.year, `★ ${movie.ratingText}`, movie.runtimeText]
+
+  ficha.original.hidden = !movie.hasOriginalTitle;
+  ficha.original.textContent = `Título original: ${movie.originalTitle}`;
+
+  ficha.meta.textContent = [movie.year, certificationText(pickCertification(movie.releaseDates)), movie.runtimeText]
     .filter(Boolean)
     .join(' · ');
+  ficha.nota.textContent = `★ ${movie.ratingText} · TMDB · ${movie.votesText}`;
+
   ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
     const li = document.createElement('li');
     li.textContent = name;
     return li;
   }));
+
+  ficha.eslogan.hidden = !movie.tagline;
+  ficha.eslogan.textContent = movie.tagline;
   ficha.sinopsis.textContent = movie.overview;
+  renderEquipo(pickCrew(movie.credits.crew));
+
+  ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
+    link.href = movieHref(movie.id, link.dataset.seccion);
+  });
 
   const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
   ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
@@ -370,6 +413,32 @@ function renderFicha(movie) {
     ? `Mapa de los países de producción: ${nombres.join(', ')}`
     : 'Mapa sin países de producción');
 }
+
+/** Pura: clasificación → texto. Si no es la española, dice de qué país es. */
+const certificationText = (cert) => {
+  if (!cert) return '';
+  return cert.country === 'ES'
+    ? cert.certification
+    : `${cert.certification} (${countryName(cert.country, cert.country)})`;
+};
+
+function renderEquipo(roles) {
+  ficha.equipo.replaceChildren(...roles.flatMap(({ label, names }) => {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = names.join(', ');
+    return [dt, dd];
+  }));
+  ficha.equipo.hidden = roles.length === 0;
+}
+
+  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
+  ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
+  ficha.mapa.setAttribute('aria-label', nombres.length
+    ? `Mapa de los países de producción: ${nombres.join(', ')}`
+    : 'Mapa sin países de producción');
+
 
 
 function handleRowClick(event) {

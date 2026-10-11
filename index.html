@@ -199,6 +199,45 @@
         <p id="ficha-estado" class="ficha-estado" role="status"></p>
 
         <div id="ficha-contenido" class="ficha-contenido" hidden>
+          <header class="ficha-cabecera">
+            <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
+            <div class="ficha-cabecera-cuerpo">
+              <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
+              <div class="ficha-info">
+                <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
+                <p id="ficha-original" class="ficha-original" hidden></p>
+                <p id="ficha-meta" class="ficha-meta"></p>
+                <p id="ficha-nota" class="ficha-nota"></p>
+                <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
+                <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
+                <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
+                <dl id="ficha-equipo" class="ficha-equipo"></dl>
+              </div>
+            </div>
+          </header>
+
+          <nav id="ficha-nav" class="ficha-nav" aria-label="Secciones de la película">
+            <ul>
+              <li><a data-seccion="reparto">Reparto</a></li>
+              <li><a data-seccion="mapa">Países</a></li>
+            </ul>
+          </nav>
+
+          <div class="ficha-cuerpo">
+            <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
+              <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+              <div id="ficha-reparto"></div> <!-- bloque C -->
+            </section>
+
+            <section id="seccion-mapa" class="ficha-seccion" aria-labelledby="ficha-mapa-titulo" tabindex="-1">
+              <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
+              <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
+              <p id="ficha-paises" class="ficha-paises"></p>
+            </section>
+          </div>
+        </div>
+
+        <div id="ficha-cargando" class="ficha-cargando" hidden>
           <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
           <div class="ficha-cuerpo">
             <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
