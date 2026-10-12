@@ -199,17 +199,15 @@
         <section id="radiografia" class="radiografia" aria-labelledby="radiografia-titular">
           <div class="radiografia-texto">
             <p class="sobretitulo">Radiografía del catálogo</p>
-            <p id="radiografia-titular" class="radiografia-titular">Revelando la película…</p>
+            <p id="radiografia-titular" class="radiografia-titular" aria-live="polite">Revelando la película…</p>
             <p id="radiografia-detalle" class="radiografia-detalle"></p>
           </div>
           <div class="radiografia-grafica">
             <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
           </div>
-          <div class="radiografia-grafica">
-            <canvas id="grafica-popularidad" role="img" aria-label="Gráfica de popularidad"></canvas>
-          </div>
+          <div id="radiografia-capsulas" class="capsulas" role="group" aria-label="Filtrar por género"></div>
         </section>
-
+        
         <!-- Sub-paso 2: filtros -->
         <p id="peliculas-estado" class="fila-mensaje" role="status"></p>
         <div id="peliculas-rejilla" class="rejilla"></div>

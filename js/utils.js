@@ -159,12 +159,6 @@ export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
  */
 export const uniqueById = (movies) => [...new Map(movies.map((movie) => [movie.id, movie])).values()];
 
-/** Top N por popularidad en formato {label, value} para Chart.js. */
-export const topByPopularity = (movies, max = 5) =>
-  sortByPopularity(movies)
-    .slice(0, max)
-    .map((movie) => ({ label: movie.title, value: Math.round(movie.popularity) }));
-
 /** Deja las N primeras filas y agrupa el resto en «Otros», que guarda todos sus ids. */
 export function groupTail(rows, max = 5, otherLabel = 'Otros') {
   if (rows.length <= max) return rows;
@@ -197,3 +191,21 @@ export const describeRows = (rows) => rows.map(({ label, value }) => `${label}: 
 
 /** ¿La película comparte algún género con los del foco? */
 export const sharesGenre = (genreIds, focusIds) => genreIds.some((id) => focusIds.includes(id));
+
+/** Pura: películas con alguno de esos géneros. Sin ids, todas. */
+export const filterByGenre = (movies, ids = []) =>
+  ids.length ? movies.filter((movie) => sharesGenre(movie.genreIds, ids)) : movies;
+
+/** Pura: tamaño de la cápsula según su peso frente al género mayor. */
+export function sizeBucket(value, max) {
+  const ratio = max > 0 ? value / max : 0;
+  if (ratio >= 0.6) return 'l';
+  if (ratio >= 0.3) return 'm';
+  return 's';
+}
+
+/** Pura: en qué porción del doughnut está un género (-1 si no está). */
+export const sliceIndexOf = (rows, genreId) => rows.findIndex((row) => row.ids.includes(genreId));
+
+/** Pura: titular con un género elegido. Sin cifras: solo lo que se mira. */
+export const genreHeadline = (label) => `Solo ${label}. Lo demás queda fuera de plano.`;

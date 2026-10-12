@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, topByPopularity, groupTail, headline, sharesGenre} from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf} from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -14,6 +14,8 @@ import { CatalogCharts } from './charts.js';
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 400;
+const MIN_VISIBLES = 12; // con un género elegido, cargar hasta tener al menos estas
+const MAX_PAGINAS = 5;   // tope de páginas por clic: no saturar la API
 
 const els = {
   btnBuscar: document.querySelector('#btn-buscar'),
@@ -358,30 +360,85 @@ const pelis = {
 const radiografia = {
   titular: document.querySelector('#radiografia-titular'),
   detalle: document.querySelector('#radiografia-detalle'),
+  capsulas: document.querySelector('#radiografia-capsulas'),
+  genero: '', // id del género elegido como texto ('' = todos)
+  filas: [],  // filas del doughnut (top 5 + Otros)
+  etiqueta: '', // nombre del género elegido (para el titular)
+  general: '',  // titular sin filtro, para recuperarlo al quitarlo
 };
 const catalogCharts = new CatalogCharts(
   document.querySelector('#grafica-generos'),
-  document.querySelector('#grafica-popularidad'),
   { onGenreFocus: setGenreFocus },
 );
 
-/** Recalcula titular y gráficas con las películas que se ven. */
+/** Recalcula titular, doughnut y cápsulas con TODAS las películas cargadas. */
 async function updateRadiografia(movies) {
   try {
     const genreStats = countByGenre(movies, await getGenres());
-    radiografia.titular.textContent = headline(genreStats, movies.length, catalog.list);
+    radiografia.filas = groupTail(genreStats, 5);
+    radiografia.general = headline(genreStats, movies.length, catalog.list);
+    pintarTitular();
     radiografia.detalle.textContent = `Calculado sobre las ${movies.length} películas cargadas · datos de TMDB`;
-    catalogCharts.update({ genres: groupTail(genreStats, 5), popularity: topByPopularity(movies, 5) });
+    catalogCharts.update({ genres: radiografia.filas });
+    renderCapsulas(genreStats);
   } catch (error) {
     radiografia.titular.textContent = toUserMessage(error);
   }
 }
 
+/** Con un género elegido, titular de ese género; si no, el general. */
+function pintarTitular() {
+  radiografia.titular.textContent = radiografia.genero
+    ? genreHeadline(radiografia.etiqueta)
+    : radiografia.general;
+}
+
+/** Con un género elegido, pide páginas hasta reunir `target` películas suyas (o agotar el tope). */
+async function fillGenre(target) {
+  const ids = [Number(radiografia.genero)];
+  for (let i = 0; i < MAX_PAGINAS && catalog.hasMore && filterByGenre(catalog.movies, ids).length < target; i++) {
+    await catalog.loadMore();
+  }
+  return catalog.movies;
+}
+
+function createCapsula({ id, label, tam, value }) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'capsula';
+  boton.dataset.genero = id;
+  boton.dataset.tam = tam;
+  boton.textContent = label;
+  boton.setAttribute('aria-pressed', String(id === radiografia.genero));
+  if (value) boton.setAttribute('aria-label', `${label}, ${value} películas`);
+  return boton;
+}
+
+function renderCapsulas(stats) {
+  const enfocada = document.activeElement?.closest?.('.capsula')?.dataset.genero;
+  const max = stats[0]?.value ?? 0; // countByGenre ya ordena de mayor a menor
+  const todos = createCapsula({ id: '', label: 'Todos', tam: 'm' });
+  const generos = stats.map(({ ids: [id], label, value }) =>
+    createCapsula({ id: String(id), label, tam: sizeBucket(value, max), value }));
+  radiografia.capsulas.replaceChildren(todos, ...generos);
+  // Si el foco estaba en una cápsula, se devuelve a la misma tras repintar
+  if (enfocada !== undefined) radiografia.capsulas.querySelector(`[data-genero="${enfocada}"]`)?.focus();
+}
+
+/** La rejilla muestra solo el género elegido; la radiografía sigue viendo todo. */
+function renderRejilla() {
+  const ids = radiografia.genero ? [Number(radiografia.genero)] : [];
+  const visibles = filterByGenre(catalog.movies, ids);
+  pelis.rejilla.replaceChildren(...visibles.map(createCard));
+  if (ids.length) pelis.estado.textContent = visibles.length ? '' : 'Ninguna película de este género por ahora.';
+}
+
 function renderPeliculas(movies) {
-  pelis.rejilla.replaceChildren(...movies.map(createCard));
+  renderRejilla();
   pelis.mas.hidden = !catalog.hasMore;
   updateRadiografia(movies);
 }
+
 
 /** Ilumina las películas de los géneros del foco; sin foco, todas normales. */
 function setGenreFocus(ids) {
@@ -393,8 +450,32 @@ function setGenreFocus(ids) {
   }
 }
 
-/** Ejecuta una acción del catálogo (load o loadMore) con estado de carga y errores. */
-async function loadPeliculas(action) {
+/** Vista previa al pasar o enfocar una cápsula: porción separada y, si no hay filtro, foco de luz. */
+function previewCapsula(id) {
+  const genreId = Number(id);
+  catalogCharts.highlight(id ? sliceIndexOf(radiografia.filas, genreId) : null);
+  setGenreFocus(id && !radiografia.genero ? [genreId] : []);
+}
+
+function handleCapsulaClick(event) {
+  const boton = event.target.closest('.capsula');
+  if (!boton) return;
+  const id = boton.dataset.genero;
+  radiografia.genero = radiografia.genero === id ? '' : id; // pulsar la activa la desactiva
+  radiografia.etiqueta = boton.textContent;
+  radiografia.capsulas.querySelectorAll('.capsula').forEach((capsula) =>
+    capsula.setAttribute('aria-pressed', String(capsula.dataset.genero === radiografia.genero)));
+  pintarTitular();
+  renderRejilla();
+  previewCapsula(radiografia.genero);
+  // Pocas películas de ese género: pedir más páginas automáticamente
+  if (radiografia.genero && pelis.rejilla.children.length < MIN_VISIBLES) {
+    loadPeliculas(() => fillGenre(MIN_VISIBLES));
+  }
+}
+
+/** Ejecuta una acción del catálogo con estado de carga y errores. */
+async function loadPeliculas(action, { enfocarNuevas = false } = {}) {
   const antes = pelis.rejilla.children.length;
   pelis.rejilla.setAttribute('aria-busy', 'true');
   pelis.estado.textContent = 'Subiendo la persiana…';
@@ -402,7 +483,7 @@ async function loadPeliculas(action) {
     const movies = await action();
     pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
     renderPeliculas(movies);
-    if (antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
+    if (enfocarNuevas && antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
   } catch (error) {
     if (error.name === 'AbortError') return;
     pelis.estado.textContent = toUserMessage(error);
@@ -410,12 +491,12 @@ async function loadPeliculas(action) {
     pelis.rejilla.removeAttribute('aria-busy');
   }
 }
-
 function handlePestanaClick(event) {
   const boton = event.target.closest('[data-lista]');
   if (!boton || boton.getAttribute('aria-pressed') === 'true') return;
   pelis.pestanas.querySelector('[aria-pressed="true"]').setAttribute('aria-pressed', 'false');
   boton.setAttribute('aria-pressed', 'true');
+  radiografia.genero = ''; // otra lista: el filtro anterior puede no tener películas
   pelis.rejilla.replaceChildren(); // otra lista: empezamos de cero
   loadPeliculas(() => catalog.load(boton.dataset.lista));
 }
@@ -574,7 +655,22 @@ els.genres.addEventListener('click', handleGenreClick);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 pelis.pestanas.addEventListener('click', handlePestanaClick);
-pelis.mas.addEventListener('click', () => loadPeliculas(() => catalog.loadMore()));
+pelis.mas.addEventListener('click', () => {
+  const accion = radiografia.genero
+    ? () => fillGenre(pelis.rejilla.children.length + MIN_VISIBLES) // con filtro: 12 más de ese género
+    : () => catalog.loadMore();
+  loadPeliculas(accion, { enfocarNuevas: true });
+});
+radiografia.capsulas.addEventListener('click', handleCapsulaClick);
+radiografia.capsulas.addEventListener('pointerover', (event) => {
+  const boton = event.target.closest('.capsula');
+  if (boton) previewCapsula(boton.dataset.genero);
+});
+radiografia.capsulas.addEventListener('pointerleave', () => previewCapsula(radiografia.genero));
+radiografia.capsulas.addEventListener('focusin', (event) => previewCapsula(event.target.dataset.genero ?? ''));
+radiografia.capsulas.addEventListener('focusout', (event) => {
+  if (!radiografia.capsulas.contains(event.relatedTarget)) previewCapsula(radiografia.genero);
+});
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado

@@ -923,12 +923,22 @@ main { padding: 2rem var(--margen-lateral); }
 .radiografia-detalle {
   margin-top: 0.5rem; font-family: var(--fuente-detalle); font-size: 0.75rem; color: var(--color-texto-suave);
 }
-.radiografia-grafica { position: relative; height: 230px; min-width: 0; }
+.radiografia-grafica { position: relative; height: 200px; min-width: 0; }
 
+/* Cápsulas de género (estilo base: la Marquesina llega en el paso 2) */
+.capsulas { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.capsula {
+  min-height: 44px; padding: 0.4rem 1rem;
+  border: 1px solid var(--color-borde-control); border-radius: 999px;
+  transition: background-color var(--dur-rapida), color var(--dur-rapida);
+}
+.capsula:hover { background: var(--color-secundario); }
+.capsula[aria-pressed="true"] { background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario); }
+
+/* Escritorio: texto a la izquierda, doughnut a la derecha y cápsulas debajo a todo el ancho */
 @media (min-width: 900px) {
-  .radiografia { grid-template-columns: 220px minmax(0, 1.3fr) minmax(0, 1fr); }
-  .radiografia-texto { order: 0; }
-  .radiografia .radiografia-grafica:nth-of-type(2) { order: -1; } /* dona a la izquierda, como el boceto */
+  .radiografia { grid-template-columns: minmax(0, 1fr) 200px; }
+  .capsulas { grid-column: 1 / -1; }
 }
 
 /* Foco de género: la radiografía ilumina sus películas y apaga el resto */
