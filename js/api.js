@@ -77,7 +77,14 @@ export function getRecommendations(id, { signal } = {}) {
   return request(`/movie/${id}/recommendations`, {}, signal);
 }
 
-export async function getGenres() {
-  const data = await request('/genre/movie/list');
-  return data.genres;
+let genresPromise = null; // memoria: los géneros no cambian durante la visita
+
+export function getGenres() {
+  genresPromise ??= request('/genre/movie/list')
+    .then((data) => data.genres)
+    .catch((error) => {
+      genresPromise = null; // si falla, el siguiente intento vuelve a pedirlos
+      throw error;
+    });
+  return genresPromise;
 }
