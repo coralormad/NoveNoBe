@@ -1,6 +1,6 @@
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCrew, pickCertification } from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -23,7 +23,7 @@ const els = {
   genreRow: document.querySelector('#fila-genero'),
 };
 
-// Ficha: referencias y estado propio del modal (ámbito de módulo, no globales)
+// Ficha: referencias y estado propio de la ficha (ámbito de módulo, no globales)
 const ficha = {
   vista: document.querySelector('#vista-ficha'),
   estado: document.querySelector('#ficha-estado'),
@@ -41,6 +41,9 @@ const ficha = {
   nav: document.querySelector('#ficha-nav'),
   mapa: document.querySelector('#ficha-mapa'),
   paises: document.querySelector('#ficha-paises'),
+  reparto: document.querySelector('#ficha-reparto'),
+  repartoVacio: document.querySelector('#ficha-reparto-vacio'),
+  repartoFlechas: document.querySelector('#reparto-flechas'),
 };
 
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
@@ -288,22 +291,6 @@ function handleResultsClick(event) {
 const prefersReducedMotion = () =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function deselectRow(row) {
-  row.querySelectorAll('.tarjeta-boton[aria-pressed="true"]')
-    .forEach((button) => button.setAttribute('aria-pressed', 'false'));
-  delete row.dataset.seleccion;
-}
-
-function selectCard(row, button) {
-  deselectRow(row);
-  button.setAttribute('aria-pressed', 'true');
-  row.dataset.seleccion = 'true';
-  button.closest('.tarjeta').scrollIntoView({
-    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    inline: 'center',
-    block: 'nearest',
-  });
-}
 
 // ---------- Navegación ----------
 /** Abrir una ficha = cambiar la URL; el router hace el resto. */
@@ -317,11 +304,27 @@ function showView(nombre) {
   });
 }
 
-async function handleRoute(route) {
-  if (route.vista === 'ficha') {
-    if (ficha.vista.hidden) scrollInicio = window.scrollY; // venimos del inicio: recordar dónde estaba
-    showView('ficha');
+// Películas y Mi lista comparten la misma vista HTML (#vista-catalogo)
+const VISTA_HTML = Object.freeze({ peliculas: 'catalogo', 'mi-lista': 'catalogo' });
+const TITULO_CATALOGO = Object.freeze({ peliculas: 'Películas', 'mi-lista': 'Mi lista' });
+const catalogoTitulo = document.querySelector('#catalogo-titulo');
+let vistaActual = 'inicio';
 
+/** Marca en el menú la vista actual (la ficha no tiene entrada: no marca ninguna). */
+function markMenu(vista) {
+  document.querySelectorAll('.menu-enlace').forEach((link) => {
+    if (link.dataset.vista === vista) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+}
+
+async function handleRoute(route) {
+  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al salir del inicio, recordar dónde estaba
+  vistaActual = route.vista;
+  markMenu(route.vista);
+
+  if (route.vista === 'ficha') {
+    showView('ficha');
     if (route.id !== fichaActual) {   // otra película → pedirla
       fichaActual = route.id;
       window.scrollTo(0, 0);
@@ -334,8 +337,9 @@ async function handleRoute(route) {
 
   fichaController?.abort();
   fichaActual = null;
-  showView('inicio');
-  window.scrollTo(0, scrollInicio);
+  showView(VISTA_HTML[route.vista] ?? route.vista);
+  if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
+  window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
 }
 
 /** Lleva a una sección de la ficha; sin sección (o desconocida), al principio. */
@@ -398,10 +402,13 @@ function renderFicha(movie) {
     return li;
   }));
 
+
+
   ficha.eslogan.hidden = !movie.tagline;
   ficha.eslogan.textContent = movie.tagline;
   ficha.sinopsis.textContent = movie.overview;
   renderEquipo(pickCrew(movie.credits.crew));
+  renderReparto(pickCast(movie.credits.cast));
 
   ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
     link.href = movieHref(movie.id, link.dataset.seccion);
@@ -412,6 +419,38 @@ function renderFicha(movie) {
   ficha.mapa.setAttribute('aria-label', nombres.length
     ? `Mapa de los países de producción: ${nombres.join(', ')}`
     : 'Mapa sin países de producción');
+}
+
+const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+const personTemplate = document.querySelector('#plantilla-persona');
+
+/** Pura: «Morgan Freeman» → «MF». Para quien no tiene foto en TMDB. */
+const initials = (name = '') =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+
+function createPerson({ name, character, profilePath }) {
+  const item = personTemplate.content.firstElementChild.cloneNode(true);
+  const img = item.querySelector('.persona-img');
+
+  if (profilePath) {
+    img.src = `${PROFILE_BASE}${profilePath}`;
+  } else {
+    img.remove(); // sin foto: quedan las iniciales
+    item.classList.add('persona--sin-foto');
+  }
+  item.querySelector('.persona-iniciales').textContent = initials(name);
+  item.querySelector('.persona-nombre').textContent = name;
+  item.querySelector('.persona-personaje').textContent = character;
+  return item;
+}
+
+function renderReparto(cast) {
+  const hayReparto = cast.length > 0;
+  ficha.reparto.replaceChildren(...cast.map(createPerson));
+  ficha.reparto.hidden = !hayReparto;
+  ficha.repartoFlechas.hidden = !hayReparto;
+  ficha.repartoVacio.hidden = hayReparto;
+  ficha.reparto.scrollLeft = 0; // nueva película → empieza por la primera persona
 }
 
 /** Pura: clasificación → texto. Si no es la española, dice de qué país es. */
@@ -433,20 +472,6 @@ function renderEquipo(roles) {
   ficha.equipo.hidden = roles.length === 0;
 }
 
-function handleRowClick(event) {
-  const button = event.target.closest('.tarjeta-boton');
-  if (!button) return;
-
-  if (button.getAttribute('aria-pressed') === 'true') {
-    openFicha(button.closest('.tarjeta').dataset.id);
-    return;
-  }
-  selectCard(event.currentTarget, button);
-}
-
-function handleRowKeydown(event) {
-  if (event.key === 'Escape') deselectRow(event.currentTarget);
-}
 
 function handleArrowClick(event) {
   const arrow = event.target.closest('[data-flecha]');
@@ -459,12 +484,6 @@ function handleArrowClick(event) {
   });
 }
 
-function handleOutsideClick(event) {
-  if (event.target.closest('.fila-flechas')) return; // las flechas no cuentan como "fuera"
-  document.querySelectorAll('.carrusel[data-seleccion]').forEach((row) => {
-    if (!row.contains(event.target)) deselectRow(row);
-  });
-}
 
 // ---------- Eventos ----------
 els.btnBuscar.addEventListener('click', togglePanel);
@@ -474,8 +493,6 @@ els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
-document.addEventListener('click', handleOutsideClick);
-enableCardTilt(document);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 

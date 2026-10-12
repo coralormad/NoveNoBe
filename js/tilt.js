@@ -3,7 +3,7 @@
 
 const MAX_GRADOS = 5;
 const MOVIMIENTO_OK = window.matchMedia(
-  '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
+  '(any-hover: hover) and (any-pointer: fine) and (prefers-reduced-motion: no-preference)'
 );
 const PROPIEDADES = ['--rx', '--ry', '--mx', '--my'];
 

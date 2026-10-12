@@ -30,11 +30,10 @@
 
     <nav class="menu" aria-label="Principal">
       <ul>
-        <li><button type="button" class="menu-boton" data-vista="inicio" aria-current="page">Inicio</button></li>
-        <li><button type="button" class="menu-boton" data-vista="que-ver">Qué ver</button></li>
-        <li><button type="button" class="menu-boton" data-vista="peliculas">Películas</button></li>
-        <li><button type="button" class="menu-boton" data-vista="series">Series</button></li>
-        <li><button type="button" class="menu-boton" data-vista="mi-lista">Mi lista</button></li>
+        <li><a class="menu-enlace" href="#/" data-vista="inicio" aria-current="page">Inicio</a></li>
+        <li><a class="menu-enlace" href="#/que-ver" data-vista="que-ver">Qué ver</a></li>
+        <li><a class="menu-enlace" href="#/peliculas" data-vista="peliculas">Películas</a></li>
+        <li><a class="menu-enlace" href="#/mi-lista" data-vista="mi-lista">Mi lista</a></li>
       </ul>
     </nav>
 
@@ -225,9 +224,17 @@
 
           <div class="ficha-cuerpo">
             <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
-              <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
-              <div id="ficha-reparto"></div> <!-- bloque C -->
+              <div class="fila-cabecera">
+                  <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+                  <div class="fila-flechas" id="reparto-flechas">
+                     <button type="button" data-flecha="izquierda" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la izquierda">‹</button>
+                     <button type="button" data-flecha="derecha" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la derecha">›</button>
+                  </div>  
+              </div>
+              <ul id="ficha-reparto" class="carrusel carrusel-reparto"></ul>
+              <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
             </section>
+          </div>
 
             <section id="seccion-mapa" class="ficha-seccion" aria-labelledby="ficha-mapa-titulo" tabindex="-1">
               <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
@@ -257,32 +264,6 @@
       </article>
     </div>
   </main>
-
-    <!-- 5. MODAL DE FICHA -->
-  <dialog id="modal-ficha" class="modal" aria-labelledby="ficha-titulo">
-    <div class="ficha">
-      <button type="button" id="modal-cerrar" class="modal-cerrar" aria-label="Cerrar ficha">×</button>
-      <p id="ficha-estado" class="ficha-estado" role="status"></p>
-
-      <article id="ficha-contenido" class="ficha-contenido" hidden>
-        <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
-        <div class="ficha-cuerpo">
-          <h2 id="ficha-titulo" class="ficha-titulo"></h2>
-          <p id="ficha-meta" class="ficha-meta"></p>
-          <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-          <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
-
-          <!-- Paso 4: «Lo que no se ve» irá aquí -->
-
-          <section class="ficha-seccion" aria-labelledby="ficha-mapa-titulo">
-            <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
-            <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
-            <p id="ficha-paises" class="ficha-paises"></p>
-          </section>
-        </div>
-      </article>
-    </div>
-  </dialog>
   
   <!-- 6. FOOTER -->
   <footer class="pie">
@@ -314,6 +295,19 @@
       <h3 class="tarjeta-titulo"></h3>
     </article>
   </template>
+
+  <!-- Plantilla de persona del reparto: main.js la clona por cada actriz/actor -->
+<template id="plantilla-persona">
+  <li class="persona">
+    <span class="persona-foto">
+      <img class="persona-img" alt="" loading="lazy" width="185" height="278">
+      <span class="persona-iniciales" aria-hidden="true"></span>
+    </span>
+    <span class="persona-nombre"></span>
+    <span class="persona-personaje"></span>
+  </li>
+</template>
+
     <!-- Plantilla de diapositiva del hero (novedades y avisos) -->
   <template id="plantilla-diapositiva">
     <article class="diapositiva" aria-roledescription="diapositiva" hidden>
