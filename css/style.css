@@ -916,19 +916,49 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (prefers-reduced-motion: reduce) { .pestanas button::after { transition: none; } }
 
-/* ---------- Radiografía del catálogo (cartel editorial) ---------- */
-.radiografia {
-  display: grid; gap: 1.5rem; align-items: center;
-  padding-block: 1.5rem; border-block: 1px solid var(--color-borde);
+/* ---------- El dial y la proyección ---------- */
+.radiografia-escena { display: grid; gap: 2rem; align-items: center; }
+@media (min-width: 900px) {
+  .radiografia-escena { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
 }
-.radiografia-titular {
-  font-family: var(--fuente-titulos); font-size: clamp(1.4rem, 3vw, 2.1rem);
-  line-height: 1.2; text-wrap: balance;
+
+.dial { display: grid; gap: 1.25rem; justify-items: center; min-width: 0; }
+.dial .radiografia-grafica { width: min(100%, 240px); height: 240px; }
+.dial .capsulas { justify-content: center; }
+
+.proyeccion { display: grid; gap: 1rem; min-width: 0; }
+
+/* Abanico: la posición de cada carátula sale de su distancia a la activa (--pos, --dist) */
+.escaparate { position: relative; height: 330px; perspective: 1000px; transform-style: preserve-3d; }
+.escaparate-item {
+  position: absolute; left: 50%; top: 0; width: 190px; margin-left: -95px;
+  transform:
+    translateX(calc(var(--pos, 0) * 62%))
+    translateZ(calc(var(--dist, 0) * -110px))
+    rotateY(calc(var(--pos, 0) * -24deg));
+  z-index: calc(10 - var(--dist, 0));
+  opacity: max(0, calc(1 - var(--dist, 0) * 0.3));
+  transition: transform 380ms var(--curva-cine), opacity 380ms var(--curva-cine);
 }
-.radiografia-detalle {
-  margin-top: 0.5rem; font-family: var(--fuente-detalle); font-size: 0.75rem; color: var(--color-texto-suave);
+.caratula { display: block; border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra-tarjeta); }
+.caratula-img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.escaparate-item:not(.activa) .caratula-img { filter: brightness(0.65); }
+
+.escaparate-pie { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+.escaparate-info {
+  font-family: var(--fuente-titulos); font-size: 1.1rem; line-height: 1.25;
+  text-align: center; text-wrap: balance; max-width: 30ch; min-height: 2.5em;
 }
-.radiografia-grafica { position: relative; height: 200px; min-width: 0; }
+.escaparate-flecha {
+  width: 44px; height: 44px; border-radius: 50%; flex: none;
+  border: 1px solid var(--color-borde-control); font-size: 1.4rem;
+  transition: background-color var(--dur-rapida);
+}
+.escaparate-flecha:hover { background: var(--color-secundario); }
+
+@media (prefers-reduced-motion: reduce) {
+  .escaparate-item { transition: opacity 200ms; }
+}
 
 /* Cápsulas de género · Marquesina: el tamaño cuenta el dato, la luz responde al cursor */
 .capsulas { display: flex; flex-wrap: wrap; gap: 0.6rem 0.5rem; align-items: center; }

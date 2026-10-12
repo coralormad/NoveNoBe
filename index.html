@@ -202,10 +202,25 @@
             <p id="radiografia-titular" class="radiografia-titular" aria-live="polite">Revelando la película…</p>
             <p id="radiografia-detalle" class="radiografia-detalle"></p>
           </div>
-          <div class="radiografia-grafica">
-            <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
+
+          <div class="radiografia-escena">
+            <div class="dial">
+              <div class="radiografia-grafica">
+                <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
+              </div>
+              <div id="radiografia-capsulas" class="capsulas" role="group" aria-label="Filtrar por género"></div>
+            </div>
+
+            <div class="proyeccion" role="group" aria-labelledby="proyeccion-titulo">
+              <h3 id="proyeccion-titulo" class="sr-only">Las más populares del género</h3>
+              <ul id="escaparate" class="escaparate"></ul>
+              <div class="escaparate-pie">
+                <button type="button" class="escaparate-flecha" data-paso="-1" aria-label="Película anterior">‹</button>
+                <p id="escaparate-info" class="escaparate-info" aria-live="polite"></p>
+                <button type="button" class="escaparate-flecha" data-paso="1" aria-label="Película siguiente">›</button>
+              </div>
+            </div>
           </div>
-          <div id="radiografia-capsulas" class="capsulas" role="group" aria-label="Filtrar por género"></div>
         </section>
         
         <!-- Sub-paso 2: filtros -->

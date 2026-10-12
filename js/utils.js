@@ -209,3 +209,7 @@ export const sliceIndexOf = (rows, genreId) => rows.findIndex((row) => row.ids.i
 
 /** Pura: titular con un género elegido. Sin cifras: solo lo que se mira. */
 export const genreHeadline = (label) => `Solo ${label}. Lo demás queda fuera de plano.`;
+
+/** Pura: las N más populares de esos géneros (sin ids, de todo el catálogo). */
+export const topOfGenre = (movies, ids = [], max = 5) =>
+  sortByPopularity(filterByGenre(movies, ids)).slice(0, max);

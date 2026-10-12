@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline } from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -10,6 +10,7 @@ import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
+import { GenreStage } from './stage.js';
 
 
 const MIN_QUERY = 2;
@@ -371,6 +372,17 @@ const catalogCharts = new CatalogCharts(
   { onGenreFocus: setGenreFocus },
 );
 
+const escaparate = new GenreStage(
+  document.querySelector('#escaparate'),
+  document.querySelector('#escaparate-info'),
+);
+
+/** El escaparate sigue al mismo filtro que la rejilla: una sola fuente de verdad. */
+function renderEscaparate() {
+  const ids = radiografia.genero ? [Number(radiografia.genero)] : [];
+  escaparate.render(topOfGenre(catalog.movies, ids));
+}
+
 /** Recalcula titular, doughnut y cápsulas con TODAS las películas cargadas. */
 async function updateRadiografia(movies) {
   try {
@@ -431,6 +443,7 @@ function renderRejilla() {
   const visibles = filterByGenre(catalog.movies, ids);
   pelis.rejilla.replaceChildren(...visibles.map(createCard));
   if (ids.length) pelis.estado.textContent = visibles.length ? '' : 'Ninguna película de este género por ahora.';
+  renderEscaparate();
 }
 
 function renderPeliculas(movies) {
@@ -643,7 +656,6 @@ function handleArrowClick(event) {
   });
 }
 
-
 // ---------- Eventos ----------
 els.btnBuscar.addEventListener('click', togglePanel);
 els.input.addEventListener('input', debouncedSearch);
@@ -670,6 +682,10 @@ radiografia.capsulas.addEventListener('pointerleave', () => previewCapsula(radio
 radiografia.capsulas.addEventListener('focusin', (event) => previewCapsula(event.target.dataset.genero ?? ''));
 radiografia.capsulas.addEventListener('focusout', (event) => {
   if (!radiografia.capsulas.contains(event.relatedTarget)) previewCapsula(radiografia.genero);
+});
+document.querySelector('.escaparate-pie').addEventListener('click', (event) => {
+  const flecha = event.target.closest('[data-paso]');
+  if (flecha) escaparate.step(Number(flecha.dataset.paso));
 });
 
 /** La luz de cada cápsula sigue al ratón. Reutiliza la función pura de la inclinación. */
