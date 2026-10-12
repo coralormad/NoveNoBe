@@ -433,14 +433,6 @@ function renderEquipo(roles) {
   ficha.equipo.hidden = roles.length === 0;
 }
 
-  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
-  ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
-  ficha.mapa.setAttribute('aria-label', nombres.length
-    ? `Mapa de los países de producción: ${nombres.join(', ')}`
-    : 'Mapa sin países de producción');
-
-
-
 function handleRowClick(event) {
   const button = event.target.closest('.tarjeta-boton');
   if (!button) return;
