@@ -2,10 +2,21 @@
 // Flechas del hero en los laterales (aparecen al acercar el cursor) y deslizar en táctil.
 import { movieHref } from './router.js';
 import { proximity } from './hero.js';
+import { tiltFromPointer } from './tilt.js';
 
 const MAX = 5;
 const SWIPE_MIN = 40; // px que hay que deslizar para cambiar de película
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+const ALCANCE_LUZ = 1.1; // en anchos de carátula: más allá, la luz no llega
+
+/**
+ * Pura: luz de una carátula (0…1) según la distancia horizontal del cursor a su centro.
+ * Curva cuadrática: la que está bajo el cursor manda y las vecinas reciben solo un eco.
+ */
+export function cardLight(pointerX, rect, alcance = ALCANCE_LUZ) {
+  const distancia = Math.abs(pointerX - (rect.left + rect.width / 2)) / rect.width;
+  return Math.max(0, 1 - distancia / alcance) ** 2;
+}
 
 export class GenreStage {
   #els;
@@ -14,6 +25,8 @@ export class GenreStage {
   #nombrar = () => '';
   #frame = 0;
   #pointerX = 0;
+  #pointerY = 0;
+  #dentro = false; // ¿hay un ratón dentro del carrusel?
   #swipe = null;
 
   /** @param {{marco, lista, titulo, generos, anterior, siguiente}} els */
@@ -24,7 +37,15 @@ export class GenreStage {
     els.anterior.addEventListener('click', () => this.step(-1));
     els.siguiente.addEventListener('click', () => this.step(1));
     els.marco.addEventListener('pointermove', (event) => this.#trackPointer(event));
-    els.marco.addEventListener('pointerleave', () => this.#setProximity(0, 0));
+    els.marco.addEventListener('pointerleave', () => {
+      this.#dentro = false;
+      this.#setProximity(0, 0);
+      this.#apagar();
+    });
+    // Tras moverse el abanico (flechas, teclado, clic), la luz se recoloca donde está el cursor
+    els.lista.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'transform' && this.#dentro) this.#pedirFotograma();
+    });
     els.marco.addEventListener('pointerdown', (event) => this.#startSwipe(event));
     els.marco.addEventListener('pointerup', (event) => this.#endSwipe(event));
   }
@@ -123,15 +144,52 @@ export class GenreStage {
 
   /** Cercanía del cursor a cada lateral, como mucho una vez por fotograma (igual que el hero). */
   #trackPointer(event) {
-    if (event.pointerType !== 'mouse') return;
+    if (event.pointerType !== 'mouse') return; // en táctil no hay cursor: ninguna carátula se queda iluminada
     this.#pointerX = event.clientX;
+    this.#pointerY = event.clientY;
+    this.#dentro = true;
+    this.#pedirFotograma();
+  }
+
+  /** Como mucho un cálculo por fotograma, por mucho que se mueva el ratón. */
+  #pedirFotograma() {
     if (this.#frame) return;
     this.#frame = requestAnimationFrame(() => {
       this.#frame = 0;
+      if (!this.#dentro) return; // el ratón salió antes de este fotograma
       const { left, width } = this.#els.marco.getBoundingClientRect();
       const x = (this.#pointerX - left) / width;
       this.#setProximity(proximity(x), proximity(1 - x));
+      this.#iluminar();
     });
+  }
+
+  /** Reparte la luz: --luz en cada carátula y el foco (--foco, --mx, --my) solo en la protagonista. */
+  #iluminar() {
+    const items = [...this.#els.lista.children];
+    // Primero se mide todo y después se escribe: mezclar lecturas y escrituras obliga a recalcular el layout
+    const rects = items.map((item) => item.getBoundingClientRect());
+    const luces = rects.map((rect) => cardLight(this.#pointerX, rect));
+    const protagonista = luces.indexOf(Math.max(...luces));
+
+    items.forEach((item, i) => {
+      item.style.setProperty('--luz', luces[i].toFixed(2));
+      const esProtagonista = i === protagonista && luces[i] > 0;
+      item.style.setProperty('--foco', esProtagonista ? '1' : '0');
+      if (esProtagonista) {
+        const { mx, my } = tiltFromPointer(this.#pointerX, this.#pointerY, rects[i]);
+        item.style.setProperty('--mx', `${mx.toFixed(1)}%`);
+        item.style.setProperty('--my', `${my.toFixed(1)}%`);
+      }
+    });
+  }
+
+  /** Sin cursor: vuelta al estado original (las transiciones del CSS hacen el fundido). */
+  #apagar() {
+    for (const item of this.#els.lista.children) {
+      item.style.removeProperty('--luz');
+      item.style.removeProperty('--foco'); // --mx/--my se quedan: el foco se apaga en su sitio, sin saltar
+    }
   }
 
   #setProximity(prev, next) {

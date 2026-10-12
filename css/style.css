@@ -957,7 +957,34 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .caratula { display: block; border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra-tarjeta); }
 .caratula-img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
-.escaparate-item:not(.activa) .caratula-img { filter: brightness(0.65); }
+
+/* Luz que acompaña al cursor. --luz (0…1) llega desde stage.js: 1 bajo el cursor, algo menos
+   en las vecinas y 0 sin cursor. Con --luz a 0 todo queda como antes (las vecinas, a brightness 0.65). */
+.escaparate-item { --luz-caratula: color-mix(in srgb, var(--lavanda-300) 55%, transparent); }
+.escaparate .caratula {
+  position: relative; /* para el foco ::after */
+  box-shadow:
+    var(--sombra-tarjeta),
+    0 0 calc(var(--luz, 0) * 34px) color-mix(in srgb, var(--color-primario) calc(var(--luz, 0) * 30%), transparent);
+  transition: box-shadow 260ms var(--curva-cine);
+}
+.escaparate .caratula-img {
+  transition: filter 260ms var(--curva-cine);
+}
+.escaparate-item.activa .caratula-img {
+  filter: brightness(calc(1 + var(--luz, 0) * 0.08)) contrast(calc(1 + var(--luz, 0) * 0.06));
+}
+.escaparate-item:not(.activa) .caratula-img {
+  filter: brightness(calc(0.65 + var(--luz, 0) * 0.3)) contrast(calc(1 + var(--luz, 0) * 0.06));
+}
+/* Foco: un círculo de luz suave donde está el cursor. Solo en la carátula protagonista (--foco 0/1). */
+.escaparate .caratula::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; /* nunca tapa el enlace */
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 40%), var(--luz-caratula), transparent 60%);
+  mix-blend-mode: soft-light;
+  opacity: var(--foco, 0);
+  transition: opacity 300ms var(--curva-cine);
+}
 
 /* Flechas: las mismas del hero, dentro del carrusel y pegadas a sus extremos */
 .escaparate-marco { position: relative; touch-action: pan-y; }
@@ -984,6 +1011,8 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (prefers-reduced-motion: reduce) {
   .escaparate-item { transition: opacity 200ms; }
+  .escaparate :is(.caratula, .caratula-img),
+  .escaparate .caratula::after { transition-duration: 1ms; } /* la luz cambia sin fundido */
 }
 
 /* Cápsulas de género · Marquesina: el tamaño cuenta el dato, la luz responde al cursor */
