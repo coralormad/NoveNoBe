@@ -256,15 +256,23 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-accion { opacity: 1; transform: none; }
 
-/* Cápsula: año · nota siempre visibles */
+/* Cápsula: en reposo el año; en hover/foco sube y aparece la nota */
 .tarjeta-capsula {
   position: absolute; top: 8px; right: 8px;
-  display: flex; gap: 0.35rem;
-  padding: 0.15rem 0.5rem;
+  height: 22px; min-width: 46px; overflow: hidden;
+  display: flex; flex-direction: column;
   border-radius: 999px; background: var(--lavanda-700); color: #211526;
   font-family: var(--fuente-detalle); font-size: 0.7rem; font-weight: 700;
 }
-.capsula-anio::after { content: '·'; margin-left: 0.35rem; }
+.tarjeta-capsula span {
+  display: grid; place-items: center; flex: 0 0 22px; padding-inline: 0.5rem;
+  transition: transform 300ms var(--curva-cine);
+}
+.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-capsula span { transform: translateY(-100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-capsula span { transition: none; }
+}
 
 /* Título: máximo 2 líneas → todas las tarjetas miden lo mismo */
 .tarjeta-titulo {
@@ -867,3 +875,38 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (min-width: 768px)  { .carrusel-reparto { --tarjetas-visibles: 5.3; } }
 @media (min-width: 1200px) { .carrusel-reparto { --tarjetas-visibles: 7.3; } }
+
+/* ---------- Películas ---------- */
+.peliculas { padding: 2rem var(--margen-lateral) 3rem; display: grid; gap: 1.25rem; }
+.peliculas h2 { font-family: var(--fuente-titulos); font-size: clamp(1.8rem, 4vw, 2.6rem); }
+
+/* Pestañas: mismo lenguaje que el menú (rendija de luz) */
+.pestanas { display: flex; gap: 1.5rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--color-borde); }
+.pestanas button {
+  position: relative; min-height: 44px; white-space: nowrap;
+  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-texto-suave); transition: color var(--transicion);
+}
+.pestanas button::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-foco) 25%, var(--color-foco) 75%, transparent);
+  transform: scaleX(0); transform-origin: left; transition: transform 250ms var(--curva-cine);
+}
+.pestanas button:hover { color: var(--color-texto); }
+.pestanas button[aria-pressed="true"] { color: var(--color-texto); }
+.pestanas button[aria-pressed="true"]::after { transform: scaleX(1); }
+
+.rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1.5rem var(--gap); }
+.rejilla[aria-busy="true"] { opacity: 0.6; transition: opacity var(--transicion); }
+@media (min-width: 1200px) { .rejilla { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); } }
+
+.boton-mas {
+  justify-self: center; min-height: 44px; padding: 0.6rem 1.6rem;
+  border: 1px solid var(--color-borde-control); border-radius: 999px;
+  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  transition: background-color var(--transicion);
+}
+.boton-mas:hover { background: var(--color-secundario); }
+.boton-mas[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .pestanas button::after { transition: none; } }

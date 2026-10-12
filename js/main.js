@@ -1,3 +1,4 @@
+import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification } from './utils.js';
@@ -8,6 +9,7 @@ import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
+
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 400;
@@ -305,8 +307,8 @@ function showView(nombre) {
 }
 
 // Películas y Mi lista comparten la misma vista HTML (#vista-catalogo)
-const VISTA_HTML = Object.freeze({ peliculas: 'catalogo', 'mi-lista': 'catalogo' });
-const TITULO_CATALOGO = Object.freeze({ peliculas: 'Películas', 'mi-lista': 'Mi lista' });
+const VISTA_HTML = Object.freeze({ 'mi-lista': 'catalogo' });
+const TITULO_CATALOGO = Object.freeze({ 'mi-lista': 'Mi lista' });
 const catalogoTitulo = document.querySelector('#catalogo-titulo');
 let vistaActual = 'inicio';
 
@@ -319,7 +321,7 @@ function markMenu(vista) {
 }
 
 async function handleRoute(route) {
-  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al salir del inicio, recordar dónde estaba
+  if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
   vistaActual = route.vista;
   markMenu(route.vista);
 
@@ -340,6 +342,47 @@ async function handleRoute(route) {
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
+}
+
+// ---------- Películas ----------
+const catalog = new MovieCatalog();
+const pelis = {
+  pestanas: document.querySelector('#peliculas-pestanas'),
+  estado: document.querySelector('#peliculas-estado'),
+  rejilla: document.querySelector('#peliculas-rejilla'),
+  mas: document.querySelector('#peliculas-mas'),
+};
+
+function renderPeliculas(movies) {
+  pelis.rejilla.replaceChildren(...movies.map(createCard));
+  pelis.mas.hidden = !catalog.hasMore;
+}
+
+/** Ejecuta una acción del catálogo (load o loadMore) con estado de carga y errores. */
+async function loadPeliculas(action) {
+  const antes = pelis.rejilla.children.length;
+  pelis.rejilla.setAttribute('aria-busy', 'true');
+  pelis.estado.textContent = 'Subiendo la persiana…';
+  try {
+    const movies = await action();
+    pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
+    renderPeliculas(movies);
+    if (antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    pelis.estado.textContent = toUserMessage(error);
+  } finally {
+    pelis.rejilla.removeAttribute('aria-busy');
+  }
+}
+
+function handlePestanaClick(event) {
+  const boton = event.target.closest('[data-lista]');
+  if (!boton || boton.getAttribute('aria-pressed') === 'true') return;
+  pelis.pestanas.querySelector('[aria-pressed="true"]').setAttribute('aria-pressed', 'false');
+  boton.setAttribute('aria-pressed', 'true');
+  pelis.rejilla.replaceChildren(); // otra lista: empezamos de cero
+  loadPeliculas(() => catalog.load(boton.dataset.lista));
 }
 
 /** Lleva a una sección de la ficha; sin sección (o desconocida), al principio. */
@@ -495,6 +538,8 @@ els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
+pelis.pestanas.addEventListener('click', handlePestanaClick);
+pelis.mas.addEventListener('click', () => loadPeliculas(() => catalog.loadMore()));
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado

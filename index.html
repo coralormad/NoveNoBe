@@ -183,11 +183,20 @@
       </section>
     </div>
 
-    <!-- 4. VISTA CATÁLOGO (Películas, Series y Mi lista) -->
-    <div id="vista-catalogo" class="vista" hidden>
-      <section class="catalogo">
-        <h2 id="catalogo-titulo"></h2>
-        <div id="catalogo-grid" class="rejilla"></div>
+    <!-- VISTA PELÍCULAS (#/peliculas) -->
+    <div id="vista-peliculas" class="vista" hidden>
+      <section class="peliculas" aria-labelledby="peliculas-titulo">
+        <h2 id="peliculas-titulo">Películas</h2>
+        <div id="peliculas-pestanas" class="pestanas" role="group" aria-label="Listas de películas">
+          <button type="button" data-lista="popular" aria-pressed="true">Populares</button>
+          <button type="button" data-lista="top_rated" aria-pressed="false">Mejor valoradas</button>
+          <button type="button" data-lista="now_playing" aria-pressed="false">En cines</button>
+          <button type="button" data-lista="upcoming" aria-pressed="false">Próximamente</button>
+        </div>
+        <!-- Sub-paso 3: radiografía del catálogo · Sub-paso 2: filtros -->
+        <p id="peliculas-estado" class="fila-mensaje" role="status"></p>
+        <div id="peliculas-rejilla" class="rejilla"></div>
+        <button type="button" id="peliculas-mas" class="boton-mas" hidden>Cargar más películas</button>
       </section>
     </div>
   

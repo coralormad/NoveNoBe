@@ -151,3 +151,10 @@ export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
   }
   return null;
 }
+
+/**
+ * Quita películas repetidas (TMDB puede repetir una entre páginas). Se queda con la primera posición.
+ * @param {Array<Movie>} movies
+ * @returns {Array<Movie>} Array nuevo sin repetidos.
+ */
+export const uniqueById = (movies) => [...new Map(movies.map((movie) => [movie.id, movie])).values()];
