@@ -241,7 +241,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     renderHistory();
     return;
   }
-s 
+  
   controller = new AbortController();
   renderMessage('Buscando…');
 
