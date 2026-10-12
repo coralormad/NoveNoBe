@@ -21,14 +21,20 @@ export class CatalogCharts {
   #popularityCanvas;
   #genreChart = null;
   #popularityChart = null;
+  #genreRows = [];
+  #focusIndex = null;
+  #onGenreFocus;
 
-  constructor(genreCanvas, popularityCanvas) {
+  constructor(genreCanvas, popularityCanvas, { onGenreFocus = () => {} } = {}) {
     this.#genreCanvas = genreCanvas;
     this.#popularityCanvas = popularityCanvas;
+    this.#onGenreFocus = onGenreFocus;
     // Al cambiar de tema, recolorear (cambia el atributo data-theme de <html>)
     new MutationObserver(() => this.#applyColors())
       .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  }
+    // Al sacar el ratón del gráfico se apaga el foco
+    genreCanvas.addEventListener('mouseleave', () => this.#focus(null));
+  }s
 
   /** @returns {boolean} false si Chart.js no ha cargado (sin red o CDN caído). */
   update({ genres, popularity }) {
@@ -36,7 +42,9 @@ export class CatalogCharts {
     this.#genreChart ??= this.#createGenreChart();
     this.#popularityChart ??= this.#createPopularityChart();
     this.#applyColors();
-
+    this.#genreRows = genres;
+    this.#focus(null); // datos nuevos: el foco anterior ya no vale
+  
     CatalogCharts.#setData(this.#genreChart, genres);
     CatalogCharts.#setData(this.#popularityChart, popularity);
     this.#genreCanvas.setAttribute('aria-label', `Géneros de las películas cargadas. ${describeRows(genres)}`);
@@ -55,6 +63,7 @@ export class CatalogCharts {
       type: 'doughnut',
       data: { labels: [], datasets: [{ data: [], borderWidth: 2 }] },
       options: {
+        onHover: (_event, elements) => this.#focus(elements[0]?.index ?? null),
         maintainAspectRatio: false,
         cutout: '68%',
         animation: REDUCED_MOTION.matches ? false : { duration: 600 },
@@ -89,6 +98,14 @@ export class CatalogCharts {
     });
   }
 
+  /** Avisa de qué géneros iluminar, solo si cambia la porción (no en cada píxel). */
+  #focus(index) {
+    if (index === this.#focusIndex) return;
+    this.#focusIndex = index;
+    const ids = index === null ? [] : this.#genreRows[index]?.ids ?? [];
+    this.#onGenreFocus(ids);
+  }
+  
   /** Aplica la paleta actual a las dos gráficas (al crearlas y al cambiar de tema). */
   #applyColors() {
     if (!window.Chart) return;

@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, topByPopularity, groupTail, headline} from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, topByPopularity, groupTail, headline, sharesGenre} from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -118,6 +118,7 @@ const cardTemplate = document.querySelector('#plantilla-tarjeta');
 function createCard(movie) {
   const card = cardTemplate.content.firstElementChild.cloneNode(true);
   card.dataset.id = movie.id;
+  card.dataset.generos = movie.genreIds.join(' ');
 
   const link = card.querySelector('.tarjeta-enlace');
   link.href = movieHref(movie.id);
@@ -361,6 +362,7 @@ const radiografia = {
 const catalogCharts = new CatalogCharts(
   document.querySelector('#grafica-generos'),
   document.querySelector('#grafica-popularidad'),
+  { onGenreFocus: setGenreFocus },
 );
 
 /** Recalcula titular y gráficas con las películas que se ven. */
@@ -379,6 +381,16 @@ function renderPeliculas(movies) {
   pelis.rejilla.replaceChildren(...movies.map(createCard));
   pelis.mas.hidden = !catalog.hasMore;
   updateRadiografia(movies);
+}
+
+/** Ilumina las películas de los géneros del foco; sin foco, todas normales. */
+function setGenreFocus(ids) {
+  const activo = ids.length > 0;
+  pelis.rejilla.classList.toggle('con-foco', activo);
+  for (const card of pelis.rejilla.children) {
+    const generos = card.dataset.generos ? card.dataset.generos.split(' ').map(Number) : [];
+    card.classList.toggle('en-foco', activo && sharesGenre(generos, ids));
+  }
 }
 
 /** Ejecuta una acción del catálogo (load o loadMore) con estado de carga y errores. */

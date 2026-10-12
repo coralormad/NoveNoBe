@@ -930,3 +930,7 @@ main { padding: 2rem var(--margen-lateral); }
   .radiografia-texto { order: 0; }
   .radiografia .radiografia-grafica:nth-of-type(2) { order: -1; } /* dona a la izquierda, como el boceto */
 }
+
+/* Foco de género: la radiografía ilumina sus películas y apaga el resto */
+.rejilla .tarjeta { transition: opacity var(--dur-media) var(--curva-cine), filter var(--dur-media) var(--curva-cine); }
+.rejilla.con-foco .tarjeta:not(.en-foco) { opacity: 0.4; filter: grayscale(0.7); }

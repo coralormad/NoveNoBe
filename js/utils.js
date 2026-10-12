@@ -38,7 +38,7 @@ export function countByGenre(movies, genres) {
 
   return genres
     .filter((genre) => counts[genre.id])
-    .map((genre) => ({ label: genre.name, value: counts[genre.id] }))
+    .map((genre) => ({ ids: [genre.id], label: genre.name, value: counts[genre.id] }))
     .sort((a, b) => b.value - a.value);
 }
 
@@ -165,11 +165,16 @@ export const topByPopularity = (movies, max = 5) =>
     .slice(0, max)
     .map((movie) => ({ label: movie.title, value: Math.round(movie.popularity) }));
 
-/** Deja las N primeras filas y agrupa el resto en «Otros» (un doughnut con 19 porciones no se lee). */
+/** Deja las N primeras filas y agrupa el resto en «Otros», que guarda todos sus ids. */
 export function groupTail(rows, max = 5, otherLabel = 'Otros') {
   if (rows.length <= max) return rows;
-  const rest = rows.slice(max).reduce((sum, row) => sum + row.value, 0);
-  return [...rows.slice(0, max), { label: otherLabel, value: rest }];
+  const rest = rows.slice(max);
+  const other = {
+    ids: rest.flatMap((row) => row.ids ?? []),
+    label: otherLabel,
+    value: rest.reduce((sum, row) => sum + row.value, 0),
+  };
+  return [...rows.slice(0, max), other];
 }
 
 // Cómo se dice cada lista en el titular
@@ -189,3 +194,6 @@ export function headline(genreStats, total, list) {
 
 /** Texto para lectores de pantalla: «Drama: 12, Acción: 8…». */
 export const describeRows = (rows) => rows.map(({ label, value }) => `${label}: ${value}`).join(', ');
+
+/** ¿La película comparte algún género con los del foco? */
+export const sharesGenre = (genreIds, focusIds) => genreIds.some((id) => focusIds.includes(id));
