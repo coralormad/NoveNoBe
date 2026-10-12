@@ -208,6 +208,9 @@ export function sizeBucket(value, max) {
   return 's';
 }
 
+/** Pura: clave del filtro («18» o «80,53» para «Otros») → ids numéricos. Sin clave, []. */
+export const toGenreIds = (key = '') => (key ? key.split(',').map(Number) : []);
+
 /** Pura: en qué porción del doughnut está un género (-1 si no está). */
 export const sliceIndexOf = (rows, genreId) => rows.findIndex((row) => row.ids.includes(genreId));
 
