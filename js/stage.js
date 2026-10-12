@@ -1,6 +1,6 @@
 // Escaparate: las películas más populares del género elegido, en abanico 3D.
 // Se navega arrastrando (ratón y táctil), pulsando una vecina, con ← → o con las flechas del hero,
-// que aparecen al acercar el cursor a cada lateral. Con ratón, el cursor es un halo de luz.
+// que aparecen al acercar el cursor a cada lateral. Con ratón, una luz ambiental difusa acompaña al cursor.
 import { movieHref } from './router.js';
 import { proximity } from './hero.js';
 import { tiltFromPointer } from './tilt.js';
@@ -10,6 +10,7 @@ const PASO = 0.62;            // separación entre carátulas, en anchos de car�
 const UMBRAL_ARRASTRE = 6;    // px que hay que mover antes de que cuente como arrastre y no como clic
 const INERCIA_MS = 150;       // cuánto «sigue» el gesto al soltar, según la velocidad
 const RESISTENCIA = 0.3;      // en los extremos, el abanico cede solo un 30 % (efecto goma)
+const SUAVIDAD_LUZ = 0.18;    // qué parte de la distancia recorre la luz en cada fotograma (0–1): sigue al ratón sin tirones
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 const ALCANCE_LUZ = 1.1; // en anchos de carátula: más allá, la luz no llega
 
@@ -51,17 +52,19 @@ export class GenreStage {
   #pointerX = 0;
   #pointerY = 0;
   #dentro = false; // ¿hay un ratón dentro del carrusel?
-  #halo;                 // halo de luz que sustituye al cursor dentro del carrusel
+  #luz;                  // luz ambiental que sigue al cursor (decorativa)
+  #luzPos = null;        // posición actual de la luz { x, y }; se acerca poco a poco a la del ratón
+  #luzFrame = 0;
   #drag = null;          // gesto en curso: { id, x, y, dx, arrastrando, velocidad, ultimo }
   #bloquearClic = false; // el clic que llega al soltar un arrastre no debe abrir la película
 
   /** @param {{marco, lista, titulo, generos, anterior, siguiente}} els */
   constructor(els) {
     this.#els = els;
-    this.#halo = document.createElement('div');
-    this.#halo.className = 'cursor-halo';
-    this.#halo.setAttribute('aria-hidden', 'true'); // decorativo: los lectores de pantalla lo ignoran
-    els.marco.append(this.#halo);
+    this.#luz = document.createElement('div');
+    this.#luz.className = 'luz-ambiente';
+    this.#luz.setAttribute('aria-hidden', 'true'); // decorativa: los lectores de pantalla la ignoran
+    els.marco.append(this.#luz);
     els.lista.addEventListener('click', (event) => this.#onClick(event));
     els.lista.addEventListener('keydown', (event) => this.#onKeydown(event));
     els.anterior.addEventListener('click', () => this.step(-1));
@@ -71,7 +74,7 @@ export class GenreStage {
       this.#dentro = false;
       this.#els.lista.style.removeProperty('--px');
       this.#setProximity(0, 0);
-      this.#halo.classList.remove('visible');
+      this.#luz.classList.remove('visible'); // se desvanece con la transición del CSS
       this.#apagar();
     });
     // Tras moverse el abanico (flechas, teclado, clic), la luz se recoloca donde está el cursor
@@ -204,8 +207,6 @@ export class GenreStage {
     this.#pointerX = event.clientX;
     this.#pointerY = event.clientY;
     this.#dentro = true;
-    // Sobre algo que se puede pulsar (la carátula activa o una flecha), el halo se abre
-    this.#halo.classList.toggle('sobre-accion', Boolean(event.target.closest('.activa a, .borde-nav')));
     this.#pedirFotograma();
   }
 
@@ -216,10 +217,7 @@ export class GenreStage {
       this.#frame = 0;
       if (!this.#dentro) return; // el ratón salió antes de este fotograma
       const { left, top, width } = this.#els.marco.getBoundingClientRect();
-      // El halo se coloca con translate (no con left/top): solo recompone, no recalcula el layout
-      this.#halo.style.setProperty('--hx', `${(this.#pointerX - left).toFixed(1)}px`);
-      this.#halo.style.setProperty('--hy', `${(this.#pointerY - top).toFixed(1)}px`);
-      this.#halo.classList.add('visible');
+      this.#moverLuz(this.#pointerX - left, this.#pointerY - top);
       const x = Math.min(Math.max((this.#pointerX - left) / width, 0), 1);
       this.#setProximity(proximity(x), proximity(1 - x));
       // Paralaje: el punto de fuga sigue a la mirada (-1 a la izquierda, 1 a la derecha)
@@ -254,6 +252,29 @@ export class GenreStage {
       item.style.removeProperty('--luz');
       item.style.removeProperty('--foco'); // --mx/--my se quedan: el foco se apaga en su sitio, sin saltar
     }
+  }
+
+  /**
+   * La luz va hacia (x, y) poco a poco: en cada fotograma recorre una parte de la distancia
+   * que falta (interpolación lineal). Así sigue al ratón con suavidad, sin saltos.
+   */
+  #moverLuz(x, y) {
+    const llegaDeFuera = !this.#luzPos || !this.#luz.classList.contains('visible');
+    // Al entrar, aparece donde está el ratón (si viniera desde su posición anterior, cruzaría el carrusel)
+    if (llegaDeFuera || REDUCED_MOTION.matches) this.#luzPos = { x, y };
+    this.#luz.classList.add('visible');
+
+    const paso = () => {
+      const dx = x - this.#luzPos.x;
+      const dy = y - this.#luzPos.y;
+      this.#luzPos = { x: this.#luzPos.x + dx * SUAVIDAD_LUZ, y: this.#luzPos.y + dy * SUAVIDAD_LUZ };
+      // translate (no left/top): solo recompone la capa, no recalcula el layout
+      this.#luz.style.setProperty('--lx', `${this.#luzPos.x.toFixed(1)}px`);
+      this.#luz.style.setProperty('--ly', `${this.#luzPos.y.toFixed(1)}px`);
+      if (Math.abs(dx) + Math.abs(dy) > 0.5) this.#luzFrame = requestAnimationFrame(paso);
+    };
+    cancelAnimationFrame(this.#luzFrame); // un único bucle a la vez, siempre hacia el destino más reciente
+    paso();
   }
 
   #setProximity(prev, next) {

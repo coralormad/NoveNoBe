@@ -1002,38 +1002,32 @@ main { padding: 2rem var(--margen-lateral); }
 /* Arrastre: pan-y deja el scroll vertical al navegador y nos da el gesto horizontal */
 .escaparate-marco { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 
-/* Halo de luz en lugar del cursor (solo ratón: en táctil no hay cursor que sustituir).
-   Oscuro: una linterna lavanda. Claro: un aro violeta sobre el papel.
-   Doble aro (color + contorno de contraste): se ve sobre pósteres claros y oscuros. */
-.escaparate-marco {
-  --halo-nucleo: var(--color-primario);
-  --halo-luz: color-mix(in srgb, var(--lavanda-300) 35%, transparent);
-  --halo-borde: color-mix(in srgb, var(--color-primario) 55%, transparent);
-  --halo-contorno: rgb(8 4 10 / 0.45); /* contraste sobre pósteres muy claros */
-}
-:root[data-theme="claro"] .escaparate-marco {
-  --halo-luz: color-mix(in srgb, var(--lavanda-500) 35%, transparent);
-  --halo-borde: color-mix(in srgb, var(--color-primario) 60%, transparent);
-  --halo-contorno: rgb(255 255 255 / 0.6); /* contraste sobre pósteres oscuros */
-}
-.cursor-halo { display: none; }
+/* Luz ambiental que acompaña al ratón (solo con ratón: en táctil no hay cursor).
+   Sin forma ni borde: una mancha de luz muy difusa que aclara las portadas al pasar.
+   soft-light: aclara lo que hay debajo sin lavar sus colores; sobre el fondo casi no se nota. */
+.escaparate-marco { --luz-ambiente: color-mix(in srgb, var(--lavanda-700) 52%, transparent); }
+:root[data-theme="claro"] .escaparate-marco { --luz-ambiente: color-mix(in srgb, #FFFFFF 30%, transparent); }
+.luz-ambiente { display: none; }
 @media (hover: hover) and (pointer: fine) {
-  .escaparate-marco, .escaparate-marco * { cursor: none; } /* ni mano ni flecha: la mirada es la luz */
-  .cursor-halo {
+  .escaparate-marco, .escaparate-marco * { cursor: default; } /* el cursor de siempre, sin mano */
+  .escaparate-marco.arrastrando, .escaparate-marco.arrastrando * { cursor: grabbing; }
+  .luz-ambiente {
     display: block; position: absolute; left: 0; top: 0; z-index: 30;
-    width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    width: 380px; height: 380px; margin: -190px 0 0 -190px;
     pointer-events: none; /* nunca se interpone entre el ratón y las películas */
-    translate: var(--hx, 0) var(--hy, 0);
-    background: radial-gradient(circle, var(--halo-nucleo) 0 2.5px, var(--halo-contorno) 2.5px 3.5px, var(--halo-luz) 4.5px, transparent 70%);
-    box-shadow: inset 0 0 0 1px var(--halo-borde), 0 0 0 1px var(--halo-contorno);
-    opacity: 0; scale: 0.6;
-    transition: opacity 200ms, scale 260ms var(--curva-cine);
+    translate: var(--lx, 0) var(--ly, 0);
+    /* Caída larga y gradual: ningún borde reconocible */
+    background: radial-gradient(circle closest-side,
+      var(--luz-ambiente) 0%,
+      color-mix(in srgb, var(--luz-ambiente) 55%, transparent) 35%,
+      color-mix(in srgb, var(--luz-ambiente) 18%, transparent) 70%,
+      transparent 100%);
+    mix-blend-mode: soft-light;
+    opacity: 0;
+    transition: opacity 900ms ease; /* al salir se desvanece despacio */
   }
-  .cursor-halo.visible { opacity: 1; scale: 1; }
-  .cursor-halo.visible.sobre-accion { scale: 1.3; }              /* se abre: aquí se puede pulsar */
-  .escaparate-marco.arrastrando .cursor-halo { scale: 0.8; }     /* se concentra mientras arrastras */
+  .luz-ambiente.visible { opacity: 1; transition-duration: 450ms; } /* al entrar aparece algo más rápido */
 }
-@media (prefers-reduced-motion: reduce) { .cursor-halo { transition: opacity 200ms; } }
 /* Mientras se arrastra, las carátulas siguen al dedo sin retraso; al soltar vuelve la transición */
 .escaparate-marco.arrastrando .escaparate-item { transition: none; }
 
