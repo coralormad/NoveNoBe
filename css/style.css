@@ -48,6 +48,9 @@
   --dur-lenta: 600ms;
   --curva-persiana: cubic-bezier(0.6, 0, 0.3, 1);
   --sombra-tarjeta: 0 22px 36px -14px rgb(8 4 10 / 0.95);
+  --capsula-luz: color-mix(in srgb, var(--lavanda-300) 35%, transparent);
+  --capsula-halo: 0 0 0 1px color-mix(in srgb, var(--color-primario) 40%, transparent),
+                  0 8px 28px -6px color-mix(in srgb, var(--lavanda-100) 55%, transparent);
 }
 
 /* Tema claro: solo redefine colores */
@@ -68,7 +71,9 @@
   --color-exito: #145B39;
   --sombra: 0 24px 80px rgba(42, 31, 48, 0.18);
     --sombra-tarjeta: 0 22px 36px -14px rgb(41 32 45 / 0.4);
-}
+  --capsula-luz: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
+  --capsula-halo: 0 10px 24px -10px rgb(42 31 48 / 0.35);
+  }
 
 /* 2. RESET ------------------------------------------------ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -925,15 +930,44 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .radiografia-grafica { position: relative; height: 200px; min-width: 0; }
 
-/* Cápsulas de género (estilo base: la Marquesina llega en el paso 2) */
-.capsulas { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+/* Cápsulas de género · Marquesina: el tamaño cuenta el dato, la luz responde al cursor */
+.capsulas { display: flex; flex-wrap: wrap; gap: 0.6rem 0.5rem; align-items: center; }
 .capsula {
-  min-height: 44px; padding: 0.4rem 1rem;
+  position: relative; isolation: isolate;
+  min-height: 44px; padding: 0.45rem 1.05rem;
   border: 1px solid var(--color-borde-control); border-radius: 999px;
-  transition: background-color var(--dur-rapida), color var(--dur-rapida);
+  font-family: var(--fuente-texto); font-size: 0.9rem; line-height: 1.1;
+  transition: transform var(--dur-rapida) var(--curva-cine), box-shadow var(--dur-rapida) var(--curva-cine),
+              background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
 }
-.capsula:hover { background: var(--color-secundario); }
+/* Tamaño = peso real del género (sizeBucket en utils.js) */
+.capsula[data-tam="s"] { font-size: 0.8rem; padding-inline: 0.85rem; }
+.capsula[data-tam="l"] { font-family: var(--fuente-titulos); font-style: italic; font-size: 1.2rem; padding-inline: 1.3rem; }
+
+/* Luz que sigue al cursor: --mx y --my llegan desde main.js */
+.capsula::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--capsula-luz), transparent 70%);
+  opacity: 0; transition: opacity var(--dur-rapida);
+}
+/* Rendija de luz bajo la elegida, la misma del menú */
+.capsula::after {
+  content: ''; position: absolute; left: 18%; right: 18%; bottom: -7px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-foco) 25%, var(--color-foco) 75%, transparent);
+  transform: scaleX(0); transition: transform 220ms var(--curva-cine);
+}
+
+.capsula:focus-visible { box-shadow: var(--capsula-halo); }
+.capsula:focus-visible::before { opacity: 1; }
+@media (hover: hover) {
+  .capsula:hover { transform: translateY(-2px); box-shadow: var(--capsula-halo); border-color: var(--color-primario); }
+  .capsula:hover::before { opacity: 1; }
+}
+
 .capsula[aria-pressed="true"] { background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario); }
+.capsula[aria-pressed="true"]::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) { .capsula:hover { transform: none; } }
 
 /* Escritorio: texto a la izquierda, doughnut a la derecha y cápsulas debajo a todo el ancho */
 @media (min-width: 900px) {

@@ -1,13 +1,13 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf} from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
-import { enableCardTilt } from './tilt.js';
+import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 
@@ -671,6 +671,23 @@ radiografia.capsulas.addEventListener('focusin', (event) => previewCapsula(event
 radiografia.capsulas.addEventListener('focusout', (event) => {
   if (!radiografia.capsulas.contains(event.relatedTarget)) previewCapsula(radiografia.genero);
 });
+
+/** La luz de cada cápsula sigue al ratón. Reutiliza la función pura de la inclinación. */
+function enableCapsuleLight(container) {
+  let frame = 0; // vive en el cierre: no es una variable global
+  container.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'mouse') return;
+    const boton = event.target.closest('.capsula');
+    if (!boton) return;
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      const { mx, my } = tiltFromPointer(event.clientX, event.clientY, boton.getBoundingClientRect());
+      boton.style.setProperty('--mx', `${mx.toFixed(1)}%`);
+      boton.style.setProperty('--my', `${my.toFixed(1)}%`);
+    });
+  });
+}
+enableCapsuleLight(radiografia.capsulas);
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
