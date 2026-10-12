@@ -24,8 +24,10 @@ export class QueVer {
   #respuestas = {};
   #favoritas = loadFavorites();
   #posters = new Map(); // tmdbId → URL del póster (caché: cada póster se pide una sola vez)
+  #miLista = null;      // contenedor de «Mi lista» (opcional)
 
-  constructor(raiz) {
+  /** @param {HTMLElement} raiz  @param {{ miLista?: HTMLElement }} opciones */
+  constructor(raiz, { miLista = null } = {}) {
     const $ = (selector) => raiz.querySelector(selector);
     this.#els = {
       seccion: $('.que-ver'), // aquí vive --enfoque (lo leen la fachada y la rendija)
@@ -53,6 +55,8 @@ export class QueVer {
     atras.addEventListener('click', () => this.#irA(this.#paso - 1));
     categorias.addEventListener('click', (event) => this.#onFavorita(event));
     reiniciar.addEventListener('click', () => this.#reiniciar());
+    this.#miLista = miLista;
+    miLista?.addEventListener('click', (event) => this.#onFavorita(event));
 
     this.#pintarPregunta();
   }
@@ -231,11 +235,15 @@ export class QueVer {
     sinopsis.className = 'qv-sinopsis';
     sinopsis.textContent = pelicula.sinopsis;
 
-    const motivo = document.createElement('p');
-    motivo.className = 'qv-motivo';
-    motivo.textContent = explicar(item);
+    // En «Mi lista» no hay respuestas que explicar: el porqué solo aparece en los resultados
+    const motivo = item.motivo ? document.createElement('p') : null;
+    if (motivo) {
+      motivo.className = 'qv-motivo';
+      motivo.textContent = explicar(item);
+    }
 
-    cuerpo.append(titulo, meta, sinopsis, motivo);
+    cuerpo.append(titulo, meta, sinopsis);
+    if (motivo) cuerpo.append(motivo);
     if (pelicula.pistaOculta) cuerpo.append(this.#crearPista(pelicula.pistaOculta));
 
     const favorita = document.createElement('button');
@@ -301,6 +309,10 @@ export class QueVer {
     const id = Number(boton.dataset.favorita);
     this.#favoritas = toggleFavorite(this.#favoritas, id);
     saveFavorites(this.#favoritas);
+    if (this.#miLista?.contains(boton)) {
+      this.pintarMiLista(); // quitada desde Mi lista: la tarjeta desaparece
+      return;
+    }
     const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
     this.#pintarFavorita(boton, titulo);
   }
@@ -310,6 +322,36 @@ export class QueVer {
     boton.setAttribute('aria-pressed', String(guardada));
     boton.textContent = guardada ? 'En tu lista' : 'Guardar en mi lista';
     boton.setAttribute('aria-label', guardada ? `Quitar ${titulo} de mi lista` : `Guardar ${titulo} en mi lista`);
+  }
+
+  // ---------- Mi lista ----------
+
+  /** Pinta las favoritas guardadas, en el orden en que se guardaron. Sin favoritas, invita a descubrir. */
+  pintarMiLista() {
+    if (!this.#miLista) return;
+    this.#favoritas = loadFavorites();
+    const guardadas = this.#favoritas
+      .map((id) => peliculas.find((p) => p.id === id))
+      .filter(Boolean); // ids que ya no están en el catálogo se ignoran
+
+    if (guardadas.length === 0) {
+      const vacio = document.createElement('p');
+      vacio.className = 'qv-lista-vacia';
+      const enlace = document.createElement('a');
+      enlace.href = '#/que-ver';
+      enlace.textContent = 'Descubre qué ver';
+      vacio.append('Aún no has guardado ninguna película. ', enlace, ' y guarda las que te llamen.');
+      this.#miLista.replaceChildren(vacio);
+      return;
+    }
+    this.#miLista.replaceChildren(...guardadas.map((pelicula, i) => this.#crearHallazgo({ pelicula }, i)));
+  }
+
+  /** Al volver a «Qué ver», los botones reflejan lo que se haya cambiado en Mi lista. */
+  refrescarFavoritas() {
+    this.#favoritas = loadFavorites();
+    this.#els.categorias.querySelectorAll('[data-favorita]').forEach((boton) =>
+      this.#pintarFavorita(boton, boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent));
   }
 
   // ---------- Utilidades ----------

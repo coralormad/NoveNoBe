@@ -1349,6 +1349,16 @@ main { padding: 2rem var(--margen-lateral); }
 
 .qv-nota { font-size: 0.85rem; color: var(--color-texto-suave); }
 
+/* Vista de catálogo (Mi lista): mismos márgenes y título que Películas */
+.catalogo { padding: 2rem var(--margen-lateral) 3rem; display: grid; gap: 1.5rem; }
+.catalogo h2 { font-family: var(--fuente-titulos); font-size: clamp(1.8rem, 4vw, 2.6rem); }
+
+/* Mi lista: las favoritas con la misma tarjeta de los hallazgos */
+.qv-lista { display: grid; gap: 2rem 2.5rem; }
+@media (min-width: 900px) { .qv-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.qv-lista-vacia { color: var(--color-texto-suave); line-height: 1.6; }
+.qv-lista-vacia a { color: var(--color-primario); text-underline-offset: 3px; }
+
 @media (prefers-reduced-motion: reduce) {
   .qv-hallazgo { animation: none; }
   .qv-fachada, .qv-rendija span, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }

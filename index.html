@@ -45,7 +45,8 @@
           <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
         </svg>
       </button>
-      <button type="button" id="btn-avisos" class="icono-boton" aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
+      <!-- Oculto hasta que tenga función: un botón que no hace nada no debe ofrecerse -->
+      <button type="button" id="btn-avisos" class="icono-boton" hidden aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
         </svg>
@@ -136,7 +137,8 @@
         <span id="hero-reloj" class="hero-reloj" aria-hidden="true"></span>
       </section>
 
-      <section class="fila reveal">
+      <!-- Oculta hasta que tenga contenido real -->
+      <section class="fila reveal" hidden>
         <div class="fila-cabecera">
           <h2>Continúa tu historia</h2>
           <div class="fila-flechas">
@@ -172,7 +174,7 @@
         <div id="fila-tendencias" class="carrusel"></div>
       </section>
 
-      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial"></section>
+      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial" hidden></section> <!-- oculta: sin contenido todavía -->
     </div>
 
     <!-- 3. VISTA QUÉ VER -->
@@ -266,7 +268,7 @@
     <div id="vista-catalogo" class="vista" hidden>
       <section class="catalogo">
         <h2 id="catalogo-titulo"></h2>
-        <div id="catalogo-grid" class="rejilla"></div>
+        <div id="catalogo-grid" class="qv-lista"></div> <!-- Mi lista: las favoritas de «Qué ver» -->
       </section>
     </div> <!-- /vista-catalogo -->
   

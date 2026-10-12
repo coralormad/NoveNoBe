@@ -347,6 +347,8 @@ async function handleRoute(route) {
   fichaActual = null;
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
+  if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
+  if (route.vista === 'que-ver') queVer.refrescarFavoritas(); // por si se quitó alguna desde Mi lista
   window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
 }
 
@@ -718,7 +720,8 @@ enableCapsuleLight(radiografia.capsulas);
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
-new QueVer(document.querySelector('#vista-que-ver')); // una sola instancia: sus listeners se crean una vez
+// Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
+const queVer = new QueVer(document.querySelector('#vista-que-ver'), { miLista: document.querySelector('#catalogo-grid') });
 
 Promise.allSettled([
   startRouter(handleRoute),
