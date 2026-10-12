@@ -191,7 +191,7 @@ async function initGenres() {
     return firstId ? loadGenreRow(firstId) : [];
   } catch (error) {
     if (error.name === 'AbortError') return [];
-    renderRowMessage(container, toUserMessage(error));
+    renderRowMessage(els.genreRow, toUserMessage(error));
     return [];
   }
 }

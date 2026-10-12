@@ -327,24 +327,43 @@ main { padding: 2rem var(--margen-lateral); }
 
 .menu { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
 .menu ul { display: flex; gap: 1.25rem; overflow-x: auto; scrollbar-width: none; }
+
+/* Base */
 .menu-enlace {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
   font-size: 0.85rem;
   color: var(--color-texto-suave);
+  text-decoration: none;
   white-space: nowrap;
   transition: color var(--transicion);
 }
+
+/* Estados */
 .menu-enlace:hover,
 .menu-enlace[aria-current="page"] { color: var(--color-texto); }
-.menu-enlace[aria-current="page"][aria-current="page"]::after {
+
+/* Rendija de luz: línea fina que se dibuja bajo la palabra */
+.menu-enlace::after {
   content: '';
   position: absolute;
   left: 0;
-  bottom: 6px;
-  width: 17px;
-  height: 2px;
-  background: var(--color-foco);
+  right: 0;
+  bottom: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-foco) 25%, var(--color-foco) 75%, transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0.6;
+  transition: transform 250ms var(--curva-cine), opacity 250ms;
+}
+.menu-enlace:is(:hover, :focus-visible)::after { transform: scaleX(1); }
+.menu-enlace[aria-current="page"]::after { transform: scaleX(1); height: 2px; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-enlace::after { transition: none; }
 }
 
 .herramientas { grid-column: 2; grid-row: 1; display: flex; align-items: center; gap: 0.25rem; }
