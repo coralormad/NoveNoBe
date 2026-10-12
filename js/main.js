@@ -1,362 +1,554 @@
-import { peliculas as peliculasLocales, avisos } from "../data/movies.js";
-import { 
-  obtenerTendenciasTMDB, 
-  obtenerSeriesTMDB, 
-  buscarEnTMDB, 
-  TITULOS_CURADOS 
-} from "./tmdb.js";
+import { MovieCatalog } from './catalog.js';
+import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
+import { Movie } from './Movie.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification } from './utils.js';
+import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
+import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
+import { CountryMap, toMarkers, countryName } from './map.js';
+import { COORDENADAS_PAISES } from '../data/paises.js';
+import { startRouter, movieHref } from './router.js';
+import { enableCardTilt } from './tilt.js';
+import { AVISOS } from '../data/avisos.js';
 
-// ===================================================
-// 1. ESTADO GLOBAL
-// ===================================================
-let peliculas = [...peliculasLocales];
-let listaHero = [];
-let indiceHero = 0;
-let peliculaSeleccionada = null;
 
-// ===================================================
-// 2. REFERENCIAS AL DOM
-// ===================================================
-const btnFeminista = document.getElementById("btn-feminista");
-const textoInterruptor = btnFeminista?.querySelector(".interruptor-texto");
+const MIN_QUERY = 2;
+const DEBOUNCE_MS = 400;
 
-const botonesMenu = document.querySelectorAll(".menu-boton");
-const vistas = document.querySelectorAll(".vista");
+const els = {
+  btnBuscar: document.querySelector('#btn-buscar'),
+  panel: document.querySelector('#panel-buscar'),
+  input: document.querySelector('#buscador'),
+  results: document.querySelector('#resultados-busqueda'),
+  trending: document.querySelector('#fila-tendencias'),
+  btnTema: document.querySelector('#btn-tema'), // NUEVO 5d
+  genres: document.querySelector('#generos'),
+  genreRow: document.querySelector('#fila-genero'),
+};
 
-const btnBuscar = document.getElementById("btn-buscar");
-const panelBuscar = document.getElementById("panel-buscar");
-const buscador = document.getElementById("buscador");
-const resultadosBusqueda = document.getElementById("resultados-busqueda");
+// Ficha: referencias y estado propio de la ficha (ámbito de módulo, no globales)
+const ficha = {
+  vista: document.querySelector('#vista-ficha'),
+  estado: document.querySelector('#ficha-estado'),
+  contenido: document.querySelector('#ficha-contenido'),
+  fondo: document.querySelector('#ficha-fondo'),
+  poster: document.querySelector('#ficha-poster'),
+  titulo: document.querySelector('#ficha-titulo'),
+  original: document.querySelector('#ficha-original'),
+  meta: document.querySelector('#ficha-meta'),
+  nota: document.querySelector('#ficha-nota'),
+  generos: document.querySelector('#ficha-generos'),
+  eslogan: document.querySelector('#ficha-eslogan'),
+  sinopsis: document.querySelector('#ficha-sinopsis'),
+  equipo: document.querySelector('#ficha-equipo'),
+  nav: document.querySelector('#ficha-nav'),
+  mapa: document.querySelector('#ficha-mapa'),
+  paises: document.querySelector('#ficha-paises'),
+  reparto: document.querySelector('#ficha-reparto'),
+  repartoVacio: document.querySelector('#ficha-reparto-vacio'),
+  repartoFlechas: document.querySelector('#reparto-flechas'),
+};
 
-const btnAvisos = document.getElementById("btn-avisos");
-const panelAvisos = document.getElementById("panel-avisos");
-const listaAvisosEl = document.getElementById("lista-avisos");
+let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
+let fichaController = null;
+let countryMap = null; // se crea la primera vez que se abre una ficha
+let scrollInicio = 0; // para volver al mismo punto del inicio
 
-const heroSlide = document.getElementById("hero-slide");
-const heroContador = document.getElementById("hero-contador");
-const btnHeroAnt = document.getElementById("hero-anterior");
-const btnHeroSig = document.getElementById("hero-siguiente");
-const spotlight = document.getElementById("spotlight");
+let controller = null; // petición en curso (variable de módulo, no global)
+let genreController = null; // petición de género en curso
 
-const filaContinua = document.getElementById("fila-continua");
-const filaTendencias = document.getElementById("fila-tendencias");
-const filaGenero = document.getElementById("fila-genero");
-const contenedorGeneros = document.getElementById("generos");
-const catalogoGrid = document.getElementById("catalogo-grid");
-const catalogoTitulo = document.getElementById("catalogo-titulo");
-
-const modalFicha = document.getElementById("modal-ficha");
-const modalCerrar = document.getElementById("modal-cerrar");
-const modalContenido = document.getElementById("modal-contenido");
-const botonesVoto = document.querySelectorAll("[data-voto]");
-
-// ===================================================
-// 3. INTERRUPTOR DE MODO (FEMINISTA / NO FEMINISTA)
-// ===================================================
-function setModo(esFeminista) {
-  if (esFeminista) {
-    document.body.setAttribute("data-theme", "feminista");
-    btnFeminista.setAttribute("aria-checked", "true");
-    if (textoInterruptor) textoInterruptor.textContent = "Versión feminista";
-  } else {
-    document.body.setAttribute("data-theme", "no-feminista");
-    btnFeminista.setAttribute("aria-checked", "false");
-    if (textoInterruptor) textoInterruptor.textContent = "Versión estándar";
-  }
+// ---------- Tema (NUEVO 5d) ----------
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
 }
 
-btnFeminista.addEventListener("click", () => {
-  const activo = btnFeminista.getAttribute("aria-checked") === "true";
-  setModo(!activo);
-});
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
+  applyTheme(next);
+  saveTheme(next);
+  if (!ficha.vista.hidden) countryMap?.refresh();
+}
 
-// ===================================================
-// 4. CAMBIO DE VISTAS (MENÚ)
-// ===================================================
-botonesMenu.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    botonesMenu.forEach((b) => b.removeAttribute("aria-current"));
-    btn.setAttribute("aria-current", "page");
+// ---------- Pintado (sin innerHTML) ----------
+function renderMessage(text) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  els.results.replaceChildren(li);
+}
 
-    const vistaDestino = btn.dataset.vista;
-    vistas.forEach((v) => (v.hidden = true));
+function renderResults(movies) {
+  if (movies.length === 0) return renderMessage('Sin resultados.');
 
-    if (vistaDestino === "inicio") {
-      document.getElementById("vista-inicio").hidden = false;
-    } else if (vistaDestino === "que-ver") {
-      document.getElementById("vista-que-ver").hidden = false;
-    } else {
-      document.getElementById("vista-catalogo").hidden = false;
-      renderCatalogo(vistaDestino);
-    }
+  const items = movies.map((movie) => {
+    const li = document.createElement('li');
+    li.textContent = `${movie.title} (${movie.year}) · ★ ${movie.ratingText}`;
+    li.dataset.id = movie.id;
+    return li;
   });
-});
+  els.results.replaceChildren(...items);
+}
 
-// ===================================================
-// 5. BÚSQUEDA EN TIEMPO REAL (TMDB + LOCAL)
-// ===================================================
-btnBuscar.addEventListener("click", () => {
-  const oculto = panelBuscar.hidden;
-  panelBuscar.hidden = !oculto;
-  btnBuscar.setAttribute("aria-expanded", String(oculto));
-  if (oculto) buscador.focus();
-});
+function createButtonItem(text, className, data) {
+  const li = document.createElement('li');
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = text;
+  Object.assign(button.dataset, data);
+  li.append(button);
+  return li;
+}
 
-let debounceTimer;
-buscador.addEventListener("input", (e) => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(async () => {
-    const query = e.target.value.trim().toLowerCase();
-    resultadosBusqueda.innerHTML = "";
-    if (!query) return;
-
-    // Buscar primero en TMDB
-    let resultados = await buscarEnTMDB(query);
-
-    // Si la API no devuelve o está offline, buscar en datos locales
-    if (resultados.length === 0) {
-      resultados = peliculas.filter((p) => p.titulo.toLowerCase().includes(query));
-    }
-
-    resultados.forEach((p) => {
-      const li = document.createElement("li");
-      li.style.padding = "0.5rem";
-      li.style.cursor = "pointer";
-      li.style.borderBottom = "1px solid var(--color-borde)";
-      li.textContent = `${p.titulo} (${p.anio}) · ${p.tipo}`;
-
-      li.addEventListener("click", () => {
-        // Si no estaba en el catálogo, se agrega
-        if (!peliculas.some((item) => item.id === p.id)) {
-          peliculas.push(p);
-        }
-        abrirModal(p);
-        panelBuscar.hidden = true;
-      });
-      resultadosBusqueda.appendChild(li);
-    });
-  }, 300);
-});
-
-// Panel de Avisos
-btnAvisos.addEventListener("click", () => {
-  const oculto = panelAvisos.hidden;
-  panelAvisos.hidden = !oculto;
-  btnAvisos.setAttribute("aria-expanded", String(oculto));
-
-  if (oculto) {
-    listaAvisosEl.innerHTML = avisos.map((aviso) => `<li>• ${aviso}</li>`).join("");
+function renderHistory() {
+  const history = loadHistory();
+  if (history.length === 0) {
+    els.results.replaceChildren();
+    return;
   }
-});
 
-// ===================================================
-// 6. HERO SLIDER (DESTACADOS / SELECCIONADOS)
-// ===================================================
-function actualizarHeroLista() {
-  // Priorizar películas destacadas o en la lista de seleccionadas
-  listaHero = peliculas.filter((p) => p.destacada);
-  if (listaHero.length === 0) listaHero = peliculas.slice(0, 3);
+  const items = history.map((query) => createButtonItem(query, 'historial-item', { query }));
+  const clearItem = createButtonItem('Borrar historial', 'historial-borrar', { action: 'clear-history' });
+  els.results.replaceChildren(...items, clearItem);
 }
 
-function renderHero() {
-  actualizarHeroLista();
-  if (listaHero.length === 0) return;
+// ---------- Tarjetas y filas ----------
+const cardTemplate = document.querySelector('#plantilla-tarjeta');
 
-  const p = listaHero[indiceHero];
-  heroSlide.innerHTML = `
-    <h2>${p.titulo}</h2>
-    <p style="margin: 0.5rem 0 1rem; color: var(--color-texto-atenuado);">${p.sinopsis}</p>
-    <button type="button" class="menu-boton" id="btn-hero-ver" style="background: var(--color-acento); color: #ffffff;">
-      Ver análisis completo
-    </button>
-  `;
+function createCard(movie) {
+  const card = cardTemplate.content.firstElementChild.cloneNode(true);
+  card.dataset.id = movie.id;
 
-  document.getElementById("btn-hero-ver").addEventListener("click", () => abrirModal(p));
-  heroContador.textContent = `0${indiceHero + 1} / 0${listaHero.length}`;
-}
+  const link = card.querySelector('.tarjeta-enlace');
+  link.href = movieHref(movie.id);
+  link.setAttribute('aria-label', `${movie.title}, ${movie.year}. Nota ${movie.ratingText}`);
 
-btnHeroAnt.addEventListener("click", () => {
-  indiceHero = (indiceHero - 1 + listaHero.length) % listaHero.length;
-  renderHero();
-});
+  card.querySelector('.tarjeta-img').src = movie.posterUrl;
+  card.querySelector('.capsula-anio').textContent = movie.year;
+  card.querySelector('.capsula-nota').textContent = `★ ${movie.ratingText}`;
+  card.querySelector('.tarjeta-titulo').textContent = movie.title;
 
-btnHeroSig.addEventListener("click", () => {
-  indiceHero = (indiceHero + 1) % listaHero.length;
-  renderHero();
-});
-
-// ===================================================
-// 7. TARJETAS, CARRUSELES Y CATÁLOGO
-// ===================================================
-function crearTarjeta(p) {
-  const card = document.createElement("article");
-  card.className = "tarjeta";
-  card.style.minWidth = "210px";
-  card.style.background = "var(--color-tarjeta)";
-  card.style.border = "1px solid var(--color-borde)";
-  card.style.borderRadius = "8px";
-  card.style.padding = "0.75rem";
-  card.style.cursor = "pointer";
-
-  card.innerHTML = `
-    <img src="${p.portada}" alt="${p.titulo}" loading="lazy" style="width:100%;height:280px;object-fit:cover;border-radius:6px;margin-bottom:0.6rem;">
-    <h4 style="font-size:1rem;margin-bottom:0.25rem;">${p.titulo}</h4>
-    <small style="color:var(--color-texto-atenuado);">${p.genero} • ${p.anio}</small>
-  `;
-
-  card.addEventListener("click", () => abrirModal(p));
   return card;
 }
 
-function renderCarruseles() {
-  filaContinua.innerHTML = "";
-  filaTendencias.innerHTML = "";
-  filaGenero.innerHTML = "";
-
-  peliculas.forEach((p) => {
-    filaContinua.appendChild(crearTarjeta(p));
-    filaTendencias.appendChild(crearTarjeta(p));
-  });
-
-  // Géneros
-  const generosUnicos = [...new Set(peliculas.map((p) => p.genero).filter(Boolean))];
-  contenedorGeneros.innerHTML = "";
-
-  generosUnicos.forEach((g) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = g;
-    btn.addEventListener("click", () => {
-      filaGenero.innerHTML = "";
-      peliculas.filter((p) => p.genero === g).forEach((p) => filaGenero.appendChild(crearTarjeta(p)));
-    });
-    contenedorGeneros.appendChild(btn);
-  });
-
-  // Cargar el primer género por defecto
-  if (generosUnicos.length > 0) {
-    peliculas.filter((p) => p.genero === generosUnicos[0]).forEach((p) => filaGenero.appendChild(crearTarjeta(p)));
-  }
-
-  // Spotlight (Obra destacada)
-  const spotlightItem = peliculas.find((p) => p.destacada) || peliculas[0];
-  if (spotlightItem && spotlight) {
-    spotlight.innerHTML = `
-      <div style="background:var(--color-tarjeta);border:1px solid var(--color-borde);border-radius:12px;padding:2rem;margin-top:2rem;">
-        <span class="sobretitulo">Obra del momento</span>
-        <h2 style="margin: 0.5rem 0;">${spotlightItem.titulo}</h2>
-        <p style="color:var(--color-texto-atenuado);margin-bottom:1rem;">${spotlightItem.sinopsis}</p>
-        <button type="button" class="menu-boton" id="btn-spotlight-ver" style="background:var(--color-acento);color:#fff;">Explorar</button>
-      </div>
-    `;
-    document.getElementById("btn-spotlight-ver").addEventListener("click", () => abrirModal(spotlightItem));
-  }
+function renderRowMessage(container, text) {
+  const p = document.createElement('p');
+  p.className = 'fila-mensaje';
+  p.textContent = text;
+  container.replaceChildren(p);
 }
 
-function renderCatalogo(categoria) {
-  catalogoGrid.innerHTML = "";
-  let items = [];
-
-  if (categoria === "peliculas") {
-    catalogoTitulo.textContent = "Todas las Películas";
-    items = peliculas.filter((p) => p.tipo === "peliculas");
-  } else if (categoria === "series") {
-    catalogoTitulo.textContent = "Todas las Series";
-    items = peliculas.filter((p) => p.tipo === "series");
-  } else if (categoria === "mi-lista") {
-    catalogoTitulo.textContent = "Mi lista guardada";
-    items = peliculas.slice(0, 3);
-  }
-
-  items.forEach((p) => catalogoGrid.appendChild(crearTarjeta(p)));
+function renderRow(container, movies) {
+  if (movies.length === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
+  container.replaceChildren(...movies.map(createCard));
 }
 
-// Flechas de desplazamiento en carrusel
-document.querySelectorAll(".fila-flechas button").forEach((flecha) => {
-  flecha.addEventListener("click", () => {
-    const idObjetivo = flecha.dataset.objetivo;
-    const carrusel = document.getElementById(idObjetivo);
-    const salto = flecha.dataset.flecha === "izquierda" ? -300 : 300;
-    carrusel.scrollBy({ left: salto, behavior: "smooth" });
-  });
-});
-
-// ===================================================
-// 8. MODAL DE FICHA Y VOTACIONES
-// ===================================================
-function abrirModal(p) {
-  peliculaSeleccionada = p;
-  modalContenido.innerHTML = `
-    <h2 id="modal-titulo">${p.titulo} (${p.anio})</h2>
-    <p style="margin: 0.5rem 0 1rem; color:var(--color-texto-atenuado);">${p.genero} • ${p.tipo}</p>
-    <p>${p.sinopsis}</p>
-  `;
-
-  actualizarContadoresVoto();
-  modalFicha.showModal();
-}
-
-modalCerrar.addEventListener("click", () => modalFicha.close());
-modalFicha.addEventListener("click", (e) => {
-  if (e.target === modalFicha) modalFicha.close();
-});
-
-function actualizarContadoresVoto() {
-  if (!peliculaSeleccionada) return;
-  document.querySelector('[data-cuenta="bechdel-si"]').textContent = peliculaSeleccionada.votos.bechdelSi;
-  document.querySelector('[data-cuenta="bechdel-no"]').textContent = peliculaSeleccionada.votos.bechdelNo;
-  document.querySelector('[data-cuenta="violacion-si"]').textContent = peliculaSeleccionada.votos.violacionSi;
-  document.querySelector('[data-cuenta="violacion-no"]').textContent = peliculaSeleccionada.votos.violacionNo;
-}
-
-botonesVoto.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    if (!peliculaSeleccionada) return;
-    const tipo = btn.dataset.voto;
-    const valor = btn.dataset.valor;
-
-    if (tipo === "bechdel") {
-      if (valor === "si") peliculaSeleccionada.votos.bechdelSi += 1;
-      else peliculaSeleccionada.votos.bechdelNo += 1;
-    } else if (tipo === "violacion") {
-      if (valor === "si") peliculaSeleccionada.votos.violacionSi += 1;
-      else peliculaSeleccionada.votos.violacionNo += 1;
-    }
-
-    actualizarContadoresVoto();
-  });
-});
-
-// ===================================================
-// 9. ARRANQUE E INTEGRACIÓN DE TMDB
-// ===================================================
-async function iniciarApp() {
-  // 1. Iniciar en Modo Feminista por defecto
-  setModo(true);
-
-  // 2. Render inicial con los datos locales
-  renderHero();
-  renderCarruseles();
-
-  // 3. Carga asíncrona de tendencias desde TMDB
+// Carga cualquier fila: recibe dónde pintar y una función que pide los datos
+async function loadRow(container, fetcher) {
+  renderRowMessage(container, 'Cargando…');
   try {
-    const pelisTMDB = await obtenerTendenciasTMDB();
-    const seriesTMDB = await obtenerSeriesTMDB();
-
-    const mapaTitulos = new Set(peliculas.map((p) => p.titulo.toLowerCase()));
-
-    [...pelisTMDB, ...seriesTMDB].forEach((item) => {
-      if (!mapaTitulos.has(item.titulo.toLowerCase())) {
-        peliculas.push(item);
-      }
-    });
-
-    // 4. Actualizar interfaz con el catálogo enriquecido
-    renderHero();
-    renderCarruseles();
+    const data = await fetcher();
+    const movies = Movie.fromList(data.results);
+    renderRow(container, movies);
+    return movies;
   } catch (error) {
-    console.warn("No se pudo conectar con TMDB, usando catálogo local.", error);
+    if (error.name === 'AbortError') return [];
+    renderRowMessage(container, toUserMessage(error));
+    return [];
   }
 }
 
-iniciarApp();
+// ---------- Géneros ----------
+function renderGenreChips(genres, activeId) {
+  const buttons = genres.map(({ id, name }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = name;
+    button.dataset.genreId = id;
+    button.setAttribute('aria-pressed', String(id === activeId));
+    return button;
+  });
+  els.genres.replaceChildren(...buttons);
+}
+
+function loadGenreRow(genreId) {
+  genreController?.abort();
+  genreController = new AbortController();
+  const { signal } = genreController;
+  return loadRow(els.genreRow, () => discoverMovies({ genreId, signal }));
+}
+
+function handleGenreClick(event) {
+  const button = event.target.closest('[data-genre-id]');
+  if (!button || button.getAttribute('aria-pressed') === 'true') return;
+  els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
+  button.setAttribute('aria-pressed', 'true');
+  loadGenreRow(Number(button.dataset.genreId));
+}
+
+async function initGenres() {
+  try {
+    const genres = await getGenres();
+    const firstId = genres[0]?.id;
+    renderGenreChips(genres, firstId);
+    return firstId ? loadGenreRow(firstId) : [];
+  } catch (error) {
+    if (error.name === 'AbortError') return [];
+    renderRowMessage(els.genreRow, toUserMessage(error));
+    return [];
+  }
+}
+
+// ---------- Hero ----------
+async function loadHero(hero) {
+  const today = new Date();
+  let picks = {};
+  try {
+    const [nowPlaying, upcoming] = await Promise.all([
+      getMovieList('now_playing'),
+      getMovieList('upcoming'),
+    ]);
+    const enCines = Movie.fromList(nowPlaying.results);
+    setAmbient(enCines);
+    picks = pickHeroMovies({
+      nowPlaying: enCines,
+      upcoming: Movie.fromList(upcoming.results),
+      today,
+    });
+  } catch (error) {
+    console.warn('Hero sin novedades; se muestran presentación y avisos.', error);
+  }
+  const slides = buildSlides({ ...picks, avisos: filterActive(AVISOS, today) });
+  hero.addSlides(slides.map(createSlide));
+}
+
+function handleHeroAction(button) {
+  if (button.dataset.accion === 'tema') toggleTheme();
+  if (button.dataset.accion === 'buscar' && els.panel.hidden) togglePanel();
+  if (button.dataset.accion === 'ficha') openFicha(button.dataset.id);
+}
+
+// ---------- Búsqueda ----------
+async function handleSearch(rawQuery, { save = false } = {}) {
+  const query = rawQuery.trim();
+  controller?.abort();
+
+  if (query.length < MIN_QUERY) {
+    renderHistory();
+    return;
+  }
+
+  controller = new AbortController();
+  renderMessage('Buscando…');
+
+  try {
+    const data = await searchMovies(query, { signal: controller.signal });
+    const movies = data.results.map((item) => new Movie(item));
+    renderResults(movies);
+    if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    renderMessage(toUserMessage(error));
+  }
+}
+
+const debouncedSearch = debounce((event) => handleSearch(event.target.value), DEBOUNCE_MS);
+
+// ---------- Manejadores ----------
+function togglePanel() {
+  const isOpen = els.btnBuscar.getAttribute('aria-expanded') === 'true';
+  els.btnBuscar.setAttribute('aria-expanded', String(!isOpen));
+  els.panel.hidden = isOpen;
+  if (!isOpen) els.input.focus();
+}
+
+function handleFocus() {
+  if (els.input.value.trim().length < MIN_QUERY) renderHistory();
+}
+
+function handleKeydown(event) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  debouncedSearch.cancel();
+  handleSearch(els.input.value, { save: true });
+}
+
+function handleResultsClick(event) {
+  const button = event.target.closest('button');
+  if (!button) return;
+
+  if (button.dataset.action === 'clear-history') {
+    clearHistory();
+    renderHistory();
+    els.input.focus();
+    return;
+  }
+
+  if (button.dataset.query) {
+    els.input.value = button.dataset.query;
+    handleSearch(button.dataset.query, { save: true });
+  }
+}
+
+// ---------- Carrusel: selección y flechas ----------
+const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+
+// ---------- Navegación ----------
+/** Abrir una ficha = cambiar la URL; el router hace el resto. */
+function openFicha(id) {
+  window.location.hash = movieHref(id);
+}
+
+function showView(nombre) {
+  document.querySelectorAll('.vista').forEach((vista) => {
+    vista.hidden = vista.id !== `vista-${nombre}`;
+  });
+}
+
+// Películas y Mi lista comparten la misma vista HTML (#vista-catalogo)
+const VISTA_HTML = Object.freeze({ 'mi-lista': 'catalogo' });
+const TITULO_CATALOGO = Object.freeze({ 'mi-lista': 'Mi lista' });
+const catalogoTitulo = document.querySelector('#catalogo-titulo');
+let vistaActual = 'inicio';
+
+/** Marca en el menú la vista actual (la ficha no tiene entrada: no marca ninguna). */
+function markMenu(vista) {
+  document.querySelectorAll('.menu-enlace').forEach((link) => {
+    if (link.dataset.vista === vista) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+}
+
+async function handleRoute(route) {
+  if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
+  vistaActual = route.vista;
+  markMenu(route.vista);
+
+  if (route.vista === 'ficha') {
+    showView('ficha');
+    if (route.id !== fichaActual) {   // otra película → pedirla
+      fichaActual = route.id;
+      window.scrollTo(0, 0);
+      const ok = await loadFicha(route.id);
+      if (!ok) return;                // error o cancelada: no hay sección a la que ir
+    }
+    goToSection(route.seccion);       // misma película → solo desplazarse
+    return;
+  }
+
+  fichaController?.abort();
+  fichaActual = null;
+  showView(VISTA_HTML[route.vista] ?? route.vista);
+  if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
+  window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
+}
+
+// ---------- Películas ----------
+const catalog = new MovieCatalog();
+const pelis = {
+  pestanas: document.querySelector('#peliculas-pestanas'),
+  estado: document.querySelector('#peliculas-estado'),
+  rejilla: document.querySelector('#peliculas-rejilla'),
+  mas: document.querySelector('#peliculas-mas'),
+};
+
+function renderPeliculas(movies) {
+  pelis.rejilla.replaceChildren(...movies.map(createCard));
+  pelis.mas.hidden = !catalog.hasMore;
+}
+
+/** Ejecuta una acción del catálogo (load o loadMore) con estado de carga y errores. */
+async function loadPeliculas(action) {
+  const antes = pelis.rejilla.children.length;
+  pelis.rejilla.setAttribute('aria-busy', 'true');
+  pelis.estado.textContent = 'Subiendo la persiana…';
+  try {
+    const movies = await action();
+    pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
+    renderPeliculas(movies);
+    if (antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    pelis.estado.textContent = toUserMessage(error);
+  } finally {
+    pelis.rejilla.removeAttribute('aria-busy');
+  }
+}
+
+function handlePestanaClick(event) {
+  const boton = event.target.closest('[data-lista]');
+  if (!boton || boton.getAttribute('aria-pressed') === 'true') return;
+  pelis.pestanas.querySelector('[aria-pressed="true"]').setAttribute('aria-pressed', 'false');
+  boton.setAttribute('aria-pressed', 'true');
+  pelis.rejilla.replaceChildren(); // otra lista: empezamos de cero
+  loadPeliculas(() => catalog.load(boton.dataset.lista));
+}
+
+/** Lleva a una sección de la ficha; sin sección (o desconocida), al principio. */
+function goToSection(seccion) {
+  const destino = seccion && document.getElementById(`seccion-${seccion}`);
+  if (!destino) {
+    window.scrollTo(0, 0);
+    ficha.titulo.focus({ preventScroll: true });
+    return;
+  }
+  destino.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+  destino.focus({ preventScroll: true });
+}
+
+async function loadFicha(id) {
+  fichaController?.abort(); // si había otra ficha cargando, se cancela
+  fichaController = new AbortController();
+
+  ficha.contenido.hidden = true;
+  ficha.estado.textContent = 'Subiendo la persiana…';
+
+  try {
+    const data = await getMovieDetails(id, { signal: fichaController.signal });
+    const movie = new Movie(data);
+    renderFicha(movie);
+    document.title = `${movie.title} · NoveNoBé`;
+    ficha.estado.textContent = '';
+    ficha.contenido.hidden = false; // primero visible: Leaflet necesita medir el contenedor
+    ficha.titulo.focus({ preventScroll: true });
+
+    countryMap ??= new CountryMap(ficha.mapa);
+    countryMap.show(toMarkers(movie.countries, COORDENADAS_PAISES));
+    return true;
+  } catch (error) {
+    if (error.name === 'AbortError') return false;
+    fichaActual = null; // para poder reintentar la misma película
+    ficha.estado.textContent = error.status === 404
+      ? 'Aquí no hay nada que ver: esta película no existe.'
+      : toUserMessage(error);
+    return false;
+  }
+}
+
+function renderFicha(movie) {
+  ficha.fondo.src = movie.backdropUrl ?? movie.posterUrl;
+  ficha.poster.src = movie.posterUrl;
+  ficha.titulo.textContent = movie.title;
+
+  ficha.original.hidden = !movie.hasOriginalTitle;
+  ficha.original.textContent = `Título original: ${movie.originalTitle}`;
+
+  ficha.meta.textContent = [movie.year, certificationText(pickCertification(movie.releaseDates)), movie.runtimeText]
+    .filter(Boolean)
+    .join(' · ');
+  ficha.nota.textContent = `★ ${movie.ratingText} · TMDB · ${movie.votesText}`;
+
+  ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
+    const li = document.createElement('li');
+    li.textContent = name;
+    return li;
+  }));
+
+
+
+  ficha.eslogan.hidden = !movie.tagline;
+  ficha.eslogan.textContent = movie.tagline;
+  ficha.sinopsis.textContent = movie.overview;
+  renderEquipo(pickCrew(movie.credits.crew));
+  renderReparto(pickCast(movie.credits.cast));
+
+  ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
+    link.href = movieHref(movie.id, link.dataset.seccion);
+  });
+
+  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
+  ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
+  ficha.mapa.setAttribute('aria-label', nombres.length
+    ? `Mapa de los países de producción: ${nombres.join(', ')}`
+    : 'Mapa sin países de producción');
+}
+
+const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+const personTemplate = document.querySelector('#plantilla-persona');
+
+/** Pura: «Morgan Freeman» → «MF». Para quien no tiene foto en TMDB. */
+const initials = (name = '') =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+
+function createPerson({ name, character, profilePath }) {
+  const item = personTemplate.content.firstElementChild.cloneNode(true);
+  const img = item.querySelector('.persona-img');
+
+  if (profilePath) {
+    img.src = `${PROFILE_BASE}${profilePath}`;
+  } else {
+    img.remove(); // sin foto: quedan las iniciales
+    item.classList.add('persona--sin-foto');
+  }
+  item.querySelector('.persona-iniciales').textContent = initials(name);
+  item.querySelector('.persona-nombre').textContent = name;
+  item.querySelector('.persona-personaje').textContent = character;
+  return item;
+}
+
+function renderReparto(cast) {
+  const hayReparto = cast.length > 0;
+  ficha.reparto.replaceChildren(...cast.map(createPerson));
+  ficha.reparto.hidden = !hayReparto;
+  ficha.repartoFlechas.hidden = !hayReparto;
+  ficha.repartoVacio.hidden = hayReparto;
+  ficha.reparto.scrollLeft = 0; // nueva película → empieza por la primera persona
+}
+
+/** Pura: clasificación → texto. Si no es la española, dice de qué país es. */
+const certificationText = (cert) => {
+  if (!cert) return '';
+  return cert.country === 'ES'
+    ? cert.certification
+    : `${cert.certification} (${countryName(cert.country, cert.country)})`;
+};
+
+function renderEquipo(roles) {
+  ficha.equipo.replaceChildren(...roles.flatMap(({ label, names }) => {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = names.join(', ');
+    return [dt, dd];
+  }));
+  ficha.equipo.hidden = roles.length === 0;
+}
+
+
+function handleArrowClick(event) {
+  const arrow = event.target.closest('[data-flecha]');
+  if (!arrow) return;
+  const row = document.getElementById(arrow.dataset.objetivo);
+  const direction = arrow.dataset.flecha === 'izquierda' ? -1 : 1;
+  row.scrollBy({
+    left: direction * row.clientWidth * 0.8,
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+  });
+}
+
+
+// ---------- Eventos ----------
+els.btnBuscar.addEventListener('click', togglePanel);
+els.input.addEventListener('input', debouncedSearch);
+els.input.addEventListener('keydown', handleKeydown);
+els.input.addEventListener('focus', handleFocus);
+els.results.addEventListener('click', handleResultsClick);
+els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
+els.genres.addEventListener('click', handleGenreClick);
+document.querySelectorAll('.fila-flechas')
+  .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
+pelis.pestanas.addEventListener('click', handlePestanaClick);
+pelis.mas.addEventListener('click', () => loadPeliculas(() => catalog.loadMore()));
+
+// ---------- Arranque ----------
+applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
+const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
+
+Promise.allSettled([
+  startRouter(handleRoute),
+  loadHero(hero),
+  loadRow(els.trending, () => getTrending()).then(fillEmblem),
+  initGenres(),
+]);
+

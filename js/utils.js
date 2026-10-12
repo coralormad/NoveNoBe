@@ -12,7 +12,7 @@ const hasValue = (value) => value !== undefined && value !== null && value !== '
 export function filterMovies(movies, { genreId, year, minRating } = {}) {
   return movies.filter((movie) =>
     (!hasValue(genreId) || movie.genreIds.includes(genreId)) &&
-    (!hasValue(year) || movie.year === year) &&
+    (!hasValue(year) || movie.year === String(year)) &&
     (!hasValue(minRating) || movie.rating >= minRating)
   );
 }
@@ -58,3 +58,103 @@ export const ERROR_MESSAGES = Object.freeze({
  * @returns {string}
  */
 export const getErrorMessage = (status) => ERROR_MESSAGES[status] ?? ERROR_MESSAGES.DEFAULT;
+
+/**
+ * Devuelve una versión de fn que solo se ejecuta tras `ms` sin nuevas llamadas.
+ * Ojo: no es pura (guarda un temporizador), es una función de orden superior.
+ * @param {Function} fn
+ * @param {number} [ms=400]
+ * @returns {Function}
+ */
+export function debounce(fn, ms = 400) {
+  let timerId;
+  const debounced = (...args) => {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), ms);
+  };
+  debounced.cancel = () => clearTimeout(timerId);
+  return debounced;
+}
+
+/**
+ * Traduce cualquier error a un mensaje para el usuario.
+ * Errores de la API → mensaje según su código HTTP.
+ * Errores de programación → se muestran en consola y mensaje genérico.
+ * @param {Error} error
+ * @returns {string}
+ */
+export function toUserMessage(error) {
+  if (error.name === 'ApiError') return getErrorMessage(error.status);
+  console.error(error);
+  return ERROR_MESSAGES.DEFAULT;
+}
+
+/**
+ * Devuelve los avisos vigentes en una fecha. Los que no tienen `hasta` no caducan.
+ * @param {Array<{hasta?: string}>} avisos
+ * @param {Date} today - Se pasa desde fuera para que la función sea pura.
+ * @returns {Array} Array nuevo con los avisos vigentes.
+ */
+export const filterActive = (avisos, today) =>
+  avisos.filter(({ hasta }) => !hasta || new Date(`${hasta}T23:59:59`) >= today);
+
+/**
+ * Las N primeras personas del reparto, en el orden de créditos de TMDB.
+ * @param {Array} cast - credits.cast crudo
+ * @param {number} max
+ * @returns {Array<{id, name, character, profilePath}>} Array nuevo (no muta `cast`).
+ */
+export const pickCast = (cast = [], max = 15) =>
+  [...cast]
+    .sort((a, b) => a.order - b.order)
+    .slice(0, max)
+    .map(({ id, name, character, profile_path }) => ({
+      id,
+      name,
+      character: character || '',
+      profilePath: profile_path ?? null,
+    }));
+
+// Puestos que mostramos, con los nombres de `job` que usa TMDB
+const CREW_ROLES = Object.freeze([
+  { label: 'Dirección', jobs: ['Director'] },
+  { label: 'Guion', jobs: ['Screenplay', 'Writer'] },
+  { label: 'Música', jobs: ['Original Music Composer', 'Music'] },
+  { label: 'Fotografía', jobs: ['Director of Photography'] },
+]);
+
+/**
+ * Agrupa el equipo técnico por puesto, sin nombres repetidos y sin puestos vacíos.
+ * @param {Array} crew - credits.crew crudo
+ * @returns {Array<{label: string, names: string[]}>}
+ */
+export function pickCrew(crew = []) {
+  return CREW_ROLES
+    .map(({ label, jobs }) => ({
+      label,
+      names: [...new Set(crew.filter((p) => jobs.includes(p.job)).map((p) => p.name))],
+    }))
+    .filter((role) => role.names.length > 0);
+}
+
+/**
+ * Clasificación por edad: la del primer país de la lista que la tenga.
+ * @param {Array} releaseDates - release_dates.results crudo
+ * @param {string[]} countries - Orden de preferencia (ISO 3166-1)
+ * @returns {{country: string, certification: string} | null}
+ */
+export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
+  for (const code of countries) {
+    const entry = releaseDates.find((r) => r.iso_3166_1 === code);
+    const certification = entry?.release_dates.find((d) => d.certification)?.certification;
+    if (certification) return { country: code, certification };
+  }
+  return null;
+}
+
+/**
+ * Quita películas repetidas (TMDB puede repetir una entre páginas). Se queda con la primera posición.
+ * @param {Array<Movie>} movies
+ * @returns {Array<Movie>} Array nuevo sin repetidos.
+ */
+export const uniqueById = (movies) => [...new Map(movies.map((movie) => [movie.id, movie])).values()];
