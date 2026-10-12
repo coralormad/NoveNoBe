@@ -88,3 +88,39 @@ export function saveTheme(theme) {
     return false;
   }
 }
+// ---------- Favoritas (Qué ver) ----------
+const FAVORITES_KEY = 'novenobe_favoritos';
+
+/** Pura: limpia lo leído (datos corruptos, tipos raros o repetidos) → ids enteros únicos. */
+export const sanitizeFavorites = (raw) =>
+  Array.isArray(raw) ? [...new Set(raw.filter(Number.isInteger))] : [];
+
+/** Pura: añade el id si no está y lo quita si está. Devuelve un array nuevo (no muta). */
+export const toggleFavorite = (ids, id) =>
+  ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+
+/**
+ * Lee las favoritas guardadas. Si no hay, o el JSON está roto, devuelve []. Nunca lanza.
+ * @returns {number[]}
+ */
+export function loadFavorites() {
+  try {
+    return sanitizeFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY)));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Guarda las favoritas.
+ * @param {number[]} ids
+ * @returns {boolean} true si se guardó.
+ */
+export function saveFavorites(ids) {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(sanitizeFavorites(ids)));
+    return true;
+  } catch {
+    return false;
+  }
+}

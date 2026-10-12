@@ -177,11 +177,33 @@
 
     <!-- 3. VISTA QUÉ VER -->
     <div id="vista-que-ver" class="vista" hidden>
-      <section class="que-ver">
-        <h2>¿Qué te apetece ver?</h2>
-        <p>Cuéntanos cómo te sientes y te sugerimos qué ver.</p>
-        <div id="que-ver-preguntas"></div>
-        <div id="que-ver-resultados" class="rejilla"></div>
+      <section class="que-ver" aria-labelledby="que-ver-titulo">
+        <!-- Las ventanas de enfrente: cada respuesta enciende una (decorativo, lo crea que-ver.js) -->
+        <div id="que-ver-fachada" class="qv-fachada" aria-hidden="true"></div>
+
+        <header class="qv-cabecera">
+          <p class="sobretitulo">Observatorio cinematográfico</p>
+          <h2 id="que-ver-titulo">Qué ver</h2>
+          <p class="qv-entradilla">Cuatro preguntas sobre cómo miras las historias. Cada respuesta enciende una ventana; al final, verás lo que hay detrás.</p>
+        </header>
+
+        <form id="que-ver-form" class="qv-escena" novalidate>
+          <p id="que-ver-progreso" class="qv-progreso" aria-live="polite"></p>
+          <div class="qv-rendija" aria-hidden="true"><span></span></div>
+          <fieldset id="que-ver-pregunta" class="qv-pregunta"></fieldset>
+          <p id="que-ver-aviso" class="qv-aviso" role="status"></p>
+          <div class="qv-acciones">
+            <button type="button" id="que-ver-atras" class="qv-boton qv-boton--secundario">Atrás</button>
+            <button type="submit" id="que-ver-siguiente" class="qv-boton">Siguiente</button>
+          </div>
+        </form>
+
+        <section id="que-ver-resultados" class="qv-resultados" aria-labelledby="que-ver-hallazgos" hidden>
+          <h3 id="que-ver-hallazgos" class="qv-resultados-titulo" tabindex="-1">Lo que había detrás de la ventana</h3>
+          <div id="que-ver-categorias" class="qv-categorias"></div>
+          <p class="qv-nota">Tus favoritas afinan la siguiente observación.</p>
+          <button type="button" id="que-ver-reiniciar" class="qv-boton qv-boton--secundario">Mirar de nuevo</button>
+        </section>
       </section>
     </div>
 

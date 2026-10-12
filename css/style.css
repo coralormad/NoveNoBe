@@ -1108,3 +1108,254 @@ main { padding: 2rem var(--margen-lateral); }
 /* Foco de género: la radiografía ilumina sus películas y apaga el resto */
 .rejilla .tarjeta { transition: opacity var(--dur-media) var(--curva-cine), filter var(--dur-media) var(--curva-cine); }
 .rejilla.con-foco .tarjeta:not(.en-foco) { opacity: 0.4; filter: grayscale(0.7); }
+/* 17. QUÉ VER · Observatorio cinematográfico ------------------------------------
+   Idea: la ventana de enfrente (La ventana indiscreta). Cada respuesta enciende una
+   ventana y enfoca la fachada (--enfoque de 0 a 1, desde que-ver.js). Al final, todo
+   queda nítido y las películas aparecen enfocándose. */
+.que-ver {
+  --enfoque: 0;
+  position: relative; isolation: isolate;
+  display: grid; gap: 2rem 3rem; align-items: start;
+  grid-template-areas: "cabecera" "fachada" "escena" "resultados";
+  padding: 2rem var(--margen-lateral) 3rem;
+}
+@media (min-width: 900px) {
+  .que-ver {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr; /* el alto sobrante va a la escena, no abre un hueco bajo la cabecera */
+    grid-template-areas: "cabecera fachada" "escena fachada" "resultados resultados";
+  }
+}
+
+.qv-cabecera { grid-area: cabecera; display: grid; gap: 0.6rem; max-width: 46ch; }
+.qv-cabecera h2 { font-family: var(--fuente-titulos); font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.05; }
+.qv-entradilla { color: var(--color-texto-suave); line-height: 1.55; }
+
+/* --- La fachada de enfrente: 12 ventanas que se encienden ----------------------- */
+.qv-fachada {
+  grid-area: fachada; align-self: stretch;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;
+  padding: 14px; border-radius: var(--radio);
+  background:
+    linear-gradient(to bottom, transparent, var(--color-fondo)),
+    var(--color-atenuado);
+  /* Desenfocada al empezar; nítida al responder la última pregunta */
+  filter: blur(calc((1 - var(--enfoque)) * 4px));
+  transition: filter var(--dur-lenta) var(--curva-cine);
+}
+@media (min-width: 900px) {
+  .qv-fachada { grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 20px; align-self: start; }
+}
+.qv-ventana {
+  aspect-ratio: 3 / 4; border-radius: 3px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--color-secundario) 80%, black), var(--color-secundario));
+  box-shadow: inset 0 0 0 1px var(--color-borde);
+  transition: background var(--dur-lenta) var(--curva-cine), box-shadow var(--dur-lenta) var(--curva-cine);
+}
+/* Encendida: luz cálida lavanda detrás de un visillo (rayas verticales muy suaves) */
+.qv-ventana.encendida {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgb(255 255 255 / 0.06) 6px 7px),
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--lavanda-700) 85%, transparent), color-mix(in srgb, var(--lavanda-100) 70%, var(--color-secundario)) 75%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lavanda-500) 60%, transparent), 0 0 22px color-mix(in srgb, var(--lavanda-300) 30%, transparent);
+}
+/* Como en un edificio de verdad, no todas las luces brillan igual */
+.qv-ventana.encendida:nth-child(3n) { filter: brightness(0.82); }
+.qv-ventana.encendida:nth-child(4n + 1) { filter: brightness(0.9) saturate(0.85); }
+/* Claro: de día no se ve el interior; un visillo blanco insinúa lo que hay detrás */
+:root[data-theme="claro"] .qv-ventana {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgb(255 255 255 / 0.5) 6px 7px),
+    linear-gradient(160deg, #E4DCE7, #CFC3D4);
+}
+:root[data-theme="claro"] .qv-ventana.encendida {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 6px, rgb(255 255 255 / 0.55) 6px 7px),
+    radial-gradient(circle at 50% 35%, var(--lavanda-500), var(--lavanda-100) 80%);
+  box-shadow: inset 0 0 0 1px var(--lavanda-100), 0 10px 24px -12px rgb(42 31 48 / 0.45);
+}
+
+/* --- La escena: una pregunta por plano ------------------------------------------ */
+.qv-escena { grid-area: escena; display: grid; gap: 1.1rem; min-width: 0; }
+.qv-escena[hidden], .qv-resultados[hidden] { display: none; }
+.qv-progreso {
+  font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--color-texto-suave);
+}
+/* Rendija de luz que se abre con las respuestas (la misma luz del menú y las cápsulas) */
+.qv-rendija { height: 2px; background: var(--color-borde); border-radius: 2px; overflow: hidden; }
+.qv-rendija span {
+  display: block; height: 100%; width: calc(var(--enfoque) * 100%);
+  background: linear-gradient(90deg, transparent, var(--color-foco) 30%, var(--color-foco));
+  transition: width var(--dur-lenta) var(--curva-cine);
+}
+
+.qv-pregunta { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 1.1rem; }
+.qv-pregunta-titulo {
+  padding: 0; font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
+  font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.15; text-wrap: balance;
+}
+.qv-pregunta-subtitulo { margin-top: -0.4rem; color: var(--color-texto-suave); line-height: 1.5; }
+.qv-opciones { display: grid; gap: 0.75rem; }
+@media (min-width: 600px) { .qv-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.qv-opcion {
+  position: relative; isolation: isolate; cursor: pointer;
+  display: grid; gap: 0.3rem; padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--color-borde-control); border-radius: var(--radio);
+  transition: border-color var(--dur-rapida), background-color var(--dur-rapida), transform var(--dur-rapida) var(--curva-cine);
+}
+/* El radio real sigue ahí (teclado y lectores de pantalla), pero no se ve: la opción entera es el control */
+.qv-radio { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.qv-opcion-etiqueta { font-family: var(--fuente-titulos); font-style: italic; font-size: 1.2rem; line-height: 1.2; }
+.qv-opcion-pista { font-size: 0.9rem; line-height: 1.45; color: var(--color-texto-suave); }
+/* Rendija bajo la elegida, como en las cápsulas */
+.qv-opcion::after {
+  content: ''; position: absolute; left: 1.1rem; right: 35%; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, var(--color-foco), transparent);
+  transform: scaleX(0); transform-origin: left; transition: transform 260ms var(--curva-cine);
+}
+@media (hover: hover) {
+  .qv-opcion:hover { border-color: var(--color-primario); background: var(--capsula-luz); }
+}
+.qv-opcion:has(.qv-radio:checked) {
+  border-color: var(--color-primario);
+  background: color-mix(in srgb, var(--color-primario) 12%, transparent);
+}
+.qv-opcion:has(.qv-radio:checked)::after { transform: scaleX(1); }
+.qv-opcion:has(.qv-radio:focus-visible) { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+
+.qv-aviso { min-height: 1.4em; font-size: 0.9rem; color: var(--color-foco); }
+.qv-acciones { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
+.qv-boton {
+  min-height: 44px; padding: 0.6rem 1.6rem; border-radius: 999px;
+  border: 1px solid var(--color-primario); background: var(--color-primario); color: var(--color-sobre-primario);
+  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase;
+  transition: background-color var(--dur-rapida), color var(--dur-rapida), box-shadow var(--dur-rapida);
+}
+.qv-boton:hover { box-shadow: var(--capsula-halo); }
+.qv-boton--secundario { background: none; color: var(--color-texto); border-color: var(--color-borde-control); }
+.qv-boton--secundario:hover { border-color: var(--color-primario); }
+.qv-boton[hidden] { display: none; }
+.qv-boton:focus-visible, .qv-favorita:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+
+/* --- Resultados: hallazgos que se enfocan ---------------------------------------- */
+.qv-resultados { grid-area: resultados; display: grid; gap: 1.75rem; justify-items: start; }
+.qv-resultados-titulo { font-family: var(--fuente-titulos); font-size: clamp(1.6rem, 3.5vw, 2.3rem); }
+.qv-resultados-titulo:focus { outline: none; }
+.qv-categorias { display: grid; gap: 2.25rem 2.5rem; width: 100%; }
+@media (min-width: 900px) {
+  .qv-categorias {
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-areas: "mira lateral" "ventana ventana";
+  }
+  .qv-grupo--mira { grid-area: mira; }
+  .qv-grupo--noBuscabas { grid-area: lateral; }
+  .qv-grupo--ventana { grid-area: ventana; }
+}
+.qv-grupo { display: grid; gap: 1rem; align-content: start; }
+.qv-grupo-titulo {
+  font-family: var(--fuente-detalle); font-size: 0.75rem; font-weight: 400; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--color-texto-suave);
+}
+.qv-grupo-vacio { color: var(--color-texto-suave); font-size: 0.9rem; line-height: 1.5; max-width: 40ch; }
+@media (min-width: 700px) {
+  .qv-grupo--ventana { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qv-grupo--ventana .qv-grupo-titulo { grid-column: 1 / -1; }
+}
+
+.qv-hallazgo {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 1rem 1.25rem; align-items: start;
+  animation: qv-enfocar 800ms var(--curva-cine) both;
+  animation-delay: calc(var(--orden, 0) * 150ms);
+}
+@keyframes qv-enfocar {
+  from { opacity: 0; filter: blur(12px); transform: translateY(10px); }
+}
+/* El hallazgo principal, más grande: la película «en tu punto de mira».
+   En móvil, cartel arriba y texto debajo; desde 600 px, lado a lado. */
+.qv-grupo--mira .qv-hallazgo { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.qv-grupo--mira .qv-cartel { width: min(62%, 220px); }
+@media (min-width: 600px) {
+  .qv-hallazgo { grid-template-columns: 110px minmax(0, 1fr); }
+  .qv-grupo--mira .qv-hallazgo { grid-template-columns: minmax(130px, 210px) minmax(0, 1fr); gap: 1.5rem 2rem; }
+  .qv-grupo--mira .qv-cartel { width: auto; }
+}
+.qv-grupo--mira .qv-hallazgo-titulo { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+
+.qv-cartel {
+  position: relative; aspect-ratio: 2 / 3; overflow: hidden; border-radius: var(--radio);
+  display: grid; place-items: center; padding: 0.75rem; text-align: center;
+  background:
+    radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--lavanda-300) 45%, transparent), transparent 70%),
+    linear-gradient(170deg, var(--color-secundario), var(--color-fondo));
+  box-shadow: var(--sombra-tarjeta), inset 0 0 0 1px var(--color-borde);
+  transition: transform var(--dur-media) var(--curva-cine), box-shadow var(--dur-media) var(--curva-cine);
+}
+.qv-cartela { font-family: var(--fuente-titulos); font-style: italic; font-size: 0.95rem; line-height: 1.2; color: var(--color-texto); }
+.qv-grupo--mira .qv-cartela { font-size: 1.3rem; }
+.qv-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-lenta); }
+.qv-cartel.con-poster .qv-poster { opacity: 1; }
+@media (hover: hover) {
+  .qv-hallazgo:hover .qv-cartel {
+    transform: translateY(-4px);
+    box-shadow: var(--sombra-tarjeta), 0 0 32px color-mix(in srgb, var(--color-primario) 22%, transparent);
+  }
+}
+
+.qv-hallazgo-cuerpo { display: grid; gap: 0.5rem; justify-items: start; min-width: 0; }
+.qv-hallazgo-titulo { font-family: var(--fuente-titulos); font-weight: 700; font-size: 1.2rem; line-height: 1.15; }
+.qv-hallazgo-titulo a { color: inherit; text-decoration: none; background: linear-gradient(var(--color-foco), var(--color-foco)) no-repeat 0 100% / 0 1px; transition: background-size var(--dur-media) var(--curva-cine); }
+.qv-hallazgo-titulo a:is(:hover, :focus-visible) { background-size: 100% 1px; }
+.qv-meta { font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-texto-suave); }
+.qv-sinopsis { line-height: 1.55; max-width: 60ch; }
+/* El porqué, como una pista apuntada al margen */
+.qv-motivo {
+  padding-left: 0.75rem; border-left: 2px solid var(--color-foco);
+  font-family: var(--fuente-detalle); font-size: 0.85rem; line-height: 1.5; color: var(--color-texto-suave);
+}
+/* Pista oculta: lo que no se ve a primera vista. Oscuro = revelación; claro = velada hasta acercarse */
+.qv-pista {
+  display: grid; gap: 0.2rem; padding: 0.6rem 0.8rem; border-radius: 0 var(--radio) var(--radio) 0;
+  background: color-mix(in srgb, var(--color-primario) 8%, transparent);
+  border-left: 2px solid var(--color-primario); font-size: 0.9rem; line-height: 1.45;
+}
+.qv-pista-etiqueta, .qv-pista-aviso {
+  font-family: var(--fuente-detalle); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--color-texto-suave);
+}
+.qv-pista-aviso { display: inline; } /* .solo-dia la oculta en oscuro */
+:root[data-theme="claro"] .qv-pista-texto {
+  filter: blur(3px); opacity: 0.7;
+  transition: filter var(--dur-lenta) var(--curva-cine), opacity var(--dur-lenta) var(--curva-cine);
+}
+:root[data-theme="claro"] .qv-hallazgo:is(:hover, :focus-within) .qv-pista-texto { filter: none; opacity: 1; }
+
+.qv-favorita {
+  min-height: 44px; padding: 0.45rem 1.1rem; border-radius: 999px;
+  border: 1px solid var(--color-borde-control);
+  font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+  transition: background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
+}
+.qv-favorita:hover { border-color: var(--color-primario); }
+.qv-favorita[aria-pressed="true"] { background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario); }
+
+/* «Lo que no estabas buscando»: mirado de reojo. En claro, el cartel está tras un visillo
+   que se descorre al acercarse (solo con ratón; el texto, siempre visible). */
+.qv-grupo--noBuscabas { padding-left: 1.25rem; border-left: 1px solid var(--color-borde); }
+@media (hover: hover) {
+:root[data-theme="claro"] .qv-grupo--noBuscabas .qv-cartel::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.55) 0 5px, rgb(255 255 255 / 0.3) 5px 7px);
+  backdrop-filter: blur(3px);
+  transition: opacity var(--dur-lenta) var(--curva-cine);
+}
+:root[data-theme="claro"] .qv-grupo--noBuscabas .qv-hallazgo:is(:hover, :focus-within) .qv-cartel::after { opacity: 0; }
+}
+
+.qv-nota { font-size: 0.85rem; color: var(--color-texto-suave); }
+
+@media (prefers-reduced-motion: reduce) {
+  .qv-hallazgo { animation: none; }
+  .qv-fachada, .qv-rendija span, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }
+}

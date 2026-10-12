@@ -11,6 +11,7 @@ import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 import { GenreStage } from './stage.js';
+import { QueVer } from './que-ver.js';
 
 
 const MIN_QUERY = 2;
@@ -717,6 +718,7 @@ enableCapsuleLight(radiografia.capsulas);
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
+new QueVer(document.querySelector('#vista-que-ver')); // una sola instancia: sus listeners se crean una vez
 
 Promise.allSettled([
   startRouter(handleRoute),
