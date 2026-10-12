@@ -38,7 +38,7 @@ export function countByGenre(movies, genres) {
 
   return genres
     .filter((genre) => counts[genre.id])
-    .map((genre) => ({ label: genre.name, value: counts[genre.id] }))
+    .map((genre) => ({ ids: [genre.id], label: genre.name, value: counts[genre.id] }))
     .sort((a, b) => b.value - a.value);
 }
 
@@ -158,3 +158,42 @@ export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
  * @returns {Array<Movie>} Array nuevo sin repetidos.
  */
 export const uniqueById = (movies) => [...new Map(movies.map((movie) => [movie.id, movie])).values()];
+
+/** Top N por popularidad en formato {label, value} para Chart.js. */
+export const topByPopularity = (movies, max = 5) =>
+  sortByPopularity(movies)
+    .slice(0, max)
+    .map((movie) => ({ label: movie.title, value: Math.round(movie.popularity) }));
+
+/** Deja las N primeras filas y agrupa el resto en «Otros», que guarda todos sus ids. */
+export function groupTail(rows, max = 5, otherLabel = 'Otros') {
+  if (rows.length <= max) return rows;
+  const rest = rows.slice(max);
+  const other = {
+    ids: rest.flatMap((row) => row.ids ?? []),
+    label: otherLabel,
+    value: rest.reduce((sum, row) => sum + row.value, 0),
+  };
+  return [...rows.slice(0, max), other];
+}
+
+// Cómo se dice cada lista en el titular
+const LIST_CONTEXT = Object.freeze({
+  popular: 'en lo más popular',
+  top_rated: 'en lo mejor valorado',
+  now_playing: 'en los cines',
+  upcoming: 'en los próximos estrenos',
+});
+
+/** Titular del cartel a partir de datos reales. Nunca inventa: sin datos, lo dice. */
+export function headline(genreStats, total, list) {
+  if (genreStats.length === 0 || total === 0) return 'Aún no hay películas que analizar.';
+  const [{ label, value }] = genreStats; // el primero es el mayor (countByGenre ya ordena)
+  return `${label} manda ${LIST_CONTEXT[list] ?? 'en el catálogo'}: ${value} de ${total} películas.`;
+}
+
+/** Texto para lectores de pantalla: «Drama: 12, Acción: 8…». */
+export const describeRows = (rows) => rows.map(({ label, value }) => `${label}: ${value}`).join(', ');
+
+/** ¿La película comparte algún género con los del foco? */
+export const sharesGenre = (genreIds, focusIds) => genreIds.some((id) => focusIds.includes(id));

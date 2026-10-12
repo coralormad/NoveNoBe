@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification } from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, topByPopularity, groupTail, headline, sharesGenre} from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -9,6 +9,7 @@ import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
+import { CatalogCharts } from './charts.js';
 
 
 const MIN_QUERY = 2;
@@ -117,6 +118,7 @@ const cardTemplate = document.querySelector('#plantilla-tarjeta');
 function createCard(movie) {
   const card = cardTemplate.content.firstElementChild.cloneNode(true);
   card.dataset.id = movie.id;
+  card.dataset.generos = movie.genreIds.join(' ');
 
   const link = card.querySelector('.tarjeta-enlace');
   link.href = movieHref(movie.id);
@@ -306,7 +308,7 @@ function showView(nombre) {
   });
 }
 
-// Películas y Mi lista comparten la misma vista HTML (#vista-catalogo)
+// Mi lista usa la vista genérica de catálogo (#vista-catalogo)
 const VISTA_HTML = Object.freeze({ 'mi-lista': 'catalogo' });
 const TITULO_CATALOGO = Object.freeze({ 'mi-lista': 'Mi lista' });
 const catalogoTitulo = document.querySelector('#catalogo-titulo');
@@ -353,9 +355,42 @@ const pelis = {
   mas: document.querySelector('#peliculas-mas'),
 };
 
+const radiografia = {
+  titular: document.querySelector('#radiografia-titular'),
+  detalle: document.querySelector('#radiografia-detalle'),
+};
+const catalogCharts = new CatalogCharts(
+  document.querySelector('#grafica-generos'),
+  document.querySelector('#grafica-popularidad'),
+  { onGenreFocus: setGenreFocus },
+);
+
+/** Recalcula titular y gráficas con las películas que se ven. */
+async function updateRadiografia(movies) {
+  try {
+    const genreStats = countByGenre(movies, await getGenres());
+    radiografia.titular.textContent = headline(genreStats, movies.length, catalog.list);
+    radiografia.detalle.textContent = `Calculado sobre las ${movies.length} películas cargadas · datos de TMDB`;
+    catalogCharts.update({ genres: groupTail(genreStats, 5), popularity: topByPopularity(movies, 5) });
+  } catch (error) {
+    radiografia.titular.textContent = toUserMessage(error);
+  }
+}
+
 function renderPeliculas(movies) {
   pelis.rejilla.replaceChildren(...movies.map(createCard));
   pelis.mas.hidden = !catalog.hasMore;
+  updateRadiografia(movies);
+}
+
+/** Ilumina las películas de los géneros del foco; sin foco, todas normales. */
+function setGenreFocus(ids) {
+  const activo = ids.length > 0;
+  pelis.rejilla.classList.toggle('con-foco', activo);
+  for (const card of pelis.rejilla.children) {
+    const generos = card.dataset.generos ? card.dataset.generos.split(' ').map(Number) : [];
+    card.classList.toggle('en-foco', activo && sharesGenre(generos, ids));
+  }
 }
 
 /** Ejecuta una acción del catálogo (load o loadMore) con estado de carga y errores. */

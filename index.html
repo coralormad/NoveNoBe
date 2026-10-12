@@ -21,6 +21,8 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+          integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -193,12 +195,36 @@
           <button type="button" data-lista="now_playing" aria-pressed="false">En cines</button>
           <button type="button" data-lista="upcoming" aria-pressed="false">Próximamente</button>
         </div>
-        <!-- Sub-paso 3: radiografía del catálogo · Sub-paso 2: filtros -->
+
+        <section id="radiografia" class="radiografia" aria-labelledby="radiografia-titular">
+          <div class="radiografia-texto">
+            <p class="sobretitulo">Radiografía del catálogo</p>
+            <p id="radiografia-titular" class="radiografia-titular">Revelando la película…</p>
+            <p id="radiografia-detalle" class="radiografia-detalle"></p>
+          </div>
+          <div class="radiografia-grafica">
+            <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
+          </div>
+          <div class="radiografia-grafica">
+            <canvas id="grafica-popularidad" role="img" aria-label="Gráfica de popularidad"></canvas>
+          </div>
+        </section>
+
+        <!-- Sub-paso 2: filtros -->
         <p id="peliculas-estado" class="fila-mensaje" role="status"></p>
         <div id="peliculas-rejilla" class="rejilla"></div>
         <button type="button" id="peliculas-mas" class="boton-mas" hidden>Cargar más películas</button>
       </section>
-    </div>
+    </div> <!-- /vista-peliculas -->
+
+
+    <!-- 4. VISTA CATÁLOGO (Mi lista) -->
+    <div id="vista-catalogo" class="vista" hidden>
+      <section class="catalogo">
+        <h2 id="catalogo-titulo"></h2>
+        <div id="catalogo-grid" class="rejilla"></div>
+      </section>
+    </div> <!-- /vista-catalogo -->
   
     <!-- 5. VISTA FICHA (#/pelicula/:id) -->
     <div id="vista-ficha" class="vista" hidden>
@@ -234,43 +260,25 @@
           <div class="ficha-cuerpo">
             <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
               <div class="fila-cabecera">
-                  <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
-                  <div class="fila-flechas" id="reparto-flechas">
-                     <button type="button" data-flecha="izquierda" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la izquierda">‹</button>
-                     <button type="button" data-flecha="derecha" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la derecha">›</button>
-                  </div>  
+                <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+                <div class="fila-flechas" id="reparto-flechas">
+                  <button type="button" data-flecha="izquierda" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la izquierda">‹</button>
+                  <button type="button" data-flecha="derecha" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la derecha">›</button>
+                </div>
               </div>
               <ul id="ficha-reparto" class="carrusel carrusel-reparto"></ul>
               <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
             </section>
-          </div>
 
             <section id="seccion-mapa" class="ficha-seccion" aria-labelledby="ficha-mapa-titulo" tabindex="-1">
               <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
               <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
               <p id="ficha-paises" class="ficha-paises"></p>
             </section>
-          </div>
-        </div>
-
-          <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
-          <div class="ficha-cuerpo">
-            <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
-            <p id="ficha-meta" class="ficha-meta"></p>
-            <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-            <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
-
-            <!-- Pasos 3-5: reparto, «Lo que no se ve», recomendadas -->
-
-            <section class="ficha-seccion" aria-labelledby="ficha-mapa-titulo">
-              <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
-              <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
-              <p id="ficha-paises" class="ficha-paises"></p>
-            </section>
-          </div>
-        </div>
+          </div> <!-- /ficha-cuerpo -->
+        </div> <!-- /ficha-contenido -->
       </article>
-    </div>
+    </div> <!-- /vista-ficha -->
   </main>
   
   <!-- 6. FOOTER -->
