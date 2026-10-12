@@ -179,12 +179,16 @@ const LIST_CONTEXT = Object.freeze({
   upcoming: 'en los próximos estrenos',
 });
 
-/** Titular del cartel a partir de datos reales. Nunca inventa: sin datos, lo dice. */
-export function headline(genreStats, total, list) {
-  if (genreStats.length === 0 || total === 0) return 'Aún no hay películas que analizar.';
-  const [{ label, value }] = genreStats; // el primero es el mayor (countByGenre ya ordena)
-  return `${label} manda ${LIST_CONTEXT[list] ?? 'en el catálogo'}: ${value} de ${total} películas.`;
+/** Titular del cartel a partir de datos reales, sin cifras. Sin datos, lo dice. */
+export function headline(genreStats, list) {
+  if (genreStats.length === 0) return 'Aún no hay películas que mostrar.';
+  const [{ label }] = genreStats; // el primero es el mayor (countByGenre ya ordena)
+  return `${label} manda ${LIST_CONTEXT[list] ?? 'en el catálogo'}.`;
 }
+
+/** Pura: nombres de los géneros de una película («Drama · Crimen»), como mucho `max`. */
+export const genreNames = (ids, genres, max = 2) =>
+  ids.map((id) => genres.find((genre) => genre.id === id)?.name).filter(Boolean).slice(0, max).join(' · ');
 
 /** Texto para lectores de pantalla: «Drama: 12, Acción: 8…». */
 export const describeRows = (rows) => rows.map(({ label, value }) => `${label}: ${value}`).join(', ');

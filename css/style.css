@@ -563,7 +563,7 @@ main { padding: 2rem var(--margen-lateral); }
 @media (hover: none) { .hero-reloj.activo { animation: none; } }
 
 /* Navegación por los bordes: aparece según la cercanía del cursor */
-.hero { --prox-anterior: 0; --prox-siguiente: 0; }
+:is(.hero, .escaparate-marco) { --prox-anterior: 0; --prox-siguiente: 0; }
 .hero-borde {
   position: absolute; top: 0; bottom: 0; z-index: 3; width: 12%;
   display: flex; align-items: center;
@@ -593,7 +593,7 @@ main { padding: 2rem var(--margen-lateral); }
 .hero-borde:active svg { scale: 0.95; }
 .hero-borde:focus-visible { outline: none; --p: 1; }
 .hero-borde:focus-visible svg { outline: 2px solid var(--color-foco); outline-offset: 8px; border-radius: 4px; }
-@media (hover: none) { .hero { --prox-anterior: 0.6; --prox-siguiente: 0.6; } }
+@media (hover: none) { :is(.hero, .escaparate-marco) { --prox-anterior: 0.6; --prox-siguiente: 0.6; } }
 
 /* Índice: mirillas de la puerta del 9ºB. Tapa cerrada = no ve; abierta = ve */
 .hero-indice {
@@ -944,17 +944,39 @@ main { padding: 2rem var(--margen-lateral); }
 .caratula-img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
 .escaparate-item:not(.activa) .caratula-img { filter: brightness(0.65); }
 
-.escaparate-pie { display: flex; align-items: center; justify-content: center; gap: 1rem; }
 .escaparate-info {
   font-family: var(--fuente-titulos); font-size: 1.1rem; line-height: 1.25;
   text-align: center; text-wrap: balance; max-width: 30ch; min-height: 2.5em;
 }
-.escaparate-flecha {
-  width: 44px; height: 44px; border-radius: 50%; flex: none;
-  border: 1px solid var(--color-borde-control); font-size: 1.4rem;
-  transition: background-color var(--dur-rapida);
+
+/* ---------- Escaparate: flechas del hero a la altura exacta de la carátula ---------- */
+.escaparate { height: 285px; } /* = alto de la carátula (190 × 1,5): la flecha cae en su centro */
+.escaparate-marco { position: relative; touch-action: pan-y; }
+.escaparate-marco .borde-nav { width: 16%; }
+.borde-nav:disabled { visibility: hidden; }
+
+/* ---------- Título de la película activa: protagonista ---------- */
+.escaparate-info { display: grid; justify-items: center; gap: 0.4rem; min-height: 4.2em; text-align: center; }
+.escaparate-titulo {
+  font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem); line-height: 1.15;
+  text-wrap: balance; max-width: 22ch; color: var(--color-primario);
 }
-.escaparate-flecha:hover { background: var(--color-secundario); }
+/* La misma rendija de luz del menú y las cápsulas, bajo el título */
+.escaparate-titulo::after {
+  content: ''; display: block; width: 55%; height: 2px; margin: 0.5rem auto 0;
+  background: linear-gradient(90deg, transparent, var(--color-foco) 25%, var(--color-foco) 75%, transparent);
+}
+.escaparate-generos {
+  font-family: var(--fuente-detalle); font-size: 0.72rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--color-texto-suave);
+}
+
+/* Controles del escaparate: los mismos del hero (bordes por cercanía y mirillas) */
+.escaparate-marco { position: relative; touch-action: pan-y; }
+.escaparate-marco .borde-nav { width: 18%; }
+.borde-nav:disabled { visibility: hidden; }
+.escaparate-indice { display: flex; justify-content: center; gap: 1.25rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .escaparate-item { transition: opacity 200ms; }

@@ -81,7 +81,7 @@ function renderMessage(text) {
 }
 
 function renderResults(movies) {
-  if (movies.length === 0) return renderMessage('Sin resultados.');
+  if (catalog.list === 0) return renderMessage('Sin resultados.');
 
   const items = movies.map((movie) => {
     const li = document.createElement('li');
@@ -143,7 +143,7 @@ function renderRowMessage(container, text) {
 }
 
 function renderRow(container, movies) {
-  if (movies.length === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
+  if (catalog.list === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
   container.replaceChildren(...movies.map(createCard));
 }
 
@@ -249,7 +249,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     const data = await searchMovies(query, { signal: controller.signal });
     const movies = data.results.map((item) => new Movie(item));
     renderResults(movies);
-    if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
+    if (save && catalog.list > 0) saveHistory(addQuery(loadHistory(), query));
   } catch (error) {
     if (error.name === 'AbortError') return;
     renderMessage(toUserMessage(error));
@@ -360,7 +360,7 @@ const pelis = {
 
 const radiografia = {
   titular: document.querySelector('#radiografia-titular'),
-  detalle: document.querySelector('#radiografia-detalle'),
+  escena: document.querySelector('#radiografia-escena'),
   capsulas: document.querySelector('#radiografia-capsulas'),
   genero: '', // id del género elegido como texto ('' = todos)
   filas: [],  // filas del doughnut (top 5 + Otros)
@@ -372,10 +372,14 @@ const catalogCharts = new CatalogCharts(
   { onGenreFocus: setGenreFocus },
 );
 
-const escaparate = new GenreStage(
-  document.querySelector('#escaparate'),
-  document.querySelector('#escaparate-info'),
-);
+const escaparate = new GenreStage({
+  marco: document.querySelector('#escaparate-marco'),
+  lista: document.querySelector('#escaparate'),
+  titulo: document.querySelector('#escaparate-titulo'),
+  generos: document.querySelector('#escaparate-generos'),
+  anterior: document.querySelector('#escaparate-anterior'),
+  siguiente: document.querySelector('#escaparate-siguiente'),
+});
 
 /** El escaparate sigue al mismo filtro que la rejilla: una sola fuente de verdad. */
 function renderEscaparate() {
@@ -388,9 +392,8 @@ async function updateRadiografia(movies) {
   try {
     const genreStats = countByGenre(movies, await getGenres());
     radiografia.filas = groupTail(genreStats, 5);
-    radiografia.general = headline(genreStats, movies.length, catalog.list);
+    radiografia.general = headline(genreStats, catalog.list);
     pintarTitular();
-    radiografia.detalle.textContent = `Calculado sobre las ${movies.length} películas cargadas · datos de TMDB`;
     catalogCharts.update({ genres: radiografia.filas });
     renderCapsulas(genreStats);
   } catch (error) {
@@ -494,7 +497,7 @@ async function loadPeliculas(action, { enfocarNuevas = false } = {}) {
   pelis.estado.textContent = 'Subiendo la persiana…';
   try {
     const movies = await action();
-    pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
+    pelis.estado.textContent = catalog.list ? '' : 'No hay películas que mostrar.';
     renderPeliculas(movies);
     if (enfocarNuevas && antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
   } catch (error) {
@@ -682,10 +685,6 @@ radiografia.capsulas.addEventListener('pointerleave', () => previewCapsula(radio
 radiografia.capsulas.addEventListener('focusin', (event) => previewCapsula(event.target.dataset.genero ?? ''));
 radiografia.capsulas.addEventListener('focusout', (event) => {
   if (!radiografia.capsulas.contains(event.relatedTarget)) previewCapsula(radiografia.genero);
-});
-document.querySelector('.escaparate-pie').addEventListener('click', (event) => {
-  const flecha = event.target.closest('[data-paso]');
-  if (flecha) escaparate.step(Number(flecha.dataset.paso));
 });
 
 /** La luz de cada cápsula sigue al ratón. Reutiliza la función pura de la inclinación. */
