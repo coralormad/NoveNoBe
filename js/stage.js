@@ -1,11 +1,15 @@
 // Escaparate: las películas más populares del género elegido, en abanico 3D.
-// Flechas del hero en los laterales (aparecen al acercar el cursor) y deslizar en táctil.
+// Se navega arrastrando (ratón y táctil), pulsando una vecina, con ← → o con las flechas del hero,
+// que aparecen al acercar el cursor a cada lateral. Con ratón, el cursor es un halo de luz.
 import { movieHref } from './router.js';
 import { proximity } from './hero.js';
 import { tiltFromPointer } from './tilt.js';
 
 const MAX = 5;
-const SWIPE_MIN = 40; // px que hay que deslizar para cambiar de película
+const PASO = 0.62;            // separación entre carátulas, en anchos de carátula (= el 62 % del CSS)
+const UMBRAL_ARRASTRE = 6;    // px que hay que mover antes de que cuente como arrastre y no como clic
+const INERCIA_MS = 150;       // cuánto «sigue» el gesto al soltar, según la velocidad
+const RESISTENCIA = 0.3;      // en los extremos, el abanico cede solo un 30 % (efecto goma)
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 const ALCANCE_LUZ = 1.1; // en anchos de carátula: más allá, la luz no llega
 
@@ -18,6 +22,26 @@ export function cardLight(pointerX, rect, alcance = ALCANCE_LUZ) {
   return Math.max(0, 1 - distancia / alcance) ** 2;
 }
 
+/** Pura: px arrastrados → desplazamiento en carátulas (positivo = hacia la siguiente). */
+export const dragShift = (dx, cardWidth) => -dx / (cardWidth * PASO);
+
+/** Pura: dentro de [min, max] no cambia; fuera, cede solo una parte (efecto goma). */
+export function rubberBand(shift, min, max) {
+  if (shift < min) return min - (min - shift) * RESISTENCIA;
+  if (shift > max) return max + (shift - max) * RESISTENCIA;
+  return shift;
+}
+
+/**
+ * Pura: película en la que se detiene el abanico al soltar.
+ * Suma una inercia moderada según la velocidad (px/ms) y redondea a la carátula más cercana.
+ */
+export function snapIndex({ activa, shift, velocidad, cardWidth, total }) {
+  const inercia = dragShift(velocidad * INERCIA_MS, cardWidth);
+  const destino = Math.round(activa + shift + inercia);
+  return Math.min(Math.max(destino, 0), total - 1);
+}
+
 export class GenreStage {
   #els;
   #movies = [];
@@ -27,11 +51,17 @@ export class GenreStage {
   #pointerX = 0;
   #pointerY = 0;
   #dentro = false; // ¿hay un ratón dentro del carrusel?
-  #swipe = null;
+  #halo;                 // halo de luz que sustituye al cursor dentro del carrusel
+  #drag = null;          // gesto en curso: { id, x, y, dx, arrastrando, velocidad, ultimo }
+  #bloquearClic = false; // el clic que llega al soltar un arrastre no debe abrir la película
 
   /** @param {{marco, lista, titulo, generos, anterior, siguiente}} els */
   constructor(els) {
     this.#els = els;
+    this.#halo = document.createElement('div');
+    this.#halo.className = 'cursor-halo';
+    this.#halo.setAttribute('aria-hidden', 'true'); // decorativo: los lectores de pantalla lo ignoran
+    els.marco.append(this.#halo);
     els.lista.addEventListener('click', (event) => this.#onClick(event));
     els.lista.addEventListener('keydown', (event) => this.#onKeydown(event));
     els.anterior.addEventListener('click', () => this.step(-1));
@@ -39,15 +69,29 @@ export class GenreStage {
     els.marco.addEventListener('pointermove', (event) => this.#trackPointer(event));
     els.marco.addEventListener('pointerleave', () => {
       this.#dentro = false;
+      this.#els.lista.style.removeProperty('--px');
       this.#setProximity(0, 0);
+      this.#halo.classList.remove('visible');
       this.#apagar();
     });
     // Tras moverse el abanico (flechas, teclado, clic), la luz se recoloca donde está el cursor
     els.lista.addEventListener('transitionend', (event) => {
       if (event.propertyName === 'transform' && this.#dentro) this.#pedirFotograma();
     });
-    els.marco.addEventListener('pointerdown', (event) => this.#startSwipe(event));
-    els.marco.addEventListener('pointerup', (event) => this.#endSwipe(event));
+    // Arrastre: mismo código para ratón, dedo y lápiz (Pointer Events)
+    els.marco.addEventListener('pointerdown', (event) => this.#empezarArrastre(event));
+    els.marco.addEventListener('pointermove', (event) => this.#moverArrastre(event));
+    els.marco.addEventListener('pointerup', (event) => this.#soltar(event));
+    els.marco.addEventListener('pointercancel', (event) => this.#soltar(event, { cancelado: true }));
+    // En fase de captura: se frena antes de que el enlace abra la ficha
+    els.marco.addEventListener('click', (event) => {
+      if (!this.#bloquearClic) return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.#bloquearClic = false;
+    }, true);
+    // Sin esto, el navegador arrastraría la imagen o el enlace en lugar del abanico
+    els.lista.addEventListener('dragstart', (event) => event.preventDefault());
   }
 
   /**
@@ -90,21 +134,33 @@ export class GenreStage {
     img.width = 342;
     img.height = 513;
     img.decoding = 'async';
+    img.draggable = false;
 
     enlace.append(img);
     item.append(enlace);
     return item;
   }
 
+  /**
+   * Posición de cada carátula respecto a la activa. Con `shift` (arrastre) las posiciones son
+   * decimales: el abanico se desliza de forma continua en vez de saltar de una a otra.
+   */
+  #posicionar(shift = 0) {
+    [...this.#els.lista.children].forEach((item, i) => {
+      const pos = i - this.#activa - shift;
+      item.style.setProperty('--pos', pos.toFixed(3));
+      item.style.setProperty('--dist', Math.abs(pos).toFixed(3));
+    });
+  }
+
   /** Coloca cada carátula según su distancia a la activa y sincroniza flechas y título. */
   #colocar() {
     const { lista, generos, anterior, siguiente } = this.#els;
+    this.#posicionar();
     [...lista.children].forEach((item, i) => {
-      const pos = i - this.#activa;
-      item.style.setProperty('--pos', pos);
-      item.style.setProperty('--dist', Math.abs(pos));
-      item.classList.toggle('activa', pos === 0);
-      item.querySelector('a').tabIndex = pos === 0 ? 0 : -1; // tabulación itinerante
+      const activa = i === this.#activa;
+      item.classList.toggle('activa', activa);
+      item.querySelector('a').tabIndex = activa ? 0 : -1; // tabulación itinerante
     });
     // En los extremos, la flecha que no lleva a ninguna parte se oculta
     anterior.disabled = this.#activa === 0;
@@ -142,12 +198,14 @@ export class GenreStage {
     this.#els.lista.children[this.#activa]?.querySelector('a').focus();
   }
 
-  /** Cercanía del cursor a cada lateral, como mucho una vez por fotograma (igual que el hero). */
+  /** Posición del ratón para la luz y el paralaje, como mucho una vez por fotograma. */
   #trackPointer(event) {
     if (event.pointerType !== 'mouse') return; // en táctil no hay cursor: ninguna carátula se queda iluminada
     this.#pointerX = event.clientX;
     this.#pointerY = event.clientY;
     this.#dentro = true;
+    // Sobre algo que se puede pulsar (la carátula activa o una flecha), el halo se abre
+    this.#halo.classList.toggle('sobre-accion', Boolean(event.target.closest('.activa a, .borde-nav')));
     this.#pedirFotograma();
   }
 
@@ -157,9 +215,15 @@ export class GenreStage {
     this.#frame = requestAnimationFrame(() => {
       this.#frame = 0;
       if (!this.#dentro) return; // el ratón salió antes de este fotograma
-      const { left, width } = this.#els.marco.getBoundingClientRect();
-      const x = (this.#pointerX - left) / width;
+      const { left, top, width } = this.#els.marco.getBoundingClientRect();
+      // El halo se coloca con translate (no con left/top): solo recompone, no recalcula el layout
+      this.#halo.style.setProperty('--hx', `${(this.#pointerX - left).toFixed(1)}px`);
+      this.#halo.style.setProperty('--hy', `${(this.#pointerY - top).toFixed(1)}px`);
+      this.#halo.classList.add('visible');
+      const x = Math.min(Math.max((this.#pointerX - left) / width, 0), 1);
       this.#setProximity(proximity(x), proximity(1 - x));
+      // Paralaje: el punto de fuga sigue a la mirada (-1 a la izquierda, 1 a la derecha)
+      this.#els.lista.style.setProperty('--px', ((x - 0.5) * 2).toFixed(3));
       this.#iluminar();
     });
   }
@@ -197,17 +261,67 @@ export class GenreStage {
     this.#els.marco.style.setProperty('--prox-siguiente', next.toFixed(3));
   }
 
-  #startSwipe(event) {
-    if (event.pointerType === 'mouse') return;
-    this.#swipe = { x: event.clientX, y: event.clientY };
+  #empezarArrastre(event) {
+    this.#bloquearClic = false;
+    if (event.button !== 0 || this.#movies.length < 2) return; // solo botón principal y si hay adónde ir
+    this.#drag = {
+      id: event.pointerId, x: event.clientX, y: event.clientY, dx: 0,
+      arrastrando: false, velocidad: 0, ultimo: { x: event.clientX, t: event.timeStamp },
+    };
   }
 
-  /** Deslizar en horizontal cambia de película; en vertical se deja hacer scroll. */
-  #endSwipe(event) {
-    if (!this.#swipe) return;
-    const dx = event.clientX - this.#swipe.x;
-    const dy = event.clientY - this.#swipe.y;
-    this.#swipe = null;
-    if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy)) this.step(dx < 0 ? 1 : -1);
+  #moverArrastre(event) {
+    const drag = this.#drag;
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+
+    if (!drag.arrastrando) {
+      if (Math.abs(dx) < UMBRAL_ARRASTRE) return;      // todavía puede ser un clic
+      if (Math.abs(dy) > Math.abs(dx)) {               // gesto vertical: es scroll, no arrastre
+        this.#drag = null;
+        return;
+      }
+      drag.arrastrando = true;
+      this.#els.marco.setPointerCapture(drag.id); // sigue recibiendo el gesto aunque salga del carrusel
+      this.#els.marco.classList.add('arrastrando');
+    }
+
+    // Velocidad suavizada (px/ms) para la inercia al soltar
+    const dt = event.timeStamp - drag.ultimo.t;
+    if (dt > 0) drag.velocidad = 0.8 * ((event.clientX - drag.ultimo.x) / dt) + 0.2 * drag.velocidad;
+    drag.ultimo = { x: event.clientX, t: event.timeStamp };
+    drag.dx = dx;
+
+    this.#posicionar(this.#shiftActual());
+  }
+
+  #soltar(event, { cancelado = false } = {}) {
+    const drag = this.#drag;
+    if (!drag || event.pointerId !== drag.id) return;
+    this.#drag = null;
+    if (!drag.arrastrando) return; // fue un clic normal: lo gestiona #onClick o el enlace
+
+    this.#els.marco.classList.remove('arrastrando'); // vuelven las transiciones: el abanico se asienta suave
+    this.#bloquearClic = !cancelado;
+    const destino = cancelado ? this.#activa : snapIndex({
+      activa: this.#activa,
+      shift: this.#shiftActual(drag.dx),
+      velocidad: drag.velocidad,
+      cardWidth: this.#anchoCaratula(),
+      total: this.#movies.length,
+    });
+    this.activate(destino);
+  }
+
+  /** Desplazamiento del arrastre en carátulas, con goma en los extremos. */
+  #shiftActual(dx = this.#drag?.dx ?? 0) {
+    const shift = dragShift(dx, this.#anchoCaratula());
+    return rubberBand(shift, -this.#activa, this.#movies.length - 1 - this.#activa);
+  }
+
+  /** Ancho real de una carátula (offsetWidth ignora las transformaciones 3D). */
+  #anchoCaratula() {
+    return this.#els.lista.children[this.#activa]?.offsetWidth || 190;
   }
 }

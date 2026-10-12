@@ -940,10 +940,20 @@ main { padding: 2rem var(--margen-lateral); }
 
 .proyeccion { grid-area: proyeccion; display: grid; gap: 1rem; min-width: 0; }
 
-/* Abanico: la posición de cada carátula sale de su distancia a la activa (--pos, --dist) */
+/* Abanico: la posición de cada carátula sale de su distancia a la activa (--pos, --dist).
+   Con el arrastre, --pos y --dist son decimales y el abanico se desliza de forma continua. */
 .escaparate {
   position: relative; perspective: 1000px; transform-style: preserve-3d;
-  height: 285px; /* = alto de la carátula (190 × 1,5): las flechas caen en su centro */
+  height: 285px; /* = alto de la carátula (190 × 1,5) */
+  pointer-events: none; /* las carátulas van «detrás» del plano de la lista: sin esto, la lista se queda los clics */
+}
+.escaparate-item { pointer-events: auto; }
+/* Paralaje: el punto de fuga sigue al ratón (--px de -1 a 1, desde stage.js). Como mirar por una ventana. */
+@media (prefers-reduced-motion: no-preference) {
+  .escaparate {
+    perspective-origin: calc(50% + var(--px, 0) * 12%) 50%;
+    transition: perspective-origin 600ms var(--curva-cine);
+  }
 }
 .escaparate-item {
   position: absolute; left: 50%; top: 0; width: 190px; margin-left: -95px;
@@ -971,11 +981,14 @@ main { padding: 2rem var(--margen-lateral); }
 .escaparate .caratula-img {
   transition: filter 260ms var(--curva-cine);
 }
-.escaparate-item.activa .caratula-img {
-  filter: brightness(calc(1 + var(--luz, 0) * 0.08)) contrast(calc(1 + var(--luz, 0) * 0.06));
-}
-.escaparate-item:not(.activa) .caratula-img {
-  filter: brightness(calc(0.65 + var(--luz, 0) * 0.3)) contrast(calc(1 + var(--luz, 0) * 0.06));
+/* El brillo depende de la distancia a la posición central (--dist), no de la clase .activa:
+   al arrastrar, la película que llega se va encendiendo poco a poco y la que se va, apagando.
+   Con --dist entero da los mismos valores de antes (1 la activa, 0.65 las demás). */
+.escaparate .caratula-img {
+  --cerca: min(var(--dist, 0), 1); /* 0 en el centro, 1 desde la primera vecina */
+  filter:
+    brightness(calc(1 - var(--cerca) * 0.35 + var(--luz, 0) * (0.08 + var(--cerca) * 0.22)))
+    contrast(calc(1 + var(--luz, 0) * 0.06));
 }
 /* Foco: un círculo de luz suave donde está el cursor. Solo en la carátula protagonista (--foco 0/1). */
 .escaparate .caratula::after {
@@ -986,8 +999,45 @@ main { padding: 2rem var(--margen-lateral); }
   transition: opacity 300ms var(--curva-cine);
 }
 
-/* Flechas: las mismas del hero, dentro del carrusel y pegadas a sus extremos */
-.escaparate-marco { position: relative; touch-action: pan-y; }
+/* Arrastre: pan-y deja el scroll vertical al navegador y nos da el gesto horizontal */
+.escaparate-marco { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+
+/* Halo de luz en lugar del cursor (solo ratón: en táctil no hay cursor que sustituir).
+   Oscuro: una linterna lavanda. Claro: un aro violeta sobre el papel.
+   Doble aro (color + contorno de contraste): se ve sobre pósteres claros y oscuros. */
+.escaparate-marco {
+  --halo-nucleo: var(--color-primario);
+  --halo-luz: color-mix(in srgb, var(--lavanda-300) 35%, transparent);
+  --halo-borde: color-mix(in srgb, var(--color-primario) 55%, transparent);
+  --halo-contorno: rgb(8 4 10 / 0.45); /* contraste sobre pósteres muy claros */
+}
+:root[data-theme="claro"] .escaparate-marco {
+  --halo-luz: color-mix(in srgb, var(--lavanda-500) 35%, transparent);
+  --halo-borde: color-mix(in srgb, var(--color-primario) 60%, transparent);
+  --halo-contorno: rgb(255 255 255 / 0.6); /* contraste sobre pósteres oscuros */
+}
+.cursor-halo { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .escaparate-marco, .escaparate-marco * { cursor: none; } /* ni mano ni flecha: la mirada es la luz */
+  .cursor-halo {
+    display: block; position: absolute; left: 0; top: 0; z-index: 30;
+    width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    pointer-events: none; /* nunca se interpone entre el ratón y las películas */
+    translate: var(--hx, 0) var(--hy, 0);
+    background: radial-gradient(circle, var(--halo-nucleo) 0 2.5px, var(--halo-contorno) 2.5px 3.5px, var(--halo-luz) 4.5px, transparent 70%);
+    box-shadow: inset 0 0 0 1px var(--halo-borde), 0 0 0 1px var(--halo-contorno);
+    opacity: 0; scale: 0.6;
+    transition: opacity 200ms, scale 260ms var(--curva-cine);
+  }
+  .cursor-halo.visible { opacity: 1; scale: 1; }
+  .cursor-halo.visible.sobre-accion { scale: 1.3; }              /* se abre: aquí se puede pulsar */
+  .escaparate-marco.arrastrando .cursor-halo { scale: 0.8; }     /* se concentra mientras arrastras */
+}
+@media (prefers-reduced-motion: reduce) { .cursor-halo { transition: opacity 200ms; } }
+/* Mientras se arrastra, las carátulas siguen al dedo sin retraso; al soltar vuelve la transición */
+.escaparate-marco.arrastrando .escaparate-item { transition: none; }
+
+/* Flechas: las del hero, en los extremos del carrusel; aparecen según la cercanía del cursor */
 .escaparate-marco .borde-nav { width: 16%; z-index: 20; } /* por encima de las carátulas (z-index máx. 10) */
 .escaparate-marco .borde-nav svg { margin-inline: 0.5rem; }
 .borde-nav:disabled { visibility: hidden; }
