@@ -82,7 +82,7 @@ function renderMessage(text) {
 }
 
 function renderResults(movies) {
-  if (catalog.list === 0) return renderMessage('Sin resultados.');
+  if (movies.length === 0) return renderMessage('Sin resultados.');
 
   const items = movies.map((movie) => {
     const li = document.createElement('li');
@@ -144,7 +144,7 @@ function renderRowMessage(container, text) {
 }
 
 function renderRow(container, movies) {
-  if (catalog.list === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
+  if (movies.length === 0) return renderRowMessage(container, 'No hay películas que mostrar.');
   container.replaceChildren(...movies.map(createCard));
 }
 
@@ -250,7 +250,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     const data = await searchMovies(query, { signal: controller.signal });
     const movies = data.results.map((item) => new Movie(item));
     renderResults(movies);
-    if (save && catalog.list > 0) saveHistory(addQuery(loadHistory(), query));
+    if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
   } catch (error) {
     if (error.name === 'AbortError') return;
     renderMessage(toUserMessage(error));
@@ -508,7 +508,7 @@ async function loadPeliculas(action, { enfocarNuevas = false } = {}) {
   try {
     const movies = await action();
     radiografia.generos = await getGenres().catch(() => []); // en caché: no repite la petición
-    pelis.estado.textContent = catalog.list ? '' : 'No hay películas que mostrar.';
+    pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
     renderPeliculas(movies);
     if (enfocarNuevas && antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
   } catch (error) {
