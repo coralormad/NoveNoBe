@@ -1139,6 +1139,7 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina-reescribir,
 .maquina[data-revelada] :is(.maquina-placa, .maquina-bechdel, .maquina-calibre, .maquina-revelar) { display: none; }
 .maquina[data-revelada] .maquina-reescribir { display: inline; }
+.maquina[data-revelada] .maquina-volver { display: none; } /* Volver solo tiene sentido mientras escribes */
 .maquina:not([data-revelada]) .maquina-revelado { display: none; } /* mientras escribes, no se repite */
 .maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
 .maquina-borrar { text-decoration: underline; text-underline-offset: 4px; }
@@ -1153,8 +1154,35 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .maquina-revelado[hidden] { display: none; }
 .maquina-revelado-meta { display: flex; flex-wrap: wrap; gap: 0 1rem; }
-.maquina-cita:empty { display: none; }
-.maquina-cita { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.4; }
+/* El archivo de observaciones: cada una, una pista. La última, nítida; las anteriores, más tenues */
+.archivo { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.archivo:empty { display: none; }
+.observacion { display: grid; gap: 0.3rem; }
+.observacion-texto { font-family: var(--fuente-titulos); font-style: italic; line-height: 1.4; overflow-wrap: anywhere; }
+.archivo-ultima .observacion-texto { font-size: var(--texto-l); }
+.archivo-anteriores .observacion-texto { font-size: var(--texto-m); color: var(--color-texto-suave); }
+.observacion-meta, .archivo-anteriores summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1rem;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+/* Corregir / Borrar aparecen al mirar la observación (en táctil, siempre) */
+.observacion-accion { opacity: 0; transition: opacity var(--dur-media) var(--curva-cine); }
+.observacion:is(:hover, :focus-within) .observacion-accion { opacity: 1; }
+@media (hover: none) { .observacion-accion { opacity: 1; } }
+
+.archivo-anteriores[hidden] { display: none; }
+.archivo-anteriores summary { cursor: pointer; list-style: none; padding-block: 0.5rem; }
+.archivo-anteriores summary::-webkit-details-marker { display: none; }
+.archivo-anteriores summary::after { content: '＋'; }
+.archivo-anteriores[open] summary::after { content: '－'; }
+.archivo-anteriores summary:hover { color: var(--color-texto); }
+.archivo-anteriores summary:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.archivo-anteriores[open] > .archivo { animation: persiana-sube var(--dur-lenta) var(--curva-persiana); }
+@media (prefers-reduced-motion: reduce) {
+  .observacion-accion { transition: none; }
+  .archivo-anteriores[open] > .archivo { animation: none; }
+}
 
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {

@@ -360,7 +360,7 @@
               <form id="mirada" class="maquina solo-noche" novalidate>
                 <p id="mirada-piloto" class="maquina-piloto" data-estado="vacia" aria-hidden="true">Sin calibrar</p>
                 <div class="maquina-placa">
-                  <label for="mirada-texto" class="maquina-pregunta">Lo que viste y nadie cuenta</label>
+                  <label for="mirada-texto" id="mirada-pregunta" class="maquina-pregunta">Lo que viste y nadie cuenta</label>
                   <textarea id="mirada-texto" class="maquina-texto" rows="4" maxlength="600"
                     placeholder="Escribe lo que la nota no dice"></textarea>
                 </div>
@@ -385,14 +385,20 @@
                 </div>
                 <div class="maquina-acciones">
                   <button type="submit" class="qv-boton maquina-revelar">Revelar mi lectura</button>
-                  <button type="button" id="mirada-reescribir" class="maquina-borrar maquina-reescribir">Reescribir</button>
-                  <button type="button" id="mirada-borrar" class="maquina-borrar" hidden>Borrar</button>
+                  <button type="button" id="mirada-reescribir" class="maquina-borrar maquina-reescribir">Mirar otra vez</button>
+                  <button type="button" id="mirada-volver" class="maquina-borrar maquina-volver" hidden>Volver</button>
+                  <button type="button" id="mirada-borrar" class="maquina-borrar" hidden>Borrar lectura</button>
                 </div>
                 <p id="mirada-estado" class="maquina-estado" role="status"></p>
-                <p id="mirada-entrada" class="maquina-revelado" hidden>
-                  <span class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span><span id="mirada-bechdel"></span></span>
-                  <span id="mirada-cita" class="maquina-cita"></span>
-                </p>
+                <!-- El archivo de observaciones: la última a la vista; las anteriores, tras la persiana -->
+                <div id="mirada-entrada" class="maquina-revelado" hidden>
+                  <p class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span><span id="mirada-bechdel"></span></p>
+                  <ol id="mirada-ultima" class="archivo archivo-ultima" aria-label="Última observación"></ol>
+                  <details id="mirada-anteriores" class="archivo-anteriores" hidden>
+                    <summary>Observaciones anteriores</summary>
+                    <ol id="mirada-archivo" class="archivo" aria-label="Observaciones anteriores"></ol>
+                  </details>
+                </div>
               </form>
             </section>
             </div> <!-- /ficha-par -->

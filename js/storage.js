@@ -130,10 +130,12 @@ export const loadObserved = () => readIds(OBSERVED_KEY);
 /** @param {number[]} ids @returns {boolean} */
 export const saveObserved = (ids) => writeIds(OBSERVED_KEY, ids);
 
-// ---------- Tu mirada: nota propia + cuaderno, por id de TMDB ----------
-// Independiente de TMDB: nunca se mezcla con vote_average. Formato: { [id]: { nota, texto, fecha } }
+// ---------- Tu mirada: nota propia + archivo de observaciones, por id de TMDB ----------
+// Independiente de TMDB: nunca se mezcla con vote_average.
+// Formato: { [id]: { nota, bechdel, fecha, observaciones: [{ id, texto, fecha }] } }
 export const MIRADAS_KEY = 'novenobe_miradas';
 const MAX_TEXTO = 600;
+const MAX_OBSERVACIONES = 30; // un archivo, no un diario: se guardan las más recientes
 
 /** Pura: nota en pasos de 0,5 y acotada a 0-10. Si no es un número, null (sin nota). */
 export const clampNota = (valor) => {
@@ -149,16 +151,50 @@ export const clampBechdel = (valor) => {
   return Number.isInteger(n) && n >= 0 && n <= 3 ? n : null;
 };
 
-/** Pura: limpia una mirada. Sin nota, sin texto y sin Bechdel no hay nada que guardar → null.
- *  Las miradas guardadas antes de existir el test se leen igual (bechdel: null). */
+const limpiarTexto = (texto) => (typeof texto === 'string' ? texto.trim().slice(0, MAX_TEXTO) : '');
+const limpiarFecha = (fecha) => (typeof fecha === 'string' ? fecha : null);
+
+/** Pura: id estable de una observación a partir de su fecha (no depende del orden). */
+export const idObservacion = (fecha) => `o${Date.parse(fecha) || 0}`;
+
+/** Pura: una observación válida { id, texto, fecha } o null si está vacía o corrupta. */
+export function sanitizeObservacion(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const texto = limpiarTexto(raw.texto);
+  if (!texto) return null;
+  const fecha = limpiarFecha(raw.fecha);
+  const id = typeof raw.id === 'string' && raw.id ? raw.id : idObservacion(fecha);
+  return { id, texto, fecha };
+}
+
+/** Pura: el archivo de una mirada. Migra el formato antiguo (un solo `texto`) a una observación. */
+export function sanitizeObservaciones(raw) {
+  const lista = Array.isArray(raw?.observaciones)
+    ? raw.observaciones
+    : [{ texto: raw?.texto, fecha: raw?.fecha }]; // mirada guardada antes del archivo
+  return lista.map(sanitizeObservacion).filter(Boolean).slice(-MAX_OBSERVACIONES);
+}
+
+/** Pura: añade una observación al final (la más reciente). No muta la lista. */
+export const addObservacion = (lista, { texto, fecha }) =>
+  sanitizeObservaciones({ observaciones: [...lista, { id: idObservacion(fecha), texto, fecha }] });
+
+/** Pura: corrige el texto de una observación. Si queda vacía, se retira. No muta la lista. */
+export const editObservacion = (lista, id, texto) =>
+  sanitizeObservaciones({ observaciones: lista.map((obs) => (obs.id === id ? { ...obs, texto } : obs)) });
+
+/** Pura: retira una observación del archivo. No muta la lista. */
+export const removeObservacion = (lista, id) => lista.filter((obs) => obs.id !== id);
+
+/** Pura: limpia una mirada. Sin nota, sin observaciones y sin Bechdel no hay nada que guardar → null.
+ *  Las miradas guardadas antes del test o del archivo se leen igual. */
 export function sanitizeMirada(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const nota = clampNota(raw.nota);
-  const texto = typeof raw.texto === 'string' ? raw.texto.trim().slice(0, MAX_TEXTO) : '';
   const bechdel = clampBechdel(raw.bechdel);
-  if (nota === null && !texto && bechdel === null) return null;
-  const fecha = typeof raw.fecha === 'string' ? raw.fecha : null;
-  return { nota, texto, bechdel, fecha };
+  const observaciones = sanitizeObservaciones(raw);
+  if (nota === null && bechdel === null && observaciones.length === 0) return null;
+  return { nota, bechdel, fecha: limpiarFecha(raw.fecha), observaciones };
 }
 
 /** Pura: limpia el objeto leído (claves que no son ids, miradas vacías o corruptas). */

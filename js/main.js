@@ -2,7 +2,7 @@ import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
-import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
+import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
@@ -62,11 +62,15 @@ const mirada = {
   rango: document.querySelector('#mirada-nota'),
   cifra: document.querySelector('#mirada-cifra'),
   texto: document.querySelector('#mirada-texto'),
+  etiqueta: document.querySelector('#mirada-pregunta'),
+  volver: document.querySelector('#mirada-volver'),
+  ultima: document.querySelector('#mirada-ultima'),
+  anteriores: document.querySelector('#mirada-anteriores'),
+  archivo: document.querySelector('#mirada-archivo'),
   borrar: document.querySelector('#mirada-borrar'),
   estado: document.querySelector('#mirada-estado'),
   entrada: document.querySelector('#mirada-entrada'),
   fecha: document.querySelector('#mirada-fecha'),
-  cita: document.querySelector('#mirada-cita'),
   piloto: document.querySelector('#mirada-piloto'),
   reescribir: document.querySelector('#mirada-reescribir'),
   enfoque: document.querySelector('#mirada-enfoque'),
@@ -79,6 +83,8 @@ const mirada = {
 const PILOTO = Object.freeze({ vacia: 'Sin calibrar', calibrando: 'Calibrando', revelada: 'Lectura revelada' });
 let miradaId = null;      // id de TMDB de la película abierta
 let miradaTocada = false; // ¿ha movido el enfoque? Sin moverlo, no hay nota propia
+let observacionEnEdicion = null; // id de la observación que se corrige (null = se escribe una nueva)
+const PREGUNTA = Object.freeze({ nueva: 'Lo que viste y nadie cuenta', corregir: 'Corrige tu observación' });
 let bechdelEtapa = 0;     // pregunta del examen en pantalla (0-2)
 let bechdelNivel = null;  // resultado del examen (0-3); null mientras no termina
 const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
@@ -706,12 +712,13 @@ function renderMirada(id) {
 
   miradaTocada = nota !== null;
   mirada.rango.value = nota ?? 5;
-  mirada.texto.value = guardada?.texto ?? '';
+  escribirObservacion(null); // la placa queda vacía: cada observación es una pista nueva
   bechdelEtapa = 0;
   bechdelNivel = bechdel;
   pintarExamen(); // sin máquina de escribir: al abrir la ficha no se teclea nada
   pintarCifraPropia(nota);
   mirada.borrar.hidden = !guardada;
+  mirada.volver.hidden = !guardada; // hay una lectura guardada a la que volver
   setPiloto(guardada ? 'revelada' : 'vacia');
 
   // Revelada: la máquina muestra el resultado (fecha, enfoque y lectura) en lugar de los controles
@@ -719,7 +726,7 @@ function renderMirada(id) {
   mirada.entrada.hidden = !guardada;
   mirada.enfoque.textContent = nota === null ? '' : `Tu enfoque ${nota.toFixed(1)}`;
   mirada.bechdel.textContent = bechdel === null ? '' : `Bechdel: ${bechdelText(bechdel)}`;
-  mirada.cita.textContent = guardada?.texto ?? '';
+  pintarArchivo(guardada?.observaciones ?? []);
   const fecha = guardada?.fecha ? new Date(guardada.fecha) : null;
   mirada.fecha.dateTime = guardada?.fecha ?? '';
   mirada.fecha.textContent = fecha && !Number.isNaN(fecha.getTime())
@@ -728,6 +735,60 @@ function renderMirada(id) {
 
   pintarAroPropio(nota);
   pintarBechdel(bechdel);
+}
+
+/** La placa: vacía para una observación nueva, o con el texto de la que se corrige. */
+function escribirObservacion(observacion) {
+  observacionEnEdicion = observacion?.id ?? null;
+  mirada.texto.value = observacion?.texto ?? '';
+  mirada.etiqueta.textContent = observacion ? PREGUNTA.corregir : PREGUNTA.nueva;
+}
+
+/** Una observación del archivo: el texto, su fecha y, al mirarla, Corregir / Borrar. */
+function createObservacion({ id, texto, fecha }) {
+  const li = document.createElement('li');
+  li.className = 'observacion';
+  li.dataset.id = id;
+
+  const p = document.createElement('p');
+  p.className = 'observacion-texto';
+  p.textContent = texto;
+
+  const meta = document.createElement('p');
+  meta.className = 'observacion-meta';
+  const cuando = fecha && !Number.isNaN(new Date(fecha).getTime()) ? FECHA_MIRADA.format(new Date(fecha)) : '';
+  if (cuando) {
+    const time = document.createElement('time');
+    time.dateTime = fecha;
+    time.textContent = cuando;
+    meta.append(time);
+  }
+  const de = cuando ? ` del ${cuando}` : '';
+  meta.append(
+    createAccionObservacion('corregir', 'Corregir', `Corregir la observación${de}`),
+    createAccionObservacion('borrar', 'Borrar', `Borrar la observación${de}`),
+  );
+  li.append(p, meta);
+  return li;
+}
+
+function createAccionObservacion(accion, texto, etiqueta) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'maquina-borrar observacion-accion';
+  boton.dataset.accion = accion;
+  boton.textContent = texto;
+  boton.setAttribute('aria-label', etiqueta);
+  return boton;
+}
+
+/** La última observación a la vista; las anteriores, de la más reciente a la más antigua. */
+function pintarArchivo(observaciones) {
+  const anteriores = [...observaciones.slice(0, -1)].reverse(); // copia: no muta lo guardado
+  mirada.ultima.replaceChildren(...observaciones.slice(-1).map(createObservacion));
+  mirada.archivo.replaceChildren(...anteriores.map(createObservacion));
+  mirada.anteriores.hidden = anteriores.length === 0;
+  if (anteriores.length === 0) mirada.anteriores.open = false;
 }
 
 /** El examen de Bechdel: la pregunta de la etapa o, si ha terminado, el resultado.
@@ -811,33 +872,77 @@ function handleMiradaInput() {
 function handleMiradaSubmit(event) {
   event.preventDefault(); // sin recargar la página
   if (miradaId === null) return;
-  const nueva = {
-    nota: miradaTocada ? mirada.rango.value : null,
-    texto: mirada.texto.value,
-    bechdel: bechdelNivel,
-    fecha: new Date().toISOString(),
-  };
-  if (nueva.nota === null && !nueva.texto.trim() && nueva.bechdel === null) {
+  const previa = loadMiradas()[miradaId] ?? null;
+  const lista = previa?.observaciones ?? [];
+  const texto = mirada.texto.value;
+  const fecha = new Date().toISOString();
+  const corrigiendo = observacionEnEdicion !== null;
+
+  // Funciones puras: corregir la que se edita o añadir una nueva (sin texto, el archivo no cambia)
+  let observaciones = lista;
+  if (corrigiendo) observaciones = editObservacion(lista, observacionEnEdicion, texto);
+  else if (texto.trim()) observaciones = addObservacion(lista, { texto, fecha });
+
+  const nueva = { nota: miradaTocada ? mirada.rango.value : null, bechdel: bechdelNivel, fecha, observaciones };
+  if (!previa && nueva.nota === null && nueva.bechdel === null && observaciones.length === 0) {
     mirada.estado.textContent = 'Escribe lo que viste, termina el test o calibra tu enfoque antes de revelar.';
     return;
   }
   const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
-  mirada.estado.textContent = ok
+  const retirada = corrigiendo && observaciones.length < lista.length;
+  const mensaje = !corrigiendo
     ? 'Tu lectura queda guardada en este navegador.'
-    : 'No se ha podido guardar: el navegador bloquea el almacenamiento.';
+    : retirada ? 'Observación retirada del archivo.' : 'Observación corregida.';
+  mirada.estado.textContent = ok ? mensaje : 'No se ha podido guardar: el navegador bloquea el almacenamiento.';
   if (ok) {
     mirada.entrada.hidden = true;  // se oculta y vuelve a aparecer: la persiana se repite
     void mirada.entrada.offsetWidth; // fuerza al navegador a aplicar el cambio antes de mostrarla
     renderMirada(miradaId);
+    mirada.reescribir.focus(); // «Revelar» desaparece: el foco pasa a «Mirar otra vez»
   }
 }
 
-/** Volver a escribir: la máquina se reabre con lo guardado, listo para cambiarlo. */
+/** Mirar otra vez: la máquina se reabre con la placa vacía para una observación nueva. */
 function handleMiradaReescribir() {
+  escribirObservacion(null);
   mirada.form.removeAttribute('data-revelada');
   mirada.estado.textContent = '';
   setPiloto('calibrando');
   mirada.texto.focus(); // el botón desaparece: el foco va a la placa
+}
+
+/** Volver: se descarta lo que no se ha revelado (vista previa de la nota, examen, texto). */
+function handleMiradaVolver() {
+  mirada.estado.textContent = '';
+  renderMirada(miradaId);
+  mirada.reescribir.focus();
+}
+
+/** Corregir o borrar una observación del archivo (un solo manejador para todas: delegación). */
+function handleArchivoClick(event) {
+  const boton = event.target.closest('[data-accion]');
+  const id = boton?.closest('.observacion')?.dataset.id;
+  if (!id || miradaId === null) return;
+  const guardada = loadMiradas()[miradaId];
+  const observacion = guardada?.observaciones.find((obs) => obs.id === id);
+  if (!observacion) return;
+
+  if (boton.dataset.accion === 'corregir') {
+    escribirObservacion(observacion);
+    mirada.form.removeAttribute('data-revelada');
+    mirada.estado.textContent = '';
+    setPiloto('calibrando');
+    mirada.texto.focus();
+    return;
+  }
+
+  const restantes = removeObservacion(guardada.observaciones, id);
+  const ok = saveMiradas(setMirada(loadMiradas(), miradaId, { ...guardada, observaciones: restantes }));
+  mirada.estado.textContent = ok ? 'Observación retirada del archivo.' : 'No se ha podido borrar.';
+  if (!ok) return;
+  renderMirada(miradaId);
+  // El botón pulsado ya no existe: el foco va a la acción que sigue a la vista
+  (mirada.form.hasAttribute('data-revelada') ? mirada.reescribir : mirada.texto).focus();
 }
 
 function handleMiradaBorrar() {
@@ -944,6 +1049,8 @@ mirada.rango.addEventListener('input', handleMiradaInput);
 mirada.form.addEventListener('submit', handleMiradaSubmit);
 mirada.borrar.addEventListener('click', handleMiradaBorrar);
 mirada.reescribir.addEventListener('click', handleMiradaReescribir);
+mirada.volver.addEventListener('click', handleMiradaVolver);
+mirada.entrada.addEventListener('click', handleArchivoClick);
 mirada.examen.addEventListener('click', handleExamenClick);
 mirada.repetir.addEventListener('click', handleExamenRepetir);
 // Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
