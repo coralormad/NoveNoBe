@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline } from './utils.js';
+import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -10,6 +10,8 @@ import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
+import { GenreStage, MAX_ESCAPARATE } from './stage.js';
+import { QueVer } from './que-ver.js';
 
 
 const MIN_QUERY = 2;
@@ -240,7 +242,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     renderHistory();
     return;
   }
-
+  
   controller = new AbortController();
   renderMessage('Buscando…');
 
@@ -345,6 +347,8 @@ async function handleRoute(route) {
   fichaActual = null;
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
+  if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
+  if (route.vista === 'que-ver') queVer.refrescarFavoritas(); // por si se quitó alguna desde Mi lista
   window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
 }
 
@@ -359,26 +363,46 @@ const pelis = {
 
 const radiografia = {
   titular: document.querySelector('#radiografia-titular'),
-  detalle: document.querySelector('#radiografia-detalle'),
+  escena: document.querySelector('#radiografia-escena'),
   capsulas: document.querySelector('#radiografia-capsulas'),
-  genero: '', // id del género elegido como texto ('' = todos)
+  genero: '', // clave del filtro: «18», o «80,53» para «Otros» ('' = todos)
+  generos: [], // lista de géneros de TMDB (id → nombre), para el pie del escaparate
   filas: [],  // filas del doughnut (top 5 + Otros)
   etiqueta: '', // nombre del género elegido (para el titular)
   general: '',  // titular sin filtro, para recuperarlo al quitarlo
 };
 const catalogCharts = new CatalogCharts(
   document.querySelector('#grafica-generos'),
-  { onGenreFocus: setGenreFocus },
+  {
+    onGenreFocus: setGenreFocus,
+    onGenreSelect: (fila) => elegirGenero(fila.ids.join(','), fila.label), // el anillo filtra igual que las cápsulas
+  },
 );
+
+const escaparate = new GenreStage({
+  marco: document.querySelector('#escaparate-marco'),
+  lista: document.querySelector('#escaparate'),
+  titulo: document.querySelector('#escaparate-titulo'),
+  generos: document.querySelector('#escaparate-generos'),
+  anterior: document.querySelector('#escaparate-anterior'),
+  siguiente: document.querySelector('#escaparate-siguiente'),
+});
+
+/** El escaparate sigue al mismo filtro que la rejilla: una sola fuente de verdad. */
+function renderEscaparate() {
+  escaparate.render(
+    topOfGenre(catalog.movies, toGenreIds(radiografia.genero), MAX_ESCAPARATE),
+    (ids) => genreNames(ids, radiografia.generos),
+  );
+}
 
 /** Recalcula titular, doughnut y cápsulas con TODAS las películas cargadas. */
 async function updateRadiografia(movies) {
   try {
     const genreStats = countByGenre(movies, await getGenres());
     radiografia.filas = groupTail(genreStats, 5);
-    radiografia.general = headline(genreStats, movies.length, catalog.list);
+    radiografia.general = headline(genreStats, catalog.list);
     pintarTitular();
-    radiografia.detalle.textContent = `Calculado sobre las ${movies.length} películas cargadas · datos de TMDB`;
     catalogCharts.update({ genres: radiografia.filas });
     renderCapsulas(genreStats);
   } catch (error) {
@@ -395,7 +419,7 @@ function pintarTitular() {
 
 /** Con un género elegido, pide páginas hasta reunir `target` películas suyas (o agotar el tope). */
 async function fillGenre(target) {
-  const ids = [Number(radiografia.genero)];
+  const ids = toGenreIds(radiografia.genero);
   for (let i = 0; i < MAX_PAGINAS && catalog.hasMore && filterByGenre(catalog.movies, ids).length < target; i++) {
     await catalog.loadMore();
   }
@@ -427,10 +451,11 @@ function renderCapsulas(stats) {
 
 /** La rejilla muestra solo el género elegido; la radiografía sigue viendo todo. */
 function renderRejilla() {
-  const ids = radiografia.genero ? [Number(radiografia.genero)] : [];
+  const ids = toGenreIds(radiografia.genero);
   const visibles = filterByGenre(catalog.movies, ids);
   pelis.rejilla.replaceChildren(...visibles.map(createCard));
   if (ids.length) pelis.estado.textContent = visibles.length ? '' : 'Ninguna película de este género por ahora.';
+  renderEscaparate();
 }
 
 function renderPeliculas(movies) {
@@ -451,18 +476,21 @@ function setGenreFocus(ids) {
 }
 
 /** Vista previa al pasar o enfocar una cápsula: porción separada y, si no hay filtro, foco de luz. */
-function previewCapsula(id) {
-  const genreId = Number(id);
-  catalogCharts.highlight(id ? sliceIndexOf(radiografia.filas, genreId) : null);
-  setGenreFocus(id && !radiografia.genero ? [genreId] : []);
+function previewCapsula(genero) {
+  const ids = toGenreIds(genero);
+  catalogCharts.highlight(ids.length ? sliceIndexOf(radiografia.filas, ids[0]) : null);
+  setGenreFocus(ids.length && !radiografia.genero ? ids : []);
 }
 
 function handleCapsulaClick(event) {
   const boton = event.target.closest('.capsula');
-  if (!boton) return;
-  const id = boton.dataset.genero;
-  radiografia.genero = radiografia.genero === id ? '' : id; // pulsar la activa la desactiva
-  radiografia.etiqueta = boton.textContent;
+  if (boton) elegirGenero(boton.dataset.genero, boton.textContent);
+}
+
+/** Única entrada al filtro, desde las cápsulas o desde el anillo. Repetir el mismo género lo quita. */
+function elegirGenero(genero, etiqueta) {
+  radiografia.genero = radiografia.genero === genero ? '' : genero;
+  radiografia.etiqueta = etiqueta;
   radiografia.capsulas.querySelectorAll('.capsula').forEach((capsula) =>
     capsula.setAttribute('aria-pressed', String(capsula.dataset.genero === radiografia.genero)));
   pintarTitular();
@@ -481,6 +509,7 @@ async function loadPeliculas(action, { enfocarNuevas = false } = {}) {
   pelis.estado.textContent = 'Subiendo la persiana…';
   try {
     const movies = await action();
+    radiografia.generos = await getGenres().catch(() => []); // en caché: no repite la petición
     pelis.estado.textContent = movies.length ? '' : 'No hay películas que mostrar.';
     renderPeliculas(movies);
     if (enfocarNuevas && antes > 0) pelis.rejilla.children[antes]?.querySelector('a')?.focus(); // «Cargar más»: foco en la primera nueva
@@ -643,7 +672,6 @@ function handleArrowClick(event) {
   });
 }
 
-
 // ---------- Eventos ----------
 els.btnBuscar.addEventListener('click', togglePanel);
 els.input.addEventListener('input', debouncedSearch);
@@ -692,6 +720,8 @@ enableCapsuleLight(radiografia.capsulas);
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
+// Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
+const queVer = new QueVer(document.querySelector('#vista-que-ver'), { miLista: document.querySelector('#catalogo-grid') });
 
 Promise.allSettled([
   startRouter(handleRoute),

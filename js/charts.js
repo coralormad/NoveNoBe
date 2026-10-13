@@ -5,9 +5,12 @@ import { describeRows } from './utils.js';
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+/** Tokens de color de las porciones (los usa también el halo en main.js). */
+export const SLICE_TOKENS = ['--lavanda-100', '--lavanda-300', '--lavanda-500', '--lavanda-700', '--lavanda-900'];
+
 /** Colores leídos de las variables CSS: la gráfica usa la misma paleta que la web. */
 const palette = () => ({
-  slices: ['--lavanda-100', '--lavanda-300', '--lavanda-500', '--lavanda-700', '--lavanda-900'].map(css),
+  slices: SLICE_TOKENS.map(css),
   other: css('--color-borde-control'),
   background: css('--color-fondo'),
 });
@@ -18,10 +21,12 @@ export class CatalogCharts {
   #genreRows = [];
   #focusIndex = null;
   #onGenreFocus;
+  #onGenreSelect;
 
-  constructor(genreCanvas, { onGenreFocus = () => {} } = {}) {
+  constructor(genreCanvas, { onGenreFocus = () => {}, onGenreSelect = () => {} } = {}) {
     this.#genreCanvas = genreCanvas;
     this.#onGenreFocus = onGenreFocus;
+    this.#onGenreSelect = onGenreSelect;
     // Al cambiar de tema, recolorear (cambia el atributo data-theme de <html>)
     new MutationObserver(() => this.#applyColors())
       .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
@@ -57,14 +62,21 @@ export class CatalogCharts {
       type: 'doughnut',
       data: { labels: [], datasets: [{ data: [], borderWidth: 2, hoverOffset: 10 }] },
       options: {
-        onHover: (_event, elements) => this.#focus(elements[0]?.index ?? null),
+        onHover: (_event, elements) => {
+          this.#genreCanvas.style.cursor = elements.length ? 'pointer' : 'default'; // parece pulsable porque lo es
+          this.#focus(elements[0]?.index ?? null);
+        },
+        onClick: (_event, elements) => {
+          const fila = this.#genreRows[elements[0]?.index];
+          if (fila) this.#onGenreSelect(fila);
+        },
         maintainAspectRatio: false,
         cutout: '68%',
         layout: { padding: 12 }, // hueco para que la porción separada no se corte
         animation: REDUCED_MOTION.matches ? false : { duration: 600 },
         plugins: {
           legend: { display: false }, // la leyenda ahora son las cápsulas (HTML accesible)
-          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed} películas` } },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}` } }, // solo el género, sin cifras
         },
       },
     });

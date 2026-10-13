@@ -13,7 +13,7 @@
   <title> NoveNoBé </title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@400;700&family=Schibsted+Grotesk:wght@800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Manrope:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,700&family=Schibsted+Grotesk:wght@800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="img/favicon-c.svg">
   <link rel="stylesheet" href="css/style.css">
     <!-- Leaflet 1.9.4 (mapa de la ficha) -->
@@ -45,7 +45,8 @@
           <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
         </svg>
       </button>
-      <button type="button" id="btn-avisos" class="icono-boton" aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
+      <!-- Oculto hasta que tenga función: un botón que no hace nada no debe ofrecerse -->
+      <button type="button" id="btn-avisos" class="icono-boton" hidden aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
         </svg>
@@ -125,10 +126,10 @@
           <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span>
           <span style="--i:4"></span><span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span>
         </div>
-        <button type="button" id="hero-anterior" class="hero-borde hero-borde--anterior" aria-label="Diapositiva anterior">
+        <button type="button" id="hero-anterior" class="borde-nav borde-nav--anterior" aria-label="Diapositiva anterior">
           <svg viewBox="0 0 34 64" aria-hidden="true" focusable="false"><path d="M28 4 L6 32 L28 60"/></svg>
         </button>
-        <button type="button" id="hero-siguiente" class="hero-borde hero-borde--siguiente" aria-label="Diapositiva siguiente">
+        <button type="button" id="hero-siguiente" class="borde-nav borde-nav--siguiente" aria-label="Diapositiva siguiente">
           <svg viewBox="0 0 34 64" aria-hidden="true" focusable="false"><path d="M6 4 L28 32 L6 60"/></svg>
         </button>
 
@@ -136,7 +137,8 @@
         <span id="hero-reloj" class="hero-reloj" aria-hidden="true"></span>
       </section>
 
-      <section class="fila reveal">
+      <!-- Oculta hasta que tenga contenido real -->
+      <section class="fila reveal" hidden>
         <div class="fila-cabecera">
           <h2>Continúa tu historia</h2>
           <div class="fila-flechas">
@@ -172,16 +174,38 @@
         <div id="fila-tendencias" class="carrusel"></div>
       </section>
 
-      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial"></section>
+      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial" hidden></section> <!-- oculta: sin contenido todavía -->
     </div>
 
     <!-- 3. VISTA QUÉ VER -->
     <div id="vista-que-ver" class="vista" hidden>
-      <section class="que-ver">
-        <h2>¿Qué te apetece ver?</h2>
-        <p>Cuéntanos cómo te sientes y te sugerimos qué ver.</p>
-        <div id="que-ver-preguntas"></div>
-        <div id="que-ver-resultados" class="rejilla"></div>
+      <section class="que-ver" aria-labelledby="que-ver-titulo">
+        <!-- Las ventanas de enfrente: cada respuesta enciende una (decorativo, lo crea que-ver.js) -->
+        <div id="que-ver-fachada" class="qv-fachada" aria-hidden="true"></div>
+
+        <header class="qv-cabecera">
+          <p class="sobretitulo">Observatorio cinematográfico</p>
+          <h2 id="que-ver-titulo">Qué ver</h2>
+          <p class="qv-entradilla">Cuatro preguntas sobre cómo miras las historias. Cada respuesta enciende una ventana; al final, verás lo que hay detrás.</p>
+        </header>
+
+        <form id="que-ver-form" class="qv-escena" novalidate>
+          <p id="que-ver-progreso" class="qv-progreso" aria-live="polite"></p>
+          <div class="qv-rendija" aria-hidden="true"><span></span></div>
+          <fieldset id="que-ver-pregunta" class="qv-pregunta"></fieldset>
+          <p id="que-ver-aviso" class="qv-aviso" role="status"></p>
+          <div class="qv-acciones">
+            <button type="button" id="que-ver-atras" class="qv-boton qv-boton--secundario">Atrás</button>
+            <button type="submit" id="que-ver-siguiente" class="qv-boton">Siguiente</button>
+          </div>
+        </form>
+
+        <section id="que-ver-resultados" class="qv-resultados" aria-labelledby="que-ver-hallazgos" hidden>
+          <h3 id="que-ver-hallazgos" class="qv-resultados-titulo" tabindex="-1">Lo que había detrás de la ventana</h3>
+          <div id="que-ver-categorias" class="qv-categorias"></div>
+          <p class="qv-nota">Tus favoritas afinan la siguiente observación.</p>
+          <button type="button" id="que-ver-reiniciar" class="qv-boton qv-boton--secundario">Mirar de nuevo</button>
+        </section>
       </section>
     </div>
 
@@ -200,14 +224,38 @@
           <div class="radiografia-texto">
             <p class="sobretitulo">Radiografía del catálogo</p>
             <p id="radiografia-titular" class="radiografia-titular" aria-live="polite">Revelando la película…</p>
-            <p id="radiografia-detalle" class="radiografia-detalle"></p>
           </div>
-          <div class="radiografia-grafica">
-            <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
+
+          <div id="radiografia-escena" class="radiografia-escena">
+            <div class="escena-luz" aria-hidden="true"></div>
+
+            <div class="dial">
+              <div class="radiografia-grafica">
+                <div class="halo" aria-hidden="true"></div>
+                <canvas id="grafica-generos" role="img" aria-label="Gráfica de géneros"></canvas>
+              </div>
+              <div id="radiografia-capsulas" class="capsulas" role="group" aria-label="Filtrar por género"></div>
+            </div>
+
+            <div class="proyeccion" role="group" aria-labelledby="proyeccion-titulo">
+              <h3 id="proyeccion-titulo" class="sr-only">Las más populares del género</h3>
+              <div id="escaparate-marco" class="escaparate-marco">
+                <ul id="escaparate" class="escaparate"></ul>
+                <button type="button" id="escaparate-anterior" class="borde-nav borde-nav--anterior" aria-label="Película anterior">
+                  <svg viewBox="0 0 34 64" aria-hidden="true" focusable="false"><path d="M28 4 L6 32 L28 60"/></svg>
+                </button>
+                <button type="button" id="escaparate-siguiente" class="borde-nav borde-nav--siguiente" aria-label="Película siguiente">
+                  <svg viewBox="0 0 34 64" aria-hidden="true" focusable="false"><path d="M6 4 L28 32 L6 60"/></svg>
+                </button>
+              </div>
+              <div class="escaparate-info" aria-live="polite">
+                <p id="escaparate-titulo" class="escaparate-titulo"></p>
+                <p id="escaparate-generos" class="escaparate-generos"></p>
+              </div>
+            </div>
           </div>
-          <div id="radiografia-capsulas" class="capsulas" role="group" aria-label="Filtrar por género"></div>
         </section>
-        
+
         <!-- Sub-paso 2: filtros -->
         <p id="peliculas-estado" class="fila-mensaje" role="status"></p>
         <div id="peliculas-rejilla" class="rejilla"></div>
@@ -220,7 +268,7 @@
     <div id="vista-catalogo" class="vista" hidden>
       <section class="catalogo">
         <h2 id="catalogo-titulo"></h2>
-        <div id="catalogo-grid" class="rejilla"></div>
+        <div id="catalogo-grid" class="qv-lista"></div> <!-- Mi lista: las favoritas de «Qué ver» -->
       </section>
     </div> <!-- /vista-catalogo -->
   

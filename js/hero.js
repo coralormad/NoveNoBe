@@ -6,10 +6,30 @@ const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: r
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const pad = (n) => String(n).padStart(2, '0');
 
-// ---------- Funciones puras ----------
-
+/** Diferencia en pixels entre dos puntos. */
+export const distance = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 /** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
 export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
+
+/** Crea una mirilla del índice. La usan el hero y el escaparate. */
+export function createMirilla({ indice, etiqueta, imagen }) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'mirilla';
+  button.dataset.indice = indice;
+  button.setAttribute('aria-label', etiqueta);
+
+  const lente = document.createElement('span');
+  lente.className = 'mirilla-lente';
+  if (imagen) lente.style.backgroundImage = `url("${imagen}")`;
+
+  const tapa = document.createElement('span');
+  tapa.className = 'mirilla-tapa';
+
+  button.append(lente, tapa);
+  return button;
+}
+
 /** Dirección de un deslizamiento: 1 = siguiente, -1 = anterior, 0 = no cuenta. */
 export function swipeDirection(dx, dy, min = 50) {
   if (Math.abs(dx) < min || Math.abs(dx) < Math.abs(dy)) return 0;
@@ -264,22 +284,12 @@ export class HeroCarousel {
     this.#slides = [...this.#els.track.children];
     const items = this.#slides.map((slide, i) => {
       const nombre = slide.dataset.nav ?? '';
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'mirilla';
-      button.dataset.indice = i;
-      button.dataset.nombre = nombre;
-      button.setAttribute('aria-label', `Diapositiva ${i + 1}: ${nombre}`);
-
-      const lente = document.createElement('span');
-      lente.className = 'mirilla-lente';
-      const imagen = slide.querySelector('.diapositiva-fondo')?.getAttribute('src');
-      if (imagen) lente.style.backgroundImage = `url("${imagen}")`;
-
-      const tapa = document.createElement('span');
-      tapa.className = 'mirilla-tapa';
-
-      button.append(lente, tapa);
+      const button = createMirilla({
+        indice: i,
+        etiqueta: `Diapositiva ${i + 1}: ${nombre}`,
+        imagen: slide.querySelector('.diapositiva-fondo')?.getAttribute('src'),
+      });
+      button.dataset.nombre = nombre; // el hero muestra el nombre al pasar el ratón
       return button;
     });
 
