@@ -2213,25 +2213,37 @@ main { padding: 2rem var(--margen-lateral); }
   letter-spacing: var(--tracking-meta); text-transform: uppercase;
 }
 
-/* Marca · navegación · créditos */
+/* Firma · créditos. Sin segundo menú: la navegación ya está arriba, fija, a un gesto de distancia */
 .cierre-fila {
   display: grid; gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-borde);
   font-size: var(--texto-s); line-height: var(--interlineado-texto);
 }
-.cierre-logo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); color: var(--color-texto); }
-.cierre-nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
-.cierre-nav a, .cierre-creditos a {
-  display: inline-block; padding-block: 0.6rem; color: var(--color-texto-suave);
-  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 5px;
+/* La firma: el emblema y, a su derecha, el nombre y el lema (dos líneas que se leen como un sello) */
+.cierre-marca {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 1rem;
+}
+.cierre-emblema {
+  grid-row: span 2; width: 48px; aspect-ratio: 1;
+  /* El SVG original como máscara: se reutiliza tal cual (sin redibujarlo) y toma el color del tema
+     de la web, no el del sistema. Son los mismos dos tonos que el propio favicon usa en claro y oscuro */
+  background: var(--cierre-emblema-color, var(--lavanda-700));
+  -webkit-mask: url('../img/favicon-c.svg') center / contain no-repeat;
+          mask: url('../img/favicon-c.svg') center / contain no-repeat;
+}
+:root[data-theme="claro"] { --cierre-emblema-color: var(--lavanda-100); }
+.cierre-logo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); line-height: 1.2; color: var(--color-texto); }
+.cierre-creditos a {
+  color: var(--color-texto-suave);
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 5px;
   transition: color var(--dur-rapida), text-decoration-color var(--dur-rapida);
 }
-.cierre-creditos a { padding-block: 0; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
 .cierre-creditos { display: grid; gap: 0.5rem; font-size: var(--texto-xs); max-width: 48ch; }
 @media (min-width: 850px) {
-  .cierre-fila { grid-template-columns: auto 1fr minmax(0, 46ch); align-items: start; gap: 3rem; }
-  .cierre-nav ul { justify-content: center; }
+  .cierre-fila { grid-template-columns: auto minmax(0, 46ch); justify-content: space-between; align-items: center; gap: 3rem; }
+  .cierre-creditos { text-align: right; justify-items: end; }
 }
-@media (prefers-reduced-motion: reduce) { .cierre-nav a, .cierre-creditos a { transition: none; } }
+@media (max-width: 599px) { .cierre-emblema { width: 40px; } }
+@media (prefers-reduced-motion: reduce) { .cierre-creditos a { transition: none; } }
 
 /* Mapa: OpenStreetMap en negativo para el tema oscuro (cine noir) */
 :root:not([data-theme="claro"]) .mapa-teselas {
