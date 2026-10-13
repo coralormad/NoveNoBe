@@ -1123,6 +1123,7 @@ enablePointerLight(radiografia.capsulas, '.capsula'); // Películas: la Marquesi
 enablePointerLight(document, '.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado');
 enablePointerLight(els.genres, '.capsula');           // Inicio: los géneros comparten la misma luz
 enablePointerLight(ficha.ventana, '.ficha-mapa');
+enablePointerLight(mirada.form, '.calibre-tira');      // «Tu enfoque»: la luz recorre la tira de tu nota
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado

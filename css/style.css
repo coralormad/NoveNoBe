@@ -1220,7 +1220,8 @@ main { padding: 2rem var(--margen-lateral); }
 .calibre-tira .tira-fotogramas { height: 32px; }
 .calibre-tira .tira-fotogramas li::before { transition: transform 120ms linear; } /* al arrastrar, sin escalonado */
 .calibre-tira .maquina-regla {
-  position: absolute; inset: 0 5px; width: calc(100% - 10px); height: 100%; margin: 0; cursor: ew-resize;
+  position: absolute; inset: 0 5px; width: calc(100% - 10px); height: 100%; margin: 0;
+  cursor: default; /* el cursor del sistema: la doble flecha (ew-resize) sobraba dentro de la tira */
 }
 .calibre-tira .maquina-regla::-webkit-slider-runnable-track { height: 32px; background: none; }
 .calibre-tira .maquina-regla::-moz-range-track { height: 32px; background: none; }
@@ -1228,7 +1229,15 @@ main { padding: 2rem var(--margen-lateral); }
 .calibre-tira .maquina-regla::-moz-range-thumb { width: 2px; height: 32px; }
 .calibre-tira .maquina-regla:focus-visible { outline: none; }
 .calibre-tira:has(.maquina-regla:focus-visible) .tira-fotogramas { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+/* Al pasar por la tira, una luz suave sigue al cursor (--mx desde main.js, como cápsulas y botones).
+   No intercepta nada: el rango de encima sigue recibiendo clics, arrastres y teclado */
+.calibre-tira::after {
+  content: ''; position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  background: radial-gradient(circle 48px at var(--mx, 50%) 50%, color-mix(in srgb, var(--lavanda-300) 28%, transparent), transparent 75%);
+  opacity: 0; transition: opacity var(--dur-media);
+}
 @media (hover: hover) {
+  .calibre-tira:hover::after { opacity: 1; }
   .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
 }
 
