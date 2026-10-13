@@ -241,3 +241,15 @@ export function filterByWatched(lista, observadas, filtro = 'todas') {
 
 /** Pura: número de colección con dos cifras (0 → «01»). Es un orden, no una cifra que leer. */
 export const numeroDeColeccion = (indice) => String(indice + 1).padStart(2, '0');
+
+/**
+ * Pura: inserta un id en una posición (para «Deshacer»). Si ya está, devuelve una copia sin cambios;
+ * si la posición no es válida, lo añade al final.
+ * @param {number[]} ids @param {number} id @param {number} indice
+ * @returns {number[]} Array nuevo.
+ */
+export function insertAt(ids, id, indice) {
+  if (ids.includes(id)) return [...ids];
+  const posicion = Number.isInteger(indice) && indice >= 0 ? Math.min(indice, ids.length) : ids.length;
+  return [...ids.slice(0, posicion), id, ...ids.slice(posicion)];
+}

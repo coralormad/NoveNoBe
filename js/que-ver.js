@@ -3,7 +3,7 @@
 // al final, las recomendaciones se revelan enfocándose. La lógica vive en recomendador.js (pura).
 import { DIMENSIONES, recomendar, explicar } from './recomendador.js';
 import { loadFavorites, saveFavorites, loadObserved, saveObserved, toggleId } from './storage.js';
-import { FILTROS_LISTA, filterByWatched, numeroDeColeccion } from './utils.js';
+import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, insertAt } from './utils.js';
 import { getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { movieHref } from './router.js';
@@ -29,9 +29,14 @@ export class QueVer {
   #filtrosLista = null; // botones Todas / Por descubrir / Ya observadas
   #observadas = loadObserved();
   #filtro = 'todas';
+  #avisoLista = null;   // línea de estado de Mi lista (anuncia filtros y permite deshacer)
+  #deshacer = null;     // última película quitada: { id, indice, titulo }
 
-  /** @param {HTMLElement} raiz  @param {{ miLista?: HTMLElement, filtrosLista?: HTMLElement }} opciones */
-  constructor(raiz, { miLista = null, filtrosLista = null } = {}) {
+  /**
+   * @param {HTMLElement} raiz
+   * @param {{ miLista?: HTMLElement, filtrosLista?: HTMLElement, avisoLista?: HTMLElement }} opciones
+   */
+  constructor(raiz, { miLista = null, filtrosLista = null, avisoLista = null } = {}) {
     const $ = (selector) => raiz.querySelector(selector);
     this.#els = {
       seccion: $('.que-ver'), // aquí vive --enfoque (lo leen la fachada y la rendija)
@@ -63,6 +68,10 @@ export class QueVer {
     miLista?.addEventListener('click', (event) => this.#onMiLista(event));
     this.#filtrosLista = filtrosLista;
     filtrosLista?.addEventListener('click', (event) => this.#onFiltro(event));
+    this.#avisoLista = avisoLista;
+    avisoLista?.addEventListener('click', (event) => {
+      if (event.target.closest('[data-deshacer]')) this.#deshacerQuitar();
+    });
 
     this.#pintarPregunta();
   }
@@ -276,6 +285,9 @@ export class QueVer {
       estado.className = 'ml-estado';
       estado.dataset.observada = pelicula.id;
       this.#pintarEstado(estado, pelicula.titulo);
+      favorita.classList.add('ml-quitar');
+      favorita.textContent = 'Quitar'; // en Mi lista ya está guardada: la acción es quitarla (aria-label lo detalla)
+      favorita.removeAttribute('aria-pressed'); // aquí no es un interruptor, es una acción
       acciones.append(estado, favorita);
       cuerpo.append(acciones);
     } else {
@@ -335,13 +347,17 @@ export class QueVer {
     const boton = event.target.closest('[data-favorita]');
     if (!boton) return;
     const id = Number(boton.dataset.favorita);
+    const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
+    const indice = this.#favoritas.indexOf(id);
     this.#favoritas = toggleId(this.#favoritas, id);
     saveFavorites(this.#favoritas);
     if (this.#miLista?.contains(boton)) {
-      this.pintarMiLista(); // quitada desde Mi lista: la tarjeta desaparece
+      // Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic)
+      this.#deshacer = { id, indice, titulo };
+      this.#pintarLista();
+      this.#anunciar(`Has quitado «${titulo}» de tu lista.`, { deshacer: true });
       return;
     }
-    const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
     this.#pintarFavorita(boton, titulo);
   }
 
@@ -363,7 +379,7 @@ export class QueVer {
     if (this.#filtro === 'todas') {
       this.#pintarEstado(estado, estado.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent);
     } else {
-      this.pintarMiLista(); // con un filtro activo, la tarjeta cambia de grupo y sale de la vista
+      this.#pintarLista(); // con un filtro activo, la tarjeta cambia de grupo y sale de la vista
     }
   }
 
@@ -371,7 +387,37 @@ export class QueVer {
     const boton = event.target.closest('[data-filtro]');
     if (!boton || !FILTROS_LISTA.includes(boton.dataset.filtro)) return;
     this.#filtro = boton.dataset.filtro;
-    this.pintarMiLista();
+    this.#pintarLista();
+    this.#anunciar(`Mostrando: ${boton.textContent.toLowerCase()}.`, { visible: false });
+  }
+
+  /** Devuelve la última película quitada a su sitio. La recupera del aviso, no de una copia de la lista. */
+  #deshacerQuitar() {
+    if (!this.#deshacer) return;
+    const { id, indice, titulo } = this.#deshacer;
+    this.#favoritas = insertAt(loadFavorites(), id, indice);
+    saveFavorites(this.#favoritas);
+    this.#deshacer = null;
+    this.#pintarLista();
+    this.#anunciar(`«${titulo}» vuelve a tu lista.`);
+  }
+
+  /** Línea de estado: los lectores de pantalla la anuncian (role="status"). */
+  #anunciar(texto, { deshacer = false, visible = true } = {}) {
+    if (!this.#avisoLista) return;
+    const mensaje = document.createElement('span');
+    mensaje.textContent = texto;
+    const partes = [mensaje];
+    if (deshacer) {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'ml-deshacer';
+      boton.dataset.deshacer = '';
+      boton.textContent = 'Deshacer';
+      partes.push(boton);
+    }
+    this.#avisoLista.classList.toggle('sr-only', !visible);
+    this.#avisoLista.replaceChildren(...partes);
   }
 
   #pintarEstado(boton, titulo) {
@@ -381,11 +427,18 @@ export class QueVer {
     boton.setAttribute('aria-label', vista ? `${titulo}: ya observada. Marcar como por descubrir` : `${titulo}: por descubrir. Marcar como ya observada`);
   }
 
+  /** Al entrar en Mi lista: se pinta con lo último guardado y el aviso anterior se retira. */
+  pintarMiLista() {
+    this.#deshacer = null;
+    this.#avisoLista?.replaceChildren();
+    this.#pintarLista();
+  }
+
   /**
    * Pinta Mi lista: las favoritas en el orden en que se guardaron, filtradas por su estado.
    * Cada tarjeta conserva su número de colección aunque haya un filtro activo.
    */
-  pintarMiLista() {
+  #pintarLista() {
     if (!this.#miLista) return;
     this.#favoritas = loadFavorites();
     this.#observadas = loadObserved();

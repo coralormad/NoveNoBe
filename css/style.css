@@ -145,7 +145,6 @@ main { padding: 2rem var(--margen-lateral); }
   font-size: var(--texto-l);
   transition: background-color var(--transicion);
 }
-.fila-flechas button:hover { background: var(--color-secundario); }
 
 .carrusel {
   --tarjetas-visibles: 2.2;
@@ -164,22 +163,13 @@ main { padding: 2rem var(--margen-lateral); }
 
 .fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
 
-.generos { display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none; }
-.generos button {
-  min-height: 44px;
-  padding: 0.5rem 1.1rem;
-  border-radius: 999px;
-  border: 1px solid var(--color-borde-control);
-  color: var(--color-texto-suave);
-  font-size: var(--texto-s);
-  white-space: nowrap;
+.generos {
+  display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
+  padding: 4px 2px 12px; /* aire para el halo, el leve ascenso y la línea de la cápsula */
 }
-.generos button[aria-pressed="true"] {
-  background: var(--color-primario);
-  border-color: var(--color-primario);
-  color: var(--color-sobre-primario);
-  font-weight: 600;
-}
+/* Los géneros de Inicio usan la cápsula de Películas (.capsula, sección «Marquesina») */
+.generos .capsula { flex-shrink: 0; white-space: nowrap; color: var(--color-texto-suave); }
+.generos .capsula[aria-pressed="true"] { color: var(--color-sobre-primario); }
 
 /* 6. TARJETAS --------------------------------------------- */
 .tarjeta {
@@ -406,7 +396,6 @@ main { padding: 2rem var(--margen-lateral); }
   border-radius: 50%;
   transition: background-color var(--transicion);
 }
-.icono-boton:hover { background: var(--color-secundario); }
 .icono-boton svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 /* 11. INTERRUPTOR DE TEMA --------------------------------- */
@@ -538,7 +527,6 @@ main { padding: 2rem var(--margen-lateral); }
   background: var(--color-primario); color: var(--color-sobre-primario); font-weight: 600;
   transition: translate var(--dur-rapida) var(--curva-cine);
 }
-.diapositiva-boton:hover { translate: 0 -2px; }
 
 /* Logo "media lectura": en claro solo la mitad superior; al interactuar se completa */
 .hero-logo {
@@ -928,7 +916,6 @@ main { padding: 2rem var(--margen-lateral); }
   font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   transition: background-color var(--transicion);
 }
-.boton-mas:hover { background: var(--color-secundario); }
 .boton-mas[hidden] { display: none; }
 
 @media (prefers-reduced-motion: reduce) { .pestanas button::after { transition: none; } }
@@ -1261,9 +1248,7 @@ main { padding: 2rem var(--margen-lateral); }
   font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   transition: background-color var(--dur-rapida), color var(--dur-rapida), box-shadow var(--dur-rapida);
 }
-.qv-boton:hover { box-shadow: var(--capsula-halo); }
 .qv-boton--secundario { background: none; color: var(--color-texto); border-color: var(--color-borde-control); }
-.qv-boton--secundario:hover { border-color: var(--color-primario); }
 .qv-boton[hidden] { display: none; }
 .qv-boton:focus-visible, .qv-favorita:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
 
@@ -1431,11 +1416,11 @@ main { padding: 2rem var(--margen-lateral); }
   font-size: var(--texto-s);
   transition: background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
 }
-.ml-filtro:hover { border-color: var(--color-primario); color: var(--color-texto); }
 .ml-filtro[aria-pressed="true"] {
   background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario);
 }
-.ml-filtro:focus-visible, .ml-estado:focus-visible, .ml-vacio-enlace:focus-visible {
+.ml-filtro:focus-visible, .ml-estado:focus-visible, .ml-vacio-enlace:focus-visible,
+.ml-quitar:focus-visible, .ml-deshacer:focus-visible, .cierre a:focus-visible {
   outline: 2px solid var(--color-foco); outline-offset: 3px;
 }
 
@@ -1448,18 +1433,48 @@ main { padding: 2rem var(--margen-lateral); }
 }
 /* En claro y sin póster, el cartel es claro: el número pasa a tinta oscura */
 :root[data-theme="claro"] .qv-cartel:not(.con-poster) .ml-numero { color: var(--color-texto-suave); text-shadow: none; }
-.ml-acciones { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+/* Jerarquía de acciones: el estado es la principal (claqueta), quitar es secundaria y discreta */
+.ml-acciones {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.25rem;
+  padding-top: 0.85rem; border-top: 1px solid var(--color-borde);
+}
 .ml-estado {
-  min-height: 44px; padding: 0.45rem 1rem; border-radius: var(--radio);
-  border: 1px dashed var(--color-borde-control); color: var(--color-texto-suave);
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  min-height: 44px; padding: 0.5rem 0.95rem 0.5rem 0.8rem; border-radius: 3px;
+  border: 1px solid var(--color-borde-control); border-left-width: 3px;
+  color: var(--color-texto-suave);
   font-family: var(--fuente-detalle); font-size: var(--texto-meta);
   letter-spacing: var(--tracking-meta); text-transform: uppercase;
-  transition: color var(--dur-rapida), border-color var(--dur-rapida);
 }
-.ml-estado::before { content: '○ '; }
-.ml-estado:hover { border-color: var(--color-primario); color: var(--color-texto); }
-.ml-estado[aria-pressed="true"] { border-style: solid; color: var(--color-texto); }
-.ml-estado[aria-pressed="true"]::before { content: '● '; }
+/* Testigo de estado: un punto vacío que se «revela» al marcar la película */
+.ml-estado::before {
+  content: ''; inline-size: 7px; block-size: 7px; border-radius: 50%;
+  border: 1px solid currentColor; transition: background-color var(--dur-rapida), box-shadow var(--dur-rapida);
+}
+.ml-estado[aria-pressed="true"] {
+  border-color: var(--color-primario); color: var(--color-texto);
+  background: color-mix(in srgb, var(--color-primario) 12%, transparent);
+}
+.ml-estado[aria-pressed="true"]::before {
+  background: var(--color-primario); border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primario) 22%, transparent);
+}
+/* Quitar: acción de texto, sin caja; avisa al acercarse (tachado discreto), nunca grita */
+.qv-favorita.ml-quitar {
+  min-height: 44px; padding: 0.5rem 0.1rem; border: 0; border-radius: 0; background: none;
+  color: var(--color-texto-suave);
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 5px;
+  transition: color var(--dur-rapida), text-decoration-color var(--dur-rapida);
+}
+
+/* Línea de estado: anuncia filtros (solo lectores) y ofrece «Deshacer» al quitar */
+.ml-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; color: var(--color-texto-suave); font-size: var(--texto-s); }
+.ml-aviso:empty { display: none; }
+.ml-deshacer {
+  min-height: 44px; padding: 0.4rem 0.2rem;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase;
+  color: var(--color-primario); text-decoration: underline; text-underline-offset: 5px;
+}
 
 /* --- Mi lista: vacío --------------------------------------------------------------- */
 .ml-vacio {
@@ -1477,5 +1492,116 @@ main { padding: 2rem var(--margen-lateral); }
 @media (prefers-reduced-motion: reduce) {
   .qv-hallazgo { animation: none; }
   .qv-fachada, .qv-rendija span, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }
-  .ml-filtro, .ml-estado { transition: none; }
+  .ml-filtro, .ml-estado, .ml-estado::before, .ml-quitar { transition: none; }
 }
+
+/* =========================================================
+   10. INTERACCIÓN DE BOTONES: una familia, cuatro registros
+   Base común: la misma duración y curva, ascenso de 1-2px al acercarse y
+   un leve «hundimiento» al pulsar. Solo con ratón (hover: hover); en táctil,
+   solo la respuesta al pulsar. Con movimiento reducido, sin desplazamientos.
+   ========================================================= */
+:is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado,
+    .icono-boton, .fila-flechas button, .ml-quitar, .ml-deshacer) {
+  transition: transform var(--dur-rapida) var(--curva-cine), filter var(--dur-rapida),
+              background-color var(--dur-rapida), color var(--dur-rapida),
+              border-color var(--dur-rapida), box-shadow var(--dur-rapida) var(--curva-cine),
+              text-decoration-color var(--dur-rapida);
+}
+
+@media (hover: hover) {
+  /* 1. Principales (rellenos): ganan luz y se elevan un poco */
+  .diapositiva-boton:hover, .qv-boton:not(.qv-boton--secundario):hover {
+    filter: brightness(1.08); transform: translateY(-2px); box-shadow: var(--capsula-halo);
+  }
+  /* 2. De contorno: el borde se enciende y el fondo se tiñe apenas */
+  .boton-mas:hover, .qv-boton--secundario:hover, .ml-filtro:not([aria-pressed="true"]):hover, .ml-estado:hover {
+    transform: translateY(-1px); border-color: var(--color-primario); color: var(--color-texto);
+    background: color-mix(in srgb, var(--color-primario) 10%, transparent);
+  }
+  .ml-estado[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--color-primario) 18%, transparent); }
+  /* 3. Iconos y flechas: el círculo se ilumina, el icono no se mueve */
+  .icono-boton:hover, .fila-flechas button:hover {
+    background: var(--color-secundario); color: var(--color-texto);
+    box-shadow: inset 0 0 0 1px var(--color-borde-control);
+  }
+  /* 4. Acciones de texto: aparece el subrayado; quitar se oscurece y se tacha levemente */
+  .ml-quitar:hover { color: var(--color-texto); text-decoration-color: currentColor; text-decoration-line: line-through; }
+  .ml-deshacer:hover { color: var(--color-texto); }
+  .cierre a:hover { color: var(--color-texto); text-decoration-color: currentColor; }
+}
+
+/* Al pulsar (también en táctil): se hunde un instante, sin rebotes */
+.diapositiva-boton:active, .qv-boton:active, .boton-mas:active, .ml-filtro:active,
+.ml-estado:active, .capsula:active { transform: translateY(0) scale(0.97); filter: none; }
+.icono-boton:active, .fila-flechas button:active { transform: scale(0.92); }
+
+/* Desactivados: sin respuesta, se ve que no se pueden usar */
+:is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado, .capsula,
+    .icono-boton, .fila-flechas button):disabled {
+  opacity: 0.45; cursor: not-allowed; transform: none; filter: none; box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado, .capsula,
+      .icono-boton, .fila-flechas button):is(:hover, :active) { transform: none; }
+}
+
+/* =========================================================
+   11. CIERRE (footer): el último plano de la experiencia
+   ========================================================= */
+.cierre {
+  position: relative; margin-top: 4rem;
+  padding: 4rem var(--margen-lateral) 2.5rem;
+  display: grid; gap: 3rem;
+  color: var(--color-texto-suave);
+}
+/* Transición desde el contenido: una línea de luz que se apaga hacia los lados */
+.cierre::before {
+  content: ''; position: absolute; top: 0; left: var(--margen-lateral); right: var(--margen-lateral); height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-borde-control), transparent);
+}
+.cierre::after {
+  content: ''; position: absolute; inset: 0 0 auto; height: 10rem; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 45% 100% at 50% 0%, color-mix(in srgb, var(--lavanda-300) 9%, transparent), transparent);
+}
+
+/* La frase, enmarcada con las esquinas de un visor */
+.cierre-plano {
+  position: relative; justify-self: center; text-align: center;
+  padding: 1.75rem clamp(1.5rem, 5vw, 3.5rem); display: grid; gap: 0.9rem;
+}
+.cierre-plano::before, .cierre-plano::after {
+  content: ''; position: absolute; inline-size: 18px; block-size: 18px;
+  border-color: var(--color-borde-control); border-style: solid;
+}
+.cierre-plano::before { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.cierre-plano::after { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+.cierre-frase p {
+  font-family: var(--fuente-titulos); font-style: italic; font-size: var(--titulo-s);
+  line-height: var(--interlineado-titulo); color: var(--color-texto); text-wrap: balance;
+}
+.cierre-pista {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase;
+}
+
+/* Marca · navegación · créditos */
+.cierre-fila {
+  display: grid; gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-borde);
+  font-size: var(--texto-s); line-height: var(--interlineado-texto);
+}
+.cierre-logo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); color: var(--color-texto); }
+.cierre-nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
+.cierre-nav a, .cierre-creditos a {
+  display: inline-block; padding-block: 0.6rem; color: var(--color-texto-suave);
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 5px;
+  transition: color var(--dur-rapida), text-decoration-color var(--dur-rapida);
+}
+.cierre-creditos a { padding-block: 0; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.cierre-creditos { display: grid; gap: 0.5rem; font-size: var(--texto-xs); max-width: 48ch; }
+@media (min-width: 850px) {
+  .cierre-fila { grid-template-columns: auto 1fr minmax(0, 46ch); align-items: start; gap: 3rem; }
+  .cierre-nav ul { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .cierre-nav a, .cierre-creditos a { transition: none; } }

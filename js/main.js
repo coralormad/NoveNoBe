@@ -168,6 +168,7 @@ function renderGenreChips(genres, activeId) {
   const buttons = genres.map(({ id, name }) => {
     const button = document.createElement('button');
     button.type = 'button';
+    button.className = 'capsula'; // la misma cápsula que en Películas: mismo lenguaje de luz y respuesta
     button.textContent = name;
     button.dataset.genreId = id;
     button.setAttribute('aria-pressed', String(id === activeId));
@@ -716,6 +717,7 @@ function enableCapsuleLight(container) {
   });
 }
 enableCapsuleLight(radiografia.capsulas);
+enableCapsuleLight(els.genres); // los géneros de Inicio comparten la luz que sigue al cursor
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
@@ -724,6 +726,7 @@ const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handl
 const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
   miLista: document.querySelector('#catalogo-grid'),
   filtrosLista: document.querySelector('#mi-lista-filtros'),
+  avisoLista: document.querySelector('#mi-lista-aviso'),
 });
 
 Promise.allSettled([
