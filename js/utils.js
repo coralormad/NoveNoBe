@@ -220,3 +220,24 @@ export const genreHeadline = (label) => `Solo ${label}. Lo demás queda fuera de
 /** Pura: las N más populares de esos géneros (sin ids, de todo el catálogo). */
 export const topOfGenre = (movies, ids = [], max = 5) =>
   sortByPopularity(filterByGenre(movies, ids)).slice(0, max);
+
+// ---------- Mi lista ----------
+
+/** Filtros de Mi lista: qué películas deja ver cada uno según estén vistas o no. */
+export const FILTROS_LISTA = Object.freeze(['todas', 'pendientes', 'observadas']);
+
+/**
+ * Pura: filtra las películas guardadas por su estado.
+ * @param {Array<{id:number}>} lista - Películas guardadas.
+ * @param {number[]} observadas - Ids de las ya vistas.
+ * @param {'todas'|'pendientes'|'observadas'} [filtro='todas']
+ * @returns {Array} Array nuevo (no muta la lista).
+ */
+export function filterByWatched(lista, observadas, filtro = 'todas') {
+  if (filtro === 'observadas') return lista.filter(({ id }) => observadas.includes(id));
+  if (filtro === 'pendientes') return lista.filter(({ id }) => !observadas.includes(id));
+  return [...lista];
+}
+
+/** Pura: número de colección con dos cifras (0 → «01»). Es un orden, no una cifra que leer. */
+export const numeroDeColeccion = (indice) => String(indice + 1).padStart(2, '0');

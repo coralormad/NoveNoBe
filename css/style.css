@@ -1390,10 +1390,92 @@ main { padding: 2rem var(--margen-lateral); }
 /* Mi lista: las favoritas con la misma tarjeta de los hallazgos */
 .qv-lista { display: grid; gap: 2rem 2.5rem; }
 @media (min-width: 900px) { .qv-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.qv-lista-vacia { color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
-.qv-lista-vacia a { color: var(--color-primario); text-underline-offset: 3px; }
+
+/* --- Mi lista: cabecera editorial ----------------------------------------------- */
+.ml-cabecera {
+  position: relative; isolation: isolate;
+  display: grid; gap: 1.5rem; align-items: end;
+  padding-block: 1.5rem 2rem; border-bottom: 1px solid var(--color-borde);
+}
+/* Un haz de luz en diagonal, como el que entra por una ventana: solo atmósfera */
+.ml-cabecera::before {
+  content: ''; position: absolute; z-index: -1; inset: 0 0 0 30%;
+  background: linear-gradient(115deg, transparent 20%,
+    color-mix(in srgb, var(--lavanda-300) 10%, transparent) 45%, transparent 75%);
+  pointer-events: none;
+}
+.ml-titular { display: grid; gap: 0.6rem; justify-items: start; }
+.ml-etiqueta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.ml-etiqueta::before { content: ''; inline-size: 5px; block-size: 5px; border-radius: 50%; background: currentColor; }
+.mi-lista h2 { font-size: var(--titulo-l); line-height: var(--interlineado-titulo); }
+.ml-entradilla { color: var(--color-texto-suave); font-size: var(--texto-m); }
+.ml-cartela {
+  max-width: 22ch; padding-top: 1rem; border-top: 1px solid var(--color-borde-control);
+  font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l);
+  line-height: var(--interlineado-titulo); color: var(--color-texto);
+}
+@media (min-width: 760px) {
+  .ml-cabecera { grid-template-columns: minmax(0, 1fr) auto; }
+  .ml-cartela { justify-self: end; text-align: right; font-size: var(--titulo-s); }
+}
+
+/* --- Mi lista: filtros (sin contadores: estado, no cifras) --------------------------- */
+.ml-filtros { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.ml-filtro {
+  min-height: 44px; padding: 0.45rem 1.2rem; border-radius: 999px;
+  border: 1px solid var(--color-borde-control); color: var(--color-texto-suave);
+  font-size: var(--texto-s);
+  transition: background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
+}
+.ml-filtro:hover { border-color: var(--color-primario); color: var(--color-texto); }
+.ml-filtro[aria-pressed="true"] {
+  background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario);
+}
+.ml-filtro:focus-visible, .ml-estado:focus-visible, .ml-vacio-enlace:focus-visible {
+  outline: 2px solid var(--color-foco); outline-offset: 3px;
+}
+
+/* --- Mi lista: tarjeta ----------------------------------------------------------- */
+.ml-numero {
+  position: absolute; z-index: 2; top: 0.6rem; left: 0.7rem;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 700;
+  letter-spacing: var(--tracking-meta); color: var(--lavanda-900);
+  text-shadow: 0 1px 4px rgb(8 4 10 / 0.8);
+}
+/* En claro y sin póster, el cartel es claro: el número pasa a tinta oscura */
+:root[data-theme="claro"] .qv-cartel:not(.con-poster) .ml-numero { color: var(--color-texto-suave); text-shadow: none; }
+.ml-acciones { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.ml-estado {
+  min-height: 44px; padding: 0.45rem 1rem; border-radius: var(--radio);
+  border: 1px dashed var(--color-borde-control); color: var(--color-texto-suave);
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase;
+  transition: color var(--dur-rapida), border-color var(--dur-rapida);
+}
+.ml-estado::before { content: '○ '; }
+.ml-estado:hover { border-color: var(--color-primario); color: var(--color-texto); }
+.ml-estado[aria-pressed="true"] { border-style: solid; color: var(--color-texto); }
+.ml-estado[aria-pressed="true"]::before { content: '● '; }
+
+/* --- Mi lista: vacío --------------------------------------------------------------- */
+.ml-vacio {
+  grid-column: 1 / -1; display: grid; gap: 0.6rem; justify-items: start;
+  padding: 2.5rem 2rem; border: 1px dashed var(--color-borde); border-radius: var(--radio);
+}
+.ml-vacio-titulo { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--titulo-s); line-height: var(--interlineado-titulo); }
+.ml-vacio-texto { color: var(--color-texto-suave); line-height: var(--interlineado-texto); max-width: 46ch; }
+.ml-vacio-enlace {
+  margin-top: 0.6rem; font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase;
+  color: var(--color-primario); text-underline-offset: 4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .qv-hallazgo { animation: none; }
   .qv-fachada, .qv-rendija span, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }
+  .ml-filtro, .ml-estado { transition: none; }
 }

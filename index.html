@@ -266,8 +266,20 @@
 
     <!-- 4. VISTA CATÁLOGO (Mi lista) -->
     <div id="vista-catalogo" class="vista" hidden>
-      <section class="catalogo">
-        <h2 id="catalogo-titulo"></h2>
+      <section class="catalogo mi-lista" aria-labelledby="catalogo-titulo">
+        <header class="ml-cabecera">
+          <div class="ml-titular">
+            <p class="ml-etiqueta">Historias en observación</p>
+            <h2 id="catalogo-titulo">Mi lista</h2>
+            <p class="ml-entradilla">Historias guardadas. Miradas pendientes.</p>
+          </div>
+          <p class="ml-cartela">No todo lo que guardas<br> lo has visto de verdad.</p>
+        </header>
+        <div id="mi-lista-filtros" class="ml-filtros" role="group" aria-label="Filtrar mi lista" hidden>
+          <button type="button" class="ml-filtro" data-filtro="todas" aria-pressed="true">Todas</button>
+          <button type="button" class="ml-filtro" data-filtro="pendientes" aria-pressed="false">Por descubrir</button>
+          <button type="button" class="ml-filtro" data-filtro="observadas" aria-pressed="false">Ya observadas</button>
+        </div>
         <div id="catalogo-grid" class="qv-lista"></div> <!-- Mi lista: las favoritas de «Qué ver» -->
       </section>
     </div> <!-- /vista-catalogo -->

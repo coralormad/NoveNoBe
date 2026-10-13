@@ -721,7 +721,10 @@ enableCapsuleLight(radiografia.capsulas);
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
 // Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
-const queVer = new QueVer(document.querySelector('#vista-que-ver'), { miLista: document.querySelector('#catalogo-grid') });
+const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
+  miLista: document.querySelector('#catalogo-grid'),
+  filtrosLista: document.querySelector('#mi-lista-filtros'),
+});
 
 Promise.allSettled([
   startRouter(handleRoute),
