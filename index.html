@@ -298,10 +298,16 @@
             <div class="ficha-cabecera-cuerpo">
               <div class="ficha-poster-marco">
                 <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
-                <!-- Visor de la nota: el anillo se ve siempre; la cifra se enfoca al mirarla -->
+                <!-- La mirilla: una lente fina en la esquina del cartel. Aro exterior = TMDB (la mayoría);
+                     aro interior = tu mirada (solo de noche). La cifra se enfoca al mirarla. -->
                 <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
+                  <svg class="visor-optica" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                    <circle class="visor-borde" cx="50" cy="50" r="46"/>
+                    <path class="visor-marcas" d="M50 0v9M50 91v9M0 50h9M91 50h9"/>
+                    <circle class="visor-arco visor-arco--tmdb" cx="50" cy="50" r="46" pathLength="100" transform="rotate(-90 50 50)"/>
+                    <circle class="visor-arco visor-arco--propia" cx="50" cy="50" r="38" pathLength="100" transform="rotate(-90 50 50)"/>
+                  </svg>
                   <span id="ficha-nota-cifra" class="visor-cifra" aria-hidden="true"></span>
-                  <!-- De noche: tu nota, en el aro interior (la lee el formulario «Tu mirada») -->
                   <span id="ficha-nota-propia" class="visor-propia solo-noche" aria-hidden="true"></span>
                 </button>
               </div>
@@ -313,31 +319,6 @@
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
                 <p id="ficha-votos" class="ficha-votos" aria-hidden="true"></p>
-
-                <!-- De día: la rendija. Solo se insinúa que hay otra lectura -->
-                <p class="ficha-rendija solo-dia">Una cifra no cuenta toda la historia. <span>Apaga la luz y mira otra vez.</span></p>
-
-                <!-- De noche: tu mirada (nota propia + cuaderno), guardada en localStorage -->
-                <form id="mirada" class="mirada solo-noche" aria-labelledby="mirada-titulo" novalidate>
-                  <h3 id="mirada-titulo" class="mirada-titulo">Tu mirada</h3>
-                  <div class="mirada-enfoque">
-                    <label for="mirada-nota" class="sr-only">Tu nota, de 0 a 10</label>
-                    <input id="mirada-nota" class="mirada-rango" type="range" min="0" max="10" step="0.5" value="5">
-                    <output id="mirada-cifra" class="mirada-cifra" for="mirada-nota"></output>
-                  </div>
-                  <label for="mirada-texto" class="mirada-etiqueta">Tu cuaderno</label>
-                  <textarea id="mirada-texto" class="mirada-texto" rows="3" maxlength="600"
-                    placeholder="Lo que viste y nadie cuenta"></textarea>
-                  <div class="mirada-acciones">
-                    <button type="submit" class="qv-boton">Guardar mi mirada</button>
-                    <button type="button" id="mirada-borrar" class="qv-boton qv-boton--secundario" hidden>Borrar</button>
-                  </div>
-                  <p id="mirada-estado" class="mirada-estado" role="status"></p>
-                  <p id="mirada-entrada" class="mirada-entrada" hidden>
-                    <time id="mirada-fecha"></time>
-                    <span id="mirada-cita"></span>
-                  </p>
-                </form>
               </div>
             </div>
           </header>
@@ -350,7 +331,9 @@
           </nav>
 
           <div class="ficha-cuerpo">
-            <!-- B. Ficha técnica y origen: los países, en texto; el mapa, plegado tras la ventana -->
+            <!-- B. Lo que se sabe y lo que se ve: la ficha técnica (datos) y, al otro lado de la mirilla,
+                 tu lectura (de día, la rendija; de noche, la máquina) -->
+            <div class="ficha-par">
             <section id="seccion-tecnica" class="ficha-seccion" aria-labelledby="ficha-tecnica-titulo" tabindex="-1">
               <h3 id="ficha-tecnica-titulo" class="sobretitulo">Ficha técnica</h3>
               <dl id="ficha-equipo" class="ficha-equipo"></dl>
@@ -359,6 +342,38 @@
                 <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
               </details>
             </section>
+
+            <section id="seccion-mirada" class="ficha-seccion" aria-labelledby="mirada-titulo" tabindex="-1">
+              <h3 id="mirada-titulo" class="sobretitulo">Lo que no se ve</h3>
+              <!-- De día: solo se insinúa que hay otra lectura -->
+              <p class="ficha-rendija solo-dia">Una cifra no cuenta toda la historia. <span>Apaga la luz y mira otra vez.</span></p>
+
+              <!-- De noche: la máquina de mirar. Escribes, calibras tu enfoque y revelas tu lectura (localStorage) -->
+              <form id="mirada" class="maquina solo-noche" novalidate>
+                <p id="mirada-piloto" class="maquina-piloto" data-estado="vacia" aria-hidden="true">Sin calibrar</p>
+                <div class="maquina-placa">
+                  <label for="mirada-texto" class="maquina-pregunta">Lo que viste y nadie cuenta</label>
+                  <textarea id="mirada-texto" class="maquina-texto" rows="4" maxlength="600"
+                    placeholder="Escribe lo que la nota no dice"></textarea>
+                </div>
+                <div class="maquina-calibre">
+                  <label for="mirada-nota" class="maquina-etiqueta">Tu enfoque</label>
+                  <input id="mirada-nota" class="maquina-regla" type="range" min="0" max="10" step="0.5" value="5">
+                  <output id="mirada-cifra" class="maquina-cifra" for="mirada-nota"></output>
+                </div>
+                <div class="maquina-acciones">
+                  <button type="submit" class="qv-boton maquina-revelar">Revelar mi lectura</button>
+                  <button type="button" id="mirada-reescribir" class="maquina-borrar maquina-reescribir">Reescribir</button>
+                  <button type="button" id="mirada-borrar" class="maquina-borrar" hidden>Borrar</button>
+                </div>
+                <p id="mirada-estado" class="maquina-estado" role="status"></p>
+                <p id="mirada-entrada" class="maquina-revelado" hidden>
+                  <span class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span></span>
+                  <span id="mirada-cita" class="maquina-cita"></span>
+                </p>
+              </form>
+            </section>
+            </div> <!-- /ficha-par -->
 
             <!-- C. Reparto: el patio de enfrente; cada persona, una ventana que se enciende al mirarla -->
             <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">

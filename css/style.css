@@ -907,101 +907,185 @@ main { padding: 2rem var(--margen-lateral); }
   border-radius: var(--radio); box-shadow: var(--sombra-tarjeta);
 }
 
-/* El visor (teleobjetivo): la nota se lee a través de una lente.
-   Anillo = nota real (siempre visible). Cifra = «media lectura» como el logo:
-   solo la mitad de arriba y desenfocada; al mirarla (hover, foco o toque) se enfoca entera. */
+/* La mirilla: una lente fina en la esquina del cartel, no una insignia.
+   Aro exterior = TMDB (la versión oficial). Aro interior = tu mirada: de día, punteado y vacío
+   (falta una mirada); de noche, tu nota. Cifra = «media lectura», como el logo: solo la mitad
+   de arriba y desenfocada; al mirarla (hover, foco o toque) se enfoca entera. */
 .ficha-poster-marco { position: relative; }
 .visor {
-  --visor-tam: 82px;
-  position: absolute; right: -0.75rem; bottom: -0.75rem;
+  --visor-tam: 64px;
+  position: absolute; right: 0.6rem; bottom: 0.6rem;
   width: var(--visor-tam); height: var(--visor-tam); border-radius: 50%;
   display: grid; place-items: center;
-  background: conic-gradient(var(--color-primario) var(--visor-angulo, 0deg),
-              color-mix(in srgb, var(--color-borde-control) 35%, transparent) 0);
-  box-shadow: var(--sombra-tarjeta);
-  animation: visor-enfoca 1s calc(var(--dur-lenta) - 100ms) var(--curva-cine) both; /* tras la persiana */
+  background: color-mix(in srgb, var(--color-fondo) 72%, transparent);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); /* legibilidad sobre el cartel */
 }
-.visor::before { /* el cristal: tapa el centro y deja solo el aro */
-  content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--color-fondo);
+.visor:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.visor-optica { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.visor-optica * { fill: none; vector-effect: non-scaling-stroke; }
+.visor-borde { stroke: var(--color-borde-control); stroke-width: 1; opacity: 0.6; }
+.visor-marcas {   /* marcas de enfoque: calibran al aparecer */
+  stroke: var(--color-texto-suave); stroke-width: 1;
+  transform-box: view-box; transform-origin: 50% 50%;
+  animation: visor-calibra var(--dur-lenta) var(--dur-lenta) var(--curva-persiana) both; /* tras la persiana */
+}
+.visor-arco { stroke-linecap: round; transition: stroke-dasharray var(--dur-media) var(--curva-cine); }
+.visor-arco--tmdb {
+  stroke: var(--color-primario); stroke-width: 2;
+  stroke-dasharray: var(--arco-tmdb, 0) 100;
+  animation: arco-dibuja 1s var(--dur-lenta) var(--curva-cine) both;
+}
+.visor-arco--propia { stroke: var(--color-borde-control); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
+
+/* De noche: la mayoría queda tenue y tu mirada toma el aro interior.
+   Otros nombres de animación: al cambiar de tema, la mirilla vuelve a calibrar (sin JS). */
+:root[data-theme="oscuro"] .visor-arco--tmdb { opacity: 0.5; animation-name: arco-dibuja-noche; }
+:root[data-theme="oscuro"] .visor-marcas { animation-name: visor-calibra-noche; }
+:root[data-theme="oscuro"] .visor-arco--propia {
+  stroke: var(--lavanda-300); stroke-width: 3; opacity: 1;
+  stroke-dasharray: var(--arco-propia, 0) 100;
+  animation: arco-dibuja-noche 1s var(--dur-lenta) var(--curva-cine) both;
 }
 
-/* Aro interior: de día, una lente punteada sin enfocar (falta una mirada);
-   de noche, tu nota. Es un anillo: la máscara vacía el centro y deja ver la cifra. */
-.visor::after {
-  content: ''; position: absolute; inset: 11px; border-radius: 50%;
-  border: 1px dashed var(--color-borde-control); opacity: 0.6;
+.visor-cifra, .visor-propia {
+  position: relative;
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.15rem; line-height: 1;
 }
-:root[data-theme="oscuro"] .visor::after {
-  border: 0; opacity: 1;
-  background: conic-gradient(var(--lavanda-300) var(--visor-propia, 0deg),
-              color-mix(in srgb, var(--color-borde-control) 25%, transparent) 0);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-}
-/* De noche el aro de TMDB se queda fino y tenue: es la opinión de fuera */
-:root[data-theme="oscuro"] .visor {
-  background: conic-gradient(color-mix(in srgb, var(--color-primario) 55%, transparent) var(--visor-angulo, 0deg),
-              color-mix(in srgb, var(--color-borde-control) 25%, transparent) 0);
-  animation-name: visor-enfoca-noche; /* otro nombre: al cambiar de tema, la lente vuelve a enfocar */
-}
-:root[data-theme="oscuro"] .visor::before { inset: 3px; }
-.visor-propia {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1;
-  color: var(--lavanda-300);
-}
-.visor:not([data-propia]) .visor-propia { display: none; }
-:root[data-theme="oscuro"] .visor[data-propia] .visor-cifra { visibility: hidden; } /* de noche manda tu nota */
 .visor-cifra {
-  position: relative; /* por encima del cristal */
-  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1;
   color: var(--color-texto);
   clip-path: inset(0 0 50% 0); filter: blur(1.5px);
   transition: clip-path var(--dur-media) var(--curva-persiana), filter var(--dur-media);
 }
 .visor:is(:hover, :focus-visible, [aria-pressed="true"]) .visor-cifra { clip-path: inset(0); filter: none; }
-.visor:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.visor-propia { position: absolute; color: var(--lavanda-300); }
+.visor:not([data-propia]) .visor-propia { display: none; }
+:root[data-theme="oscuro"] .visor[data-propia] .visor-cifra { visibility: hidden; } /* de noche manda tu nota */
+
 .ficha-votos { opacity: 0; transition: opacity var(--dur-media); } /* reserva su sitio: no hay saltos */
 .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
-@keyframes visor-enfoca {
-  from { filter: blur(6px); transform: rotate(-120deg) scale(0.85); }
-}
-@keyframes visor-enfoca-noche {
-  from { filter: blur(6px); transform: rotate(120deg) scale(0.85); } /* gira al revés: mira otra vez */
+
+@keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
+@keyframes visor-calibra-noche { from { transform: rotate(45deg);  opacity: 0; } } /* gira al revés: mira otra vez */
+@keyframes arco-dibuja         { from { stroke-dasharray: 0 100; } }
+@keyframes arco-dibuja-noche   { from { stroke-dasharray: 0 100; } }
+
+/* B. Lo que se sabe | lo que se ve: ficha técnica y tu lectura, separadas por una línea de enfoque.
+   En la línea, una mirilla pequeña hace de nexo: de los datos objetivos a la interpretación propia.
+   En móvil, una debajo de otra (sin columnas que compriman los campos). */
+.ficha-par { display: grid; gap: 3.5rem; align-items: start; }
+@media (min-width: 1024px) {
+  .ficha-par { grid-template-columns: minmax(0, 700px) minmax(280px, 400px); gap: clamp(2rem, 4vw, 3.5rem); }
+  #seccion-mirada {
+    position: relative; align-self: stretch;
+    padding-left: clamp(1.5rem, 3vw, 2.5rem); border-left: 1px solid var(--color-borde);
+  }
+  #seccion-mirada::before { /* la mirilla-nexo: de día vacía, de noche enfocada */
+    content: ''; position: absolute; left: -8px; top: 0.15rem;
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 1px solid var(--color-borde-control); background: var(--color-fondo);
+  }
+  :root[data-theme="oscuro"] #seccion-mirada::before {
+    border-color: var(--lavanda-300);
+    background: radial-gradient(circle, var(--lavanda-300) 0 2px, var(--color-fondo) 2.5px);
+  }
 }
 
-/* De día: la rendija. Una frase en voz baja, sin contenido de la otra lectura */
-.ficha-rendija { font-family: var(--fuente-titulos); font-style: italic; color: var(--color-texto-suave); }
+/* De día: la rendija. Una frase en voz baja, sin nada de la otra lectura */
+.ficha-rendija { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); color: var(--color-texto-suave); }
 .ficha-rendija span { color: var(--color-primario); }
 
-/* De noche: tu mirada. Cuaderno de observación, no una caja de reseñas */
-.mirada {
-  display: grid; gap: 0.75rem; max-width: 46ch; padding-top: 1rem;
-  border-top: 1px solid var(--color-borde);
-}
-.mirada-titulo, .mirada-etiqueta, .mirada-estado, .mirada-entrada time {
-  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 400;
+/* De noche: la máquina de mirar. Pocos controles: escribir, calibrar, revelar */
+.maquina { display: grid; gap: 1.25rem; }
+.maquina-piloto, .maquina-etiqueta, .maquina-estado, .maquina-borrar, .maquina-revelado-meta {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
   letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
 }
-.mirada-enfoque { display: flex; align-items: center; gap: 1rem; }
-.mirada-rango { flex: 1; min-width: 0; accent-color: var(--lavanda-300); }
-.mirada-cifra {
+/* Piloto: un único indicador de estado (sin calibrar → calibrando → revelada) */
+.maquina-piloto { display: flex; align-items: center; gap: 0.6rem; }
+.maquina-piloto::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid var(--color-borde-control);
+  transition: background-color var(--dur-media), border-color var(--dur-media);
+}
+.maquina-piloto[data-estado="calibrando"]::before { background: var(--lavanda-300); border-color: var(--lavanda-300); }
+.maquina-piloto[data-estado="revelada"]::before { background: var(--color-primario); border-color: var(--color-primario); }
+
+/* Registrar la longitud de las marcas permite animarla (una variable CSS normal no se interpola) */
+@property --marca-l { syntax: '<length>'; inherits: false; initial-value: 14px; }
+/* La placa: el núcleo. Cuatro marcas de enfoque (la misma familia que la mirilla) que se cierran al escribir */
+.maquina-placa {
+  --marca: var(--color-borde-control); --marca-l: 14px;
+  display: grid; gap: 0.75rem; padding: 1.25rem;
+  background:
+    linear-gradient(var(--marca), var(--marca)) top left / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) top left / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) top right / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) top right / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) bottom left / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) bottom left / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) bottom right / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) bottom right / 1px var(--marca-l);
+  background-repeat: no-repeat;
+  transition: --marca-l var(--dur-media);
+}
+.maquina-placa:focus-within { --marca: var(--lavanda-300); --marca-l: 26px; } /* enfoca: es el foco visible */
+.maquina-pregunta { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); }
+.maquina-texto {
+  width: 100%; min-height: 6.4em; resize: vertical; border: 0; padding: 0;
+  font-family: var(--fuente-titulos); font-size: var(--texto-m); line-height: 1.6em; color: var(--color-texto);
+  background: repeating-linear-gradient(transparent 0 calc(1.6em - 1px), var(--color-borde) calc(1.6em - 1px) 1.6em);
+}
+.maquina-texto:focus { outline: none; } /* el foco lo marcan las esquinas de la placa */
+.maquina-texto::placeholder { color: var(--color-texto-suave); font-style: italic; }
+
+/* El calibre: una regla con una muesca. Hasta que la mueves, la cifra dice «¿Y tú?» */
+.maquina-calibre { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.4rem 1rem; }
+.maquina-etiqueta { grid-column: 1 / -1; }
+.maquina-regla {
+  --regla: repeating-linear-gradient(90deg, var(--color-borde-control) 0 1px, transparent 1px 10%) 0 50% / 100% 10px no-repeat,
+           linear-gradient(var(--color-borde-control), var(--color-borde-control)) 0 100% / 100% 1px no-repeat;
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 32px; background: none; cursor: pointer;
+}
+.maquina-regla::-webkit-slider-runnable-track { height: 18px; background: var(--regla); }
+.maquina-regla::-moz-range-track { height: 18px; background: var(--regla); }
+.maquina-regla::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 3px; height: 26px; margin-top: -4px; border-radius: 1px;
+  background: var(--lavanda-300); transition: background-color var(--dur-media);
+}
+.maquina-regla::-moz-range-thumb {
+  width: 3px; height: 26px; border: 0; border-radius: 1px; background: var(--lavanda-300);
+}
+.maquina-regla[data-vacia]::-webkit-slider-thumb { background: var(--color-borde-control); }
+.maquina-regla[data-vacia]::-moz-range-thumb { background: var(--color-borde-control); }
+.maquina-regla:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.maquina-cifra {
   min-width: 4.5ch; text-align: center;
   font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--lavanda-300);
-  transition: filter var(--dur-media);
 }
-.mirada-cifra[data-vacia] { font-size: var(--texto-m); filter: blur(0.6px); color: var(--color-texto-suave); }
-.mirada-texto {
-  width: 100%; resize: vertical; padding: 0.75rem;
-  font: inherit; color: var(--color-texto); background: var(--color-atenuado);
-  border: 1px solid var(--color-borde); border-radius: var(--radio);
+.maquina-cifra[data-vacia] { font-size: var(--texto-m); filter: blur(0.6px); color: var(--color-texto-suave); }
+
+.maquina-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+/* Dos estados de la máquina: escribiendo (placa + calibre + revelar) o revelada (resultado + reescribir) */
+.maquina-reescribir,
+.maquina[data-revelada] :is(.maquina-placa, .maquina-calibre, .maquina-revelar) { display: none; }
+.maquina[data-revelada] .maquina-reescribir { display: inline; }
+.maquina:not([data-revelada]) .maquina-revelado { display: none; } /* mientras escribes, no se repite */
+.maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
+.maquina-borrar { text-decoration: underline; text-underline-offset: 4px; }
+.maquina-borrar:hover { color: var(--color-texto); }
+.maquina-borrar:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.maquina-estado:empty { display: none; }
+
+/* El resultado: tu lectura revelada, con la persiana (la misma que abre el mapa) */
+.maquina-revelado {
+  display: grid; gap: 0.4rem; padding-left: 1rem; border-left: 1px solid var(--lavanda-300);
+  animation: persiana-sube var(--dur-lenta) var(--curva-persiana);
 }
-.mirada-texto:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 2px; }
-.mirada-acciones { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.mirada-estado:empty { display: none; }
-.mirada-entrada { display: grid; gap: 0.35rem; padding-left: 1rem; border-left: 2px solid var(--lavanda-300); }
-.mirada-entrada[hidden] { display: none; }
-#mirada-cita { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.4; }
+.maquina-revelado[hidden] { display: none; }
+.maquina-revelado-meta { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+.maquina-cita:empty { display: none; }
+.maquina-cita { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.4; }
 
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {
@@ -1022,8 +1106,7 @@ main { padding: 2rem var(--margen-lateral); }
 @media (max-width: 640px) {
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .ficha-poster-marco { width: 160px; }
-  .visor { --visor-tam: 68px; }
-  .mirada { justify-items: stretch; text-align: left; }
+  .visor { --visor-tam: 56px; right: 0.4rem; bottom: 0.4rem; }
   .ficha-generos { justify-content: center; }
 }
 

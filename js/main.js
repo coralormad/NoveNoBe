@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToAngle, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToArc, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -66,7 +66,11 @@ const mirada = {
   entrada: document.querySelector('#mirada-entrada'),
   fecha: document.querySelector('#mirada-fecha'),
   cita: document.querySelector('#mirada-cita'),
+  piloto: document.querySelector('#mirada-piloto'),
+  reescribir: document.querySelector('#mirada-reescribir'),
+  enfoque: document.querySelector('#mirada-enfoque'),
 };
+const PILOTO = Object.freeze({ vacia: 'Sin calibrar', calibrando: 'Calibrando', revelada: 'Lectura revelada' });
 let miradaId = null;      // id de TMDB de la película abierta
 let miradaTocada = false; // ¿ha movido el enfoque? Sin moverlo, no hay nota propia
 const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
@@ -644,7 +648,7 @@ function renderNota(movie) {
   ficha.nota.hidden = sinVotos;
   ficha.votos.hidden = sinVotos;
   ficha.nota.setAttribute('aria-pressed', 'false'); // cada película empieza a medio leer
-  ficha.nota.style.setProperty('--visor-angulo', `${ratingToAngle(movie.rating)}deg`);
+  ficha.nota.style.setProperty('--arco-tmdb', ratingToArc(movie.rating));
   ficha.nota.setAttribute('aria-label', `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`);
   ficha.notaCifra.textContent = movie.ratingText;
   ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
@@ -661,9 +665,12 @@ function renderMirada(id) {
   mirada.texto.value = guardada?.texto ?? '';
   pintarCifraPropia(nota);
   mirada.borrar.hidden = !guardada;
+  setPiloto(guardada ? 'revelada' : 'vacia');
 
-  // El cuaderno: la última entrada guardada, como una anotación de observación
-  mirada.entrada.hidden = !guardada?.texto;
+  // Revelada: la máquina muestra el resultado (fecha, enfoque y lectura) en lugar de los controles
+  mirada.form.toggleAttribute('data-revelada', Boolean(guardada));
+  mirada.entrada.hidden = !guardada;
+  mirada.enfoque.textContent = nota === null ? '' : `Tu enfoque ${nota.toFixed(1)}`;
   mirada.cita.textContent = guardada?.texto ?? '';
   const fecha = guardada?.fecha ? new Date(guardada.fecha) : null;
   mirada.fecha.dateTime = guardada?.fecha ?? '';
@@ -671,21 +678,37 @@ function renderMirada(id) {
     ? `Observada el ${FECHA_MIRADA.format(fecha)}`
     : '';
 
-  // El aro interior del visor: tu nota (de noche). Sin nota, el aro queda vacío
+  pintarAroPropio(nota);
+}
+
+/** El aro interior de la mirilla: tu nota (solo de noche). Sin nota, el aro queda vacío. */
+function pintarAroPropio(nota) {
   ficha.nota.toggleAttribute('data-propia', nota !== null);
-  ficha.nota.style.setProperty('--visor-propia', `${ratingToAngle(nota ?? 0)}deg`);
+  ficha.nota.style.setProperty('--arco-propia', ratingToArc(nota ?? 0));
   ficha.notaPropia.textContent = nota === null ? '' : nota.toFixed(1);
+}
+
+/** El piloto de la máquina: un solo indicador con tres estados. */
+function setPiloto(estado) {
+  mirada.piloto.dataset.estado = estado;
+  mirada.piloto.textContent = PILOTO[estado];
 }
 
 /** La cifra del enfoque: «¿Y tú?» hasta que mueves el rango; después, tu nota nítida. */
 function pintarCifraPropia(nota) {
   mirada.cifra.textContent = nota === null ? '¿Y tú?' : nota.toFixed(1);
   mirada.cifra.toggleAttribute('data-vacia', nota === null);
+  mirada.rango.toggleAttribute('data-vacia', nota === null);
+  mirada.rango.setAttribute('aria-valuetext', nota === null ? 'Sin nota' : `${nota.toFixed(1)} sobre 10`);
 }
 
+/** Al calibrar, la mirilla de arriba responde en directo: la máquina y la lente son el mismo mecanismo. */
 function handleMiradaInput() {
   miradaTocada = true;
-  pintarCifraPropia(Number(mirada.rango.value));
+  const nota = Number(mirada.rango.value);
+  pintarCifraPropia(nota);
+  pintarAroPropio(nota); // vista previa: no se guarda hasta revelar
+  setPiloto('calibrando');
 }
 
 function handleMiradaSubmit(event) {
@@ -697,14 +720,26 @@ function handleMiradaSubmit(event) {
     fecha: new Date().toISOString(),
   };
   if (nueva.nota === null && !nueva.texto.trim()) {
-    mirada.estado.textContent = 'Mueve el enfoque o escribe algo antes de guardar.';
+    mirada.estado.textContent = 'Escribe lo que viste o calibra tu enfoque antes de revelar.';
     return;
   }
   const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
   mirada.estado.textContent = ok
-    ? 'Tu mirada queda guardada en este navegador.'
+    ? 'Tu lectura queda guardada en este navegador.'
     : 'No se ha podido guardar: el navegador bloquea el almacenamiento.';
-  if (ok) renderMirada(miradaId);
+  if (ok) {
+    mirada.entrada.hidden = true;  // se oculta y vuelve a aparecer: la persiana se repite
+    void mirada.entrada.offsetWidth; // fuerza al navegador a aplicar el cambio antes de mostrarla
+    renderMirada(miradaId);
+  }
+}
+
+/** Volver a escribir: la máquina se reabre con lo guardado, listo para cambiarlo. */
+function handleMiradaReescribir() {
+  mirada.form.removeAttribute('data-revelada');
+  mirada.estado.textContent = '';
+  setPiloto('calibrando');
+  mirada.texto.focus(); // el botón desaparece: el foco va a la placa
 }
 
 function handleMiradaBorrar() {
@@ -713,7 +748,7 @@ function handleMiradaBorrar() {
   mirada.estado.textContent = ok ? 'Mirada borrada.' : 'No se ha podido borrar.';
   if (ok) {
     renderMirada(miradaId);
-    mirada.rango.focus(); // el botón Borrar desaparece: el foco no se pierde
+    mirada.texto.focus(); // el botón Borrar desaparece: el foco no se pierde
   }
 }
 
@@ -805,6 +840,7 @@ ficha.nota.addEventListener('click', toggleNota);
 mirada.rango.addEventListener('input', handleMiradaInput);
 mirada.form.addEventListener('submit', handleMiradaSubmit);
 mirada.borrar.addEventListener('click', handleMiradaBorrar);
+mirada.reescribir.addEventListener('click', handleMiradaReescribir);
 // Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
 window.addEventListener('storage', (event) => {
   if (event.key === MIRADAS_KEY && miradaId !== null) renderMirada(miradaId);
