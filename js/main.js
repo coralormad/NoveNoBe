@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToAngle, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -41,6 +41,8 @@ const ficha = {
   original: document.querySelector('#ficha-original'),
   meta: document.querySelector('#ficha-meta'),
   nota: document.querySelector('#ficha-nota'),
+  notaCifra: document.querySelector('#ficha-nota-cifra'),
+  votos: document.querySelector('#ficha-votos'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
@@ -591,7 +593,7 @@ function renderFicha(movie) {
   ficha.meta.textContent = [movie.year, certificationText(pickCertification(movie.releaseDates)), movie.runtimeText]
     .filter(Boolean)
     .join(' · ');
-  ficha.nota.textContent = `★ ${movie.ratingText} · TMDB · ${movie.votesText}`;
+  renderNota(movie);
 
   ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
     const li = document.createElement('li');
@@ -615,6 +617,24 @@ function renderFicha(movie) {
   ficha.mapa.setAttribute('aria-label', nombres.length
     ? `Mapa de los países de producción: ${nombres.join(', ')}`
     : 'Mapa sin países de producción');
+}
+
+/** Visor de la nota: el anillo muestra la nota real; la cifra y los votos se descubren al mirarla. */
+function renderNota(movie) {
+  const sinVotos = movie.voteCount === 0; // sin votos no hay nota que enfocar
+  ficha.nota.hidden = sinVotos;
+  ficha.votos.hidden = sinVotos;
+  ficha.nota.setAttribute('aria-pressed', 'false'); // cada película empieza a medio leer
+  ficha.nota.style.setProperty('--visor-angulo', `${ratingToAngle(movie.rating)}deg`);
+  ficha.nota.setAttribute('aria-label', `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`);
+  ficha.notaCifra.textContent = movie.ratingText;
+  ficha.votos.textContent = `TMDB · ${movie.votesText}`;
+}
+
+/** Tocar o pulsar el visor deja la nota enfocada (en móvil no hay hover). */
+function toggleNota() {
+  const enfocada = ficha.nota.getAttribute('aria-pressed') === 'true';
+  ficha.nota.setAttribute('aria-pressed', String(!enfocada));
 }
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
@@ -695,6 +715,7 @@ document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 pelis.pestanas.addEventListener('click', handlePestanaClick);
 ficha.ventana.addEventListener('toggle', showMap);
+ficha.nota.addEventListener('click', toggleNota);
 pelis.mas.addEventListener('click', () => {
   const accion = radiografia.genero
     ? () => fillGenre(pelis.rejilla.children.length + MIN_VISIBLES) // con filtro: 12 más de ese género

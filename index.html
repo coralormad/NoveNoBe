@@ -296,7 +296,13 @@
           <header class="ficha-cabecera">
             <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
             <div class="ficha-cabecera-cuerpo">
-              <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
+              <div class="ficha-poster-marco">
+                <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
+                <!-- Visor de la nota: el anillo se ve siempre; la cifra se enfoca al mirarla -->
+                <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
+                  <span id="ficha-nota-cifra" class="visor-cifra" aria-hidden="true"></span>
+                </button>
+              </div>
               <div class="ficha-info">
                 <p id="ficha-meta" class="ficha-meta"></p>
                 <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
@@ -304,7 +310,7 @@
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-                <p id="ficha-nota" class="ficha-nota"></p>
+                <p id="ficha-votos" class="ficha-votos" aria-hidden="true"></p>
               </div>
             </div>
           </header>

@@ -872,7 +872,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 .ficha-volver,
 .ficha-meta,
-.ficha-nota,
+.ficha-votos,
 .ficha-nav a,
 .ficha-equipo dt,
 .ficha-ventana-pista {
@@ -906,6 +906,39 @@ main { padding: 2rem var(--margen-lateral); }
   width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover;
   border-radius: var(--radio); box-shadow: var(--sombra-tarjeta);
 }
+
+/* El visor (teleobjetivo): la nota se lee a través de una lente.
+   Anillo = nota real (siempre visible). Cifra = «media lectura» como el logo:
+   solo la mitad de arriba y desenfocada; al mirarla (hover, foco o toque) se enfoca entera. */
+.ficha-poster-marco { position: relative; }
+.visor {
+  --visor-tam: 82px;
+  position: absolute; right: -0.75rem; bottom: -0.75rem;
+  width: var(--visor-tam); height: var(--visor-tam); border-radius: 50%;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--color-primario) var(--visor-angulo, 0deg),
+              color-mix(in srgb, var(--color-borde-control) 35%, transparent) 0);
+  box-shadow: var(--sombra-tarjeta);
+  animation: visor-enfoca 1s calc(var(--dur-lenta) - 100ms) var(--curva-cine) both; /* tras la persiana */
+}
+.visor::before { /* el cristal: tapa el centro y deja solo el aro */
+  content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--color-fondo);
+}
+.visor-cifra {
+  position: relative; /* por encima del cristal */
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1;
+  color: var(--color-texto);
+  clip-path: inset(0 0 50% 0); filter: blur(1.5px);
+  transition: clip-path var(--dur-media) var(--curva-persiana), filter var(--dur-media);
+}
+.visor:is(:hover, :focus-visible, [aria-pressed="true"]) .visor-cifra { clip-path: inset(0); filter: none; }
+.visor:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.ficha-votos { opacity: 0; transition: opacity var(--dur-media); } /* reserva su sitio: no hay saltos */
+.ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
+@keyframes visor-enfoca {
+  from { filter: blur(6px); transform: rotate(-120deg) scale(0.85); }
+}
+
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {
   font-family: var(--fuente-titulos); font-size: var(--titulo-m);
@@ -924,7 +957,8 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (max-width: 640px) {
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-  .ficha-poster { width: 160px; }
+  .ficha-poster-marco { width: 160px; }
+  .visor { --visor-tam: 68px; }
   .ficha-generos { justify-content: center; }
 }
 
