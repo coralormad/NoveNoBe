@@ -254,6 +254,16 @@ export function insertAt(ids, id, indice) {
   return [...ids.slice(0, posicion), id, ...ids.slice(posicion)];
 }
 
+/**
+ * Pura: ¿queda contenido fuera de plano a cada lado de una tira con scroll horizontal?
+ * El margen de 2px evita parpadeos por redondeos de subpíxel.
+ * @returns {{ antes: boolean, despues: boolean }}
+ */
+export const bordesDeScroll = (scrollLeft, clientWidth, scrollWidth, margen = 2) => ({
+  antes: scrollLeft > margen,
+  despues: scrollLeft + clientWidth < scrollWidth - margen,
+});
+
 /** Pura: nota (0-10) → porción del aro de la mirilla (0-100, el pathLength del SVG). Acotada. */
 export const ratingToArc = (rating) => Math.min(Math.max(Number(rating) || 0, 0), 10) * 10;
 

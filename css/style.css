@@ -163,10 +163,41 @@ main { padding: 2rem var(--margen-lateral); }
 
 .fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
 
-.generos {
-  display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
-  padding: 4px 2px 12px; /* aire para el halo, el leve ascenso y la línea de la cápsula */
+/* Tira de géneros: una sola fila que se desliza. El borde con más géneros se funde (como el
+   borde de un visor) y, con ratón, aparece una flecha discreta. En táctil, el gesto de siempre. */
+.generos-marco {
+  --fundido: 56px;
+  position: relative; min-width: 0; /* sin esto, la fila de la rejilla crecería con las cápsulas */
 }
+.generos {
+  display: flex; flex-wrap: nowrap; gap: 0.5rem;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  scroll-snap-type: x proximity; scroll-padding-inline: var(--fundido);
+  padding: 4px 2px 12px; /* aire para el halo, el leve ascenso y la línea de la cápsula */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fundido-antes, 0px), #000 calc(100% - var(--fundido-despues, 0px)), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 var(--fundido-antes, 0px), #000 calc(100% - var(--fundido-despues, 0px)), transparent);
+}
+.generos::-webkit-scrollbar { display: none; }
+.generos .capsula { scroll-snap-align: start; }
+.generos-marco[data-antes] { --fundido-antes: var(--fundido); }
+.generos-marco[data-despues] { --fundido-despues: var(--fundido); }
+
+.generos-flecha {
+  position: absolute; top: 4px; z-index: 1;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid var(--color-borde-control);
+  background: color-mix(in srgb, var(--color-fondo) 80%, transparent);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  color: var(--color-texto);
+  transition: border-color var(--dur-rapida), transform var(--dur-rapida) var(--curva-cine);
+}
+.generos-flecha svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.generos-flecha--anterior { left: 0; }
+.generos-flecha--siguiente { right: 0; }
+.generos-flecha:hover { border-color: var(--color-primario); transform: scale(1.06); }
+/* Táctil: sin flechas (el dedo ya desliza); el fundido sigue avisando de que hay más */
+@media (hover: none) { .generos-flecha { display: none; } }
 /* Los géneros de Inicio usan la cápsula de Películas (.capsula, sección «Marquesina») */
 .generos .capsula { flex-shrink: 0; white-space: nowrap; color: var(--color-texto-suave); }
 .generos .capsula[aria-pressed="true"] { color: var(--color-sobre-primario); }

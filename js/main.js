@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToArc, fotogramas, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToArc, fotogramas, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds, bordesDeScroll } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
@@ -27,6 +27,7 @@ const els = {
   trending: document.querySelector('#fila-tendencias'),
   btnTema: document.querySelector('#btn-tema'), // NUEVO 5d
   genres: document.querySelector('#generos'),
+  genresMarco: document.querySelector('#generos-marco'),
   genreRow: document.querySelector('#fila-genero'),
 };
 
@@ -229,6 +230,28 @@ function renderGenreChips(genres, activeId) {
     return button;
   });
   els.genres.replaceChildren(...buttons);
+  marcarBordes(els.genres, els.genresMarco);
+}
+
+/** Marca si queda algo fuera de plano a cada lado: el CSS funde ese borde y la flecha aparece.
+ *  La decisión la toma una función pura (bordesDeScroll); aquí solo se escribe en el DOM. */
+function marcarBordes(tira, marco) {
+  const { antes, despues } = bordesDeScroll(tira.scrollLeft, tira.clientWidth, tira.scrollWidth);
+  marco.toggleAttribute('data-antes', antes);
+  marco.toggleAttribute('data-despues', despues);
+  marco.querySelector('[data-flecha="izquierda"]').hidden = !antes;
+  marco.querySelector('[data-flecha="derecha"]').hidden = !despues;
+}
+
+/** Vigila el scroll y el tamaño de una tira (un frame como mucho por evento: no satura). */
+function vigilarBordes(tira, marco) {
+  let frame = 0; // vive en el cierre: no es una variable global
+  const actualizar = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => marcarBordes(tira, marco));
+  };
+  tira.addEventListener('scroll', actualizar, { passive: true });
+  new ResizeObserver(actualizar).observe(tira);
 }
 
 function loadGenreRow(genreId) {
@@ -243,6 +266,8 @@ function handleGenreClick(event) {
   if (!button || button.getAttribute('aria-pressed') === 'true') return;
   els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-pressed', 'true');
+  // La elegida entra entera en plano (si estaba cortada por un borde)
+  button.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   loadGenreRow(Number(button.dataset.genreId));
 }
 
@@ -1117,6 +1142,8 @@ els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
+els.genresMarco.addEventListener('click', handleArrowClick); // las flechas de los géneros reutilizan las del carrusel
+vigilarBordes(els.genres, els.genresMarco);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 pelis.pestanas.addEventListener('click', handlePestanaClick);
