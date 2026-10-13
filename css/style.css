@@ -118,42 +118,62 @@ h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: 
 ::selection { background: var(--lavanda-100); color: var(--lavanda-900); }
 
 /* 3b. ESCENA DE FONDO --------------------------------------
-   El fondo deja de ser una superficie plana: es la habitación de enfrente vista por una ventana.
-   · fondo-luz: halos que dirigen la mirada (de noche, luz de luna lavanda; de día, sol entrando).
-   · fondo-persiana: la sombra (o la luz) de las lamas proyectada en la pared, solo en una zona.
-   · ::after: una viñeta fija, como el borde de un visor.
-   Profundidad: al hacer scroll, la luz se desplaza menos que la persiana, y las dos mucho menos que
-   el contenido (scrollTheme.js escribe --scroll de 0 a 1 solo en esta capa). La deriva lenta usa
-   `transform` y el scroll usa `translate`: son propiedades distintas y no se pisan. */
+   Una atmósfera que cambia mientras miras, como la luz de la habitación de enfrente a lo largo del día.
+   Tres luces, una para cada tramo de la página; el scroll las funde (scrollTheme.js escribe --scroll,
+   de 0 a 1, solo en esta capa). Paleta corta: violeta (la casa), azul de medianoche y una luz cálida de proyector.
+   · alba (arriba): luz lavanda que entra por la ventana. Sobre ella, la sombra de la persiana.
+   · sala (en medio): azul de medianoche a un lado, violeta al otro: la escena se oscurece y gana profundidad.
+   · proyector (al final): un halo cálido abajo, como el haz que llega a la pantalla. Cierra hacia el footer.
+   · persiana: se «sube» al bajar (se desvanece): se revela la sala.
+   · ::after: viñeta fija, el borde de un visor.
+   Profundidad: las luces se desplazan menos que la persiana, y todo mucho menos que el contenido.
+   Todo es opacidad y translate: el navegador lo mueve en la GPU, sin repintar. */
 :root {
-  --escena-halo-1: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
-  --escena-halo-2: rgb(120 58 120 / 0.16);
-  --escena-halo-3: rgb(70 36 82 / 0.32);
-  --escena-lama: rgb(218 203 218 / 0.055);
+  --alba-1: rgb(155 113 155 / 0.28);   --alba-2: rgb(120 58 120 / 0.18);
+  --sala-1: rgb(48 66 140 / 0.26);     --sala-2: rgb(110 58 132 / 0.2);
+  --proyector-1: rgb(226 146 112 / 0.16); --proyector-2: rgb(155 113 155 / 0.16);
+  --escena-lama: rgb(218 203 218 / 0.06);
   --escena-vineta: rgb(4 2 6 / 0.7);
 }
 :root[data-theme="claro"] {
-  --escena-halo-1: rgb(255 255 255 / 0.85);
-  --escena-halo-2: color-mix(in srgb, var(--lavanda-500) 40%, transparent);
-  --escena-halo-3: color-mix(in srgb, var(--lavanda-100) 14%, transparent);
-  --escena-lama: rgb(100 67 115 / 0.06);
+  --alba-1: rgb(255 255 255 / 0.9);    --alba-2: color-mix(in srgb, var(--lavanda-500) 42%, transparent);
+  --sala-1: rgb(168 188 232 / 0.38);   --sala-2: color-mix(in srgb, var(--lavanda-300) 30%, transparent);
+  --proyector-1: rgb(250 196 164 / 0.5); --proyector-2: rgb(255 255 255 / 0.6);
+  --escena-lama: rgb(100 67 115 / 0.065);
   --escena-vineta: rgb(98 81 106 / 0.14);
 }
 .fondo-escena { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.fondo-luz, .fondo-persiana { position: absolute; inset: -15% 0 -40%; will-change: translate, transform; }
+.fondo-luz, .fondo-persiana { position: absolute; inset: -15% 0 -40%; will-change: translate, transform, opacity; }
 .fondo-luz {
-  background:
-    radial-gradient(ellipse 55% 40% at 80% 14%, var(--escena-halo-1), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 10% 52%, var(--escena-halo-2), transparent 70%),
-    radial-gradient(ellipse 70% 40% at 55% 92%, var(--escena-halo-3), transparent 72%);
   translate: 0 calc(var(--scroll, 0) * -12%);
   animation: fondo-deriva 60s ease-in-out infinite alternate;
+}
+.fondo-luz--alba {
+  background:
+    radial-gradient(ellipse 55% 40% at 80% 14%, var(--alba-1), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 10% 50%, var(--alba-2), transparent 70%);
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 1.8), 1);       /* manda arriba y se apaga al bajar */
+}
+.fondo-luz--sala {
+  background:
+    radial-gradient(ellipse 50% 45% at 14% 34%, var(--sala-1), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 88% 62%, var(--sala-2), transparent 70%);
+  opacity: clamp(0, min(calc(var(--scroll, 0) * 2.2), calc((1 - var(--scroll, 0)) * 2.2)), 1); /* manda en medio */
+  animation-delay: -20s; /* no deriva al compás de las otras */
+}
+.fondo-luz--proyector {
+  background:
+    radial-gradient(ellipse 60% 38% at 50% 78%, var(--proyector-1), transparent 72%),
+    radial-gradient(ellipse 40% 30% at 18% 30%, var(--proyector-2), transparent 70%);
+  opacity: clamp(0, calc(var(--scroll, 0) * 1.8 - 0.8), 1);      /* se enciende en el último tramo */
+  animation-delay: -40s;
 }
 .fondo-persiana {
   background: repeating-linear-gradient(168deg, var(--escena-lama) 0 16px, transparent 16px 44px);
   -webkit-mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
           mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
   translate: 0 calc(var(--scroll, 0) * -22%); /* más cerca: se mueve más que la luz */
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 1.4), 1); /* al bajar, la persiana se sube */
   animation: fondo-persiana 75s ease-in-out infinite alternate;
 }
 .fondo-escena::after {
@@ -162,8 +182,15 @@ h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: 
 }
 @keyframes fondo-deriva   { to { transform: translate3d(-2%, 1.5%, 0) scale(1.06); } }
 @keyframes fondo-persiana { to { transform: translate3d(1.5%, 0, 0) rotate(-1deg); } }
+/* Móvil: menos capas y sin deriva (ahorra batería); las luces siguen fundiéndose con el scroll */
+@media (max-width: 599px) {
+  .fondo-persiana { display: none; }
+  .fondo-luz { animation: none; will-change: translate, opacity; }
+}
+/* Movimiento reducido: nada se mueve ni cambia al hacer scroll; queda una atmósfera fija (alba + sala) */
 @media (prefers-reduced-motion: reduce) {
-  .fondo-luz, .fondo-persiana { translate: none; animation: none; will-change: auto; } /* la luz se queda; el movimiento, no */
+  .fondo-luz, .fondo-persiana { translate: none; animation: none; will-change: auto; }
+  .fondo-luz--sala { opacity: 0.5; }
 }
 
 /* 4. LAYOUT ----------------------------------------------- */
