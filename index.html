@@ -150,8 +150,8 @@
         <div class="fila-cabecera">
           <h2>Continúa tu historia</h2>
           <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-continua" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-continua" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-continua" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-continua" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-continua" class="carrusel"></div>
@@ -163,10 +163,10 @@
         <!-- La tira de géneros se desliza en horizontal; las flechas solo aparecen si queda algo fuera de plano -->
         <div id="generos-marco" class="generos-marco">
           <div id="generos" class="generos" role="group" aria-label="Géneros"></div>
-          <button type="button" class="generos-flecha generos-flecha--anterior" data-flecha="izquierda" data-objetivo="generos" tabindex="-1" aria-label="Ver géneros anteriores" hidden>
+          <button type="button" class="flecha-luz generos-flecha generos-flecha--anterior" data-flecha="izquierda" data-objetivo="generos" tabindex="-1" aria-label="Ver géneros anteriores" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
           </button>
-          <button type="button" class="generos-flecha generos-flecha--siguiente" data-flecha="derecha" data-objetivo="generos" tabindex="-1" aria-label="Ver más géneros" hidden>
+          <button type="button" class="flecha-luz generos-flecha generos-flecha--siguiente" data-flecha="derecha" data-objetivo="generos" tabindex="-1" aria-label="Ver más géneros" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
@@ -177,8 +177,8 @@
             <h3 class="fila-titulo">Lo que no te puedes perder</h3>
           </div>
           <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-genero" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-genero" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-genero" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-genero" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-genero" class="carrusel"></div>
@@ -192,8 +192,8 @@
             <h2 class="fila-titulo">En boca de todos</h2>
           </div>
           <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-tendencias" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-tendencias" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-tendencias" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-tendencias" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-tendencias" class="carrusel"></div>
@@ -207,8 +207,8 @@
             <h2 id="para-ti-titulo" class="fila-titulo">Para ti</h2>
           </div>
           <div id="para-ti-flechas" class="fila-flechas" hidden>
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-para-ti" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-para-ti" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-para-ti" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-para-ti" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-para-ti" class="carrusel"></div>
