@@ -5,7 +5,7 @@ import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, 
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
-import { COORDENADAS_PAISES, fetchCountryCoords } from '../data/paises.js';
+import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
@@ -596,7 +596,8 @@ async function loadFicha(id) {
     ficha.titulo.focus({ preventScroll: true });
 
     const codes = movie.countries.map(({ iso_3166_1 }) => iso_3166_1);
-    const coords = await fetchCountryCoords(codes, { signal: fichaController.signal });
+    const apiCoords = await fetchCountryCoords(codes, { signal: fichaController.signal });
+    const coords = { ...COORDENADAS_PAISES, ...apiCoords };
     fichaMarcadores = toMarkers(movie.countries, coords);
 
     ficha.ventana.hidden = fichaMarcadores.length === 0; // sin coordenadas, no hay nada que mirar
