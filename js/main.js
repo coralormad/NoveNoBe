@@ -10,7 +10,7 @@ import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
-import { GenreStage } from './stage.js';
+import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
 
 
@@ -391,7 +391,7 @@ const escaparate = new GenreStage({
 /** El escaparate sigue al mismo filtro que la rejilla: una sola fuente de verdad. */
 function renderEscaparate() {
   escaparate.render(
-    topOfGenre(catalog.movies, toGenreIds(radiografia.genero)),
+    topOfGenre(catalog.movies, toGenreIds(radiografia.genero), MAX_ESCAPARATE),
     (ids) => genreNames(ids, radiografia.generos),
   );
 }

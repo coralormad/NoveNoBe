@@ -5,8 +5,12 @@ import { movieHref } from './router.js';
 import { proximity } from './hero.js';
 import { tiltFromPointer } from './tilt.js';
 
-const MAX = 5;
-const PASO = 0.62;            // separación entre carátulas, en anchos de carátula (= el 62 % del CSS)
+export const MAX_ESCAPARATE = 9; // películas del escaparate: variedad sin convertirlo en un catálogo
+const PASO = 0.62;            // separación máxima entre carátulas, en anchos de carátula
+const PASO_MIN = 36;          // px: en pantallas estrechas, las carátulas se agrupan pero no se funden
+const VISIBLES_POR_LADO = 2;  // carátulas que caben enteras a cada lado de la activa; las más lejanas se ocultan
+const GUINO_PAUSA = 4000;     // ms: la frase no vuelve a aparecer si se sale y entra enseguida
+const GUINO_DURACION = 2600;  // ms que la frase permanece antes de desvanecerse
 const UMBRAL_ARRASTRE = 6;    // px que hay que mover antes de que cuente como arrastre y no como clic
 const INERCIA_MS = 150;       // cuánto «sigue» el gesto al soltar, según la velocidad
 const RESISTENCIA = 0.3;      // en los extremos, el abanico cede solo un 30 % (efecto goma)
@@ -24,7 +28,19 @@ export function cardLight(pointerX, rect, alcance = ALCANCE_LUZ) {
 }
 
 /** Pura: px arrastrados → desplazamiento en carátulas (positivo = hacia la siguiente). */
-export const dragShift = (dx, cardWidth) => -dx / (cardWidth * PASO);
+export const dragShift = (dx, paso) => -dx / paso;
+
+/** Pura: índice de la película central (con 9 → 4; con 2 → 0). El carrusel arranca «en marcha». */
+export const indiceCentral = (total) => Math.max(0, Math.floor((total - 1) / 2));
+
+/**
+ * Pura: separación (px) entre carátulas para que, a cada lado de la activa, quepan enteras
+ * VISIBLES_POR_LADO carátulas dentro del ancho real del carrusel. Nunca más que el 62 % de una carátula.
+ */
+export function pasoEntre(anchoMarco, anchoCaratula) {
+  const espacioLateral = anchoMarco / 2 - anchoCaratula / 2 - 8; // 8 px de aire con el borde
+  return Math.max(PASO_MIN, Math.min(anchoCaratula * PASO, espacioLateral / VISIBLES_POR_LADO));
+}
 
 /** Pura: dentro de [min, max] no cambia; fuera, cede solo una parte (efecto goma). */
 export function rubberBand(shift, min, max) {
@@ -37,8 +53,8 @@ export function rubberBand(shift, min, max) {
  * Pura: película en la que se detiene el abanico al soltar.
  * Suma una inercia moderada según la velocidad (px/ms) y redondea a la carátula más cercana.
  */
-export function snapIndex({ activa, shift, velocidad, cardWidth, total }) {
-  const inercia = dragShift(velocidad * INERCIA_MS, cardWidth);
+export function snapIndex({ activa, shift, velocidad, paso, total }) {
+  const inercia = dragShift(velocidad * INERCIA_MS, paso);
   const destino = Math.round(activa + shift + inercia);
   return Math.min(Math.max(destino, 0), total - 1);
 }
@@ -57,6 +73,10 @@ export class GenreStage {
   #luzFrame = 0;
   #drag = null;          // gesto en curso: { id, x, y, dx, arrastrando, velocidad, ultimo }
   #bloquearClic = false; // el clic que llega al soltar un arrastre no debe abrir la película
+  #paso = 118;           // px entre carátulas; se recalcula con el ancho real del carrusel
+  #guino;                // «Luces, cámara… acción.»: aparece al entrar con el ratón
+  #guinoVisto = -Infinity; // cuándo se apagó por última vez
+  #guinoTimer = 0;
 
   /** @param {{marco, lista, titulo, generos, anterior, siguiente}} els */
   constructor(els) {
@@ -65,6 +85,16 @@ export class GenreStage {
     this.#luz.className = 'luz-ambiente';
     this.#luz.setAttribute('aria-hidden', 'true'); // decorativa: los lectores de pantalla la ignoran
     els.marco.append(this.#luz);
+
+    this.#guino = document.createElement('p');
+    this.#guino.className = 'escaparate-guino';
+    this.#guino.setAttribute('aria-hidden', 'true'); // detalle visual: no aporta información
+    this.#guino.textContent = 'Luces, cámara… acción.';
+    els.marco.append(this.#guino);
+    els.marco.addEventListener('pointerenter', (event) => this.#mostrarGuino(event));
+
+    // Si cambia el ancho (ventana, rotación del móvil), se recalcula el paso y se recoloca el abanico
+    new ResizeObserver(() => this.#medirPaso()).observe(els.marco);
     els.lista.addEventListener('click', (event) => this.#onClick(event));
     els.lista.addEventListener('keydown', (event) => this.#onKeydown(event));
     els.anterior.addEventListener('click', () => this.step(-1));
@@ -75,6 +105,7 @@ export class GenreStage {
       this.#els.lista.style.removeProperty('--px');
       this.#setProximity(0, 0);
       this.#luz.classList.remove('visible'); // se desvanece con la transición del CSS
+      this.#ocultarGuino();
       this.#apagar();
     });
     // Tras moverse el abanico (flechas, teclado, clic), la luz se recoloca donde está el cursor
@@ -98,15 +129,23 @@ export class GenreStage {
   }
 
   /**
-   * Pinta las películas (ya ordenadas) y activa la primera.
+   * Pinta las películas (ya ordenadas) y activa la central: hay títulos a ambos lados.
    * @param {Function} nombrar ids de géneros → texto («Drama · Crimen»)
    */
   render(movies, nombrar = () => '') {
-    this.#movies = movies.slice(0, MAX);
+    this.#movies = movies.slice(0, MAX_ESCAPARATE);
     this.#nombrar = nombrar;
-    this.#activa = 0;
+    this.#activa = indiceCentral(this.#movies.length);
     this.#els.lista.replaceChildren(...this.#movies.map((movie, i) => GenreStage.#crear(movie, i)));
+    this.#medirPaso();
     this.#colocar();
+  }
+
+  /** Paso entre carátulas según el ancho real del carrusel y de una carátula (se mide, no se supone). */
+  #medirPaso() {
+    const anchoCaratula = this.#els.lista.children[0]?.offsetWidth || 190; // offsetWidth ignora las transformaciones 3D
+    this.#paso = pasoEntre(this.#els.marco.clientWidth, anchoCaratula);
+    this.#els.lista.style.setProperty('--paso', `${this.#paso.toFixed(1)}px`);
   }
 
   /** Activa la película i, sin salirse de los límites. */
@@ -153,6 +192,7 @@ export class GenreStage {
       const pos = i - this.#activa - shift;
       item.style.setProperty('--pos', pos.toFixed(3));
       item.style.setProperty('--dist', Math.abs(pos).toFixed(3));
+      item.classList.toggle('lejos', Math.abs(pos) > VISIBLES_POR_LADO + 0.5); // fuera de cuadro: oculta
     });
   }
 
@@ -329,7 +369,7 @@ export class GenreStage {
       activa: this.#activa,
       shift: this.#shiftActual(drag.dx),
       velocidad: drag.velocidad,
-      cardWidth: this.#anchoCaratula(),
+      paso: this.#paso,
       total: this.#movies.length,
     });
     this.activate(destino);
@@ -337,12 +377,23 @@ export class GenreStage {
 
   /** Desplazamiento del arrastre en carátulas, con goma en los extremos. */
   #shiftActual(dx = this.#drag?.dx ?? 0) {
-    const shift = dragShift(dx, this.#anchoCaratula());
+    const shift = dragShift(dx, this.#paso);
     return rubberBand(shift, -this.#activa, this.#movies.length - 1 - this.#activa);
   }
 
-  /** Ancho real de una carátula (offsetWidth ignora las transformaciones 3D). */
-  #anchoCaratula() {
-    return this.#els.lista.children[this.#activa]?.offsetWidth || 190;
+  /** La frase aparece al entrar con el ratón, una vez por visita: no se repite de carátula en carátula. */
+  #mostrarGuino(event) {
+    if (event.pointerType !== 'mouse' || this.#movies.length === 0) return;
+    if (performance.now() - this.#guinoVisto < GUINO_PAUSA) return; // salió y volvió enseguida: no insistir
+    this.#guino.classList.add('visible');
+    clearTimeout(this.#guinoTimer);
+    this.#guinoTimer = setTimeout(() => this.#ocultarGuino(), GUINO_DURACION);
+  }
+
+  /** Se apaga al salir o al cumplir su tiempo; la pausa para volver a verla cuenta desde aquí. */
+  #ocultarGuino() {
+    clearTimeout(this.#guinoTimer);
+    if (this.#guino.classList.contains('visible')) this.#guinoVisto = performance.now();
+    this.#guino.classList.remove('visible');
   }
 }

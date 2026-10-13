@@ -938,7 +938,8 @@ main { padding: 2rem var(--margen-lateral); }
 .halo { position: absolute; inset: 0; z-index: -1; pointer-events: none; } /* halo del anillo (bloque 2) */
 .dial .capsulas { justify-content: center; }
 
-.proyeccion { grid-area: proyeccion; display: grid; gap: 1rem; min-width: 0; }
+.proyeccion { grid-area: proyeccion; display: grid; gap: 1rem; min-width: 0; overflow-x: clip; } /* el abanico nunca abre scroll horizontal */
+.escaparate-item.lejos { opacity: 0; pointer-events: none; } /* más allá de 2 a cada lado: fuera de cuadro */
 
 /* Abanico: la posición de cada carátula sale de su distancia a la activa (--pos, --dist).
    Con el arrastre, --pos y --dist son decimales y el abanico se desliza de forma continua. */
@@ -958,7 +959,7 @@ main { padding: 2rem var(--margen-lateral); }
 .escaparate-item {
   position: absolute; left: 50%; top: 0; width: 190px; margin-left: -95px;
   transform:
-    translateX(calc(var(--pos, 0) * 62%))
+    translateX(calc(var(--pos, 0) * var(--paso, 118px))) /* --paso: lo calcula stage.js con el ancho real */
     translateZ(calc(var(--dist, 0) * -110px))
     rotateY(calc(var(--pos, 0) * -24deg));
   z-index: calc(10 - var(--dist, 0));
@@ -1027,6 +1028,22 @@ main { padding: 2rem var(--margen-lateral); }
     transition: opacity 900ms ease; /* al salir se desvanece despacio */
   }
   .luz-ambiente.visible { opacity: 1; transition-duration: 450ms; } /* al entrar aparece algo más rápido */
+}
+/* Guiño: «Luces, cámara… acción.» se revela como un título en la sala (desenfoque que se resuelve) */
+.escaparate-guino { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .escaparate-guino {
+    display: block; position: absolute; left: 0; right: 0; top: -2.2rem; z-index: 25;
+    margin: 0; text-align: center; pointer-events: none;
+    font-family: var(--fuente-titulos); font-style: italic; font-size: 1rem; letter-spacing: 0.04em;
+    color: var(--color-texto-suave);
+    opacity: 0; filter: blur(6px); transform: translateY(4px);
+    transition: opacity 1100ms ease, filter 1100ms var(--curva-cine), transform 1100ms var(--curva-cine);
+  }
+  .escaparate-guino.visible { opacity: 0.85; filter: blur(0); transform: none; transition-duration: 700ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .escaparate-guino { filter: none; transform: none; transition: opacity 400ms ease; }
 }
 /* Mientras se arrastra, las carátulas siguen al dedo sin retraso; al soltar vuelve la transición */
 .escaparate-marco.arrastrando .escaparate-item { transition: none; }
