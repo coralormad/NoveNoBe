@@ -924,6 +924,34 @@ main { padding: 2rem var(--margen-lateral); }
 .visor::before { /* el cristal: tapa el centro y deja solo el aro */
   content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--color-fondo);
 }
+
+/* Aro interior: de día, una lente punteada sin enfocar (falta una mirada);
+   de noche, tu nota. Es un anillo: la máscara vacía el centro y deja ver la cifra. */
+.visor::after {
+  content: ''; position: absolute; inset: 11px; border-radius: 50%;
+  border: 1px dashed var(--color-borde-control); opacity: 0.6;
+}
+:root[data-theme="oscuro"] .visor::after {
+  border: 0; opacity: 1;
+  background: conic-gradient(var(--lavanda-300) var(--visor-propia, 0deg),
+              color-mix(in srgb, var(--color-borde-control) 25%, transparent) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+/* De noche el aro de TMDB se queda fino y tenue: es la opinión de fuera */
+:root[data-theme="oscuro"] .visor {
+  background: conic-gradient(color-mix(in srgb, var(--color-primario) 55%, transparent) var(--visor-angulo, 0deg),
+              color-mix(in srgb, var(--color-borde-control) 25%, transparent) 0);
+  animation-name: visor-enfoca-noche; /* otro nombre: al cambiar de tema, la lente vuelve a enfocar */
+}
+:root[data-theme="oscuro"] .visor::before { inset: 3px; }
+.visor-propia {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1;
+  color: var(--lavanda-300);
+}
+.visor:not([data-propia]) .visor-propia { display: none; }
+:root[data-theme="oscuro"] .visor[data-propia] .visor-cifra { visibility: hidden; } /* de noche manda tu nota */
 .visor-cifra {
   position: relative; /* por encima del cristal */
   font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1;
@@ -938,6 +966,42 @@ main { padding: 2rem var(--margen-lateral); }
 @keyframes visor-enfoca {
   from { filter: blur(6px); transform: rotate(-120deg) scale(0.85); }
 }
+@keyframes visor-enfoca-noche {
+  from { filter: blur(6px); transform: rotate(120deg) scale(0.85); } /* gira al revés: mira otra vez */
+}
+
+/* De día: la rendija. Una frase en voz baja, sin contenido de la otra lectura */
+.ficha-rendija { font-family: var(--fuente-titulos); font-style: italic; color: var(--color-texto-suave); }
+.ficha-rendija span { color: var(--color-primario); }
+
+/* De noche: tu mirada. Cuaderno de observación, no una caja de reseñas */
+.mirada {
+  display: grid; gap: 0.75rem; max-width: 46ch; padding-top: 1rem;
+  border-top: 1px solid var(--color-borde);
+}
+.mirada-titulo, .mirada-etiqueta, .mirada-estado, .mirada-entrada time {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 400;
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.mirada-enfoque { display: flex; align-items: center; gap: 1rem; }
+.mirada-rango { flex: 1; min-width: 0; accent-color: var(--lavanda-300); }
+.mirada-cifra {
+  min-width: 4.5ch; text-align: center;
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--lavanda-300);
+  transition: filter var(--dur-media);
+}
+.mirada-cifra[data-vacia] { font-size: var(--texto-m); filter: blur(0.6px); color: var(--color-texto-suave); }
+.mirada-texto {
+  width: 100%; resize: vertical; padding: 0.75rem;
+  font: inherit; color: var(--color-texto); background: var(--color-atenuado);
+  border: 1px solid var(--color-borde); border-radius: var(--radio);
+}
+.mirada-texto:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 2px; }
+.mirada-acciones { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.mirada-estado:empty { display: none; }
+.mirada-entrada { display: grid; gap: 0.35rem; padding-left: 1rem; border-left: 2px solid var(--lavanda-300); }
+.mirada-entrada[hidden] { display: none; }
+#mirada-cita { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.4; }
 
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {
@@ -959,6 +1023,7 @@ main { padding: 2rem var(--margen-lateral); }
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .ficha-poster-marco { width: 160px; }
   .visor { --visor-tam: 68px; }
+  .mirada { justify-items: stretch; text-align: left; }
   .ficha-generos { justify-content: center; }
 }
 

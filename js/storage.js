@@ -129,3 +129,65 @@ export const saveFavorites = (ids) => writeIds(FAVORITES_KEY, ids);
 export const loadObserved = () => readIds(OBSERVED_KEY);
 /** @param {number[]} ids @returns {boolean} */
 export const saveObserved = (ids) => writeIds(OBSERVED_KEY, ids);
+
+// ---------- Tu mirada: nota propia + cuaderno, por id de TMDB ----------
+// Independiente de TMDB: nunca se mezcla con vote_average. Formato: { [id]: { nota, texto, fecha } }
+export const MIRADAS_KEY = 'novenobe_miradas';
+const MAX_TEXTO = 600;
+
+/** Pura: nota en pasos de 0,5 y acotada a 0-10. Si no es un número, null (sin nota). */
+export const clampNota = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const n = Number(valor);
+  return Number.isFinite(n) ? Math.min(Math.max(Math.round(n * 2) / 2, 0), 10) : null;
+};
+
+/** Pura: limpia una mirada. Sin nota y sin texto no hay nada que guardar → null. */
+export function sanitizeMirada(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const nota = clampNota(raw.nota);
+  const texto = typeof raw.texto === 'string' ? raw.texto.trim().slice(0, MAX_TEXTO) : '';
+  if (nota === null && !texto) return null;
+  const fecha = typeof raw.fecha === 'string' ? raw.fecha : null;
+  return { nota, texto, fecha };
+}
+
+/** Pura: limpia el objeto leído (claves que no son ids, miradas vacías o corruptas). */
+export function sanitizeMiradas(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.fromEntries(
+    Object.entries(raw)
+      .filter(([id]) => /^\d+$/.test(id))
+      .map(([id, mirada]) => [id, sanitizeMirada(mirada)])
+      .filter(([, mirada]) => mirada !== null)
+  );
+}
+
+/** Pura: quita la mirada de una película. Devuelve un objeto nuevo (no muta). */
+export const removeMirada = (miradas, id) =>
+  Object.fromEntries(Object.entries(miradas).filter(([clave]) => clave !== String(id)));
+
+/** Pura: guarda (o sustituye) la mirada de una película. Si queda vacía, la quita. */
+export function setMirada(miradas, id, mirada) {
+  const limpia = sanitizeMirada(mirada);
+  return limpia ? { ...miradas, [id]: limpia } : removeMirada(miradas, id);
+}
+
+/** Lee todas las miradas. Nunca lanza: si falla, {}. */
+export function loadMiradas() {
+  try {
+    return sanitizeMiradas(JSON.parse(localStorage.getItem(MIRADAS_KEY)));
+  } catch {
+    return {};
+  }
+}
+
+/** Guarda todas las miradas. Devuelve true si se guardó (false si el navegador lo bloquea). */
+export function saveMiradas(miradas) {
+  try {
+    localStorage.setItem(MIRADAS_KEY, JSON.stringify(miradas));
+    return true;
+  } catch {
+    return false;
+  }
+}

@@ -301,6 +301,8 @@
                 <!-- Visor de la nota: el anillo se ve siempre; la cifra se enfoca al mirarla -->
                 <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
                   <span id="ficha-nota-cifra" class="visor-cifra" aria-hidden="true"></span>
+                  <!-- De noche: tu nota, en el aro interior (la lee el formulario «Tu mirada») -->
+                  <span id="ficha-nota-propia" class="visor-propia solo-noche" aria-hidden="true"></span>
                 </button>
               </div>
               <div class="ficha-info">
@@ -311,6 +313,31 @@
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
                 <p id="ficha-votos" class="ficha-votos" aria-hidden="true"></p>
+
+                <!-- De día: la rendija. Solo se insinúa que hay otra lectura -->
+                <p class="ficha-rendija solo-dia">Una cifra no cuenta toda la historia. <span>Apaga la luz y mira otra vez.</span></p>
+
+                <!-- De noche: tu mirada (nota propia + cuaderno), guardada en localStorage -->
+                <form id="mirada" class="mirada solo-noche" aria-labelledby="mirada-titulo" novalidate>
+                  <h3 id="mirada-titulo" class="mirada-titulo">Tu mirada</h3>
+                  <div class="mirada-enfoque">
+                    <label for="mirada-nota" class="sr-only">Tu nota, de 0 a 10</label>
+                    <input id="mirada-nota" class="mirada-rango" type="range" min="0" max="10" step="0.5" value="5">
+                    <output id="mirada-cifra" class="mirada-cifra" for="mirada-nota"></output>
+                  </div>
+                  <label for="mirada-texto" class="mirada-etiqueta">Tu cuaderno</label>
+                  <textarea id="mirada-texto" class="mirada-texto" rows="3" maxlength="600"
+                    placeholder="Lo que viste y nadie cuenta"></textarea>
+                  <div class="mirada-acciones">
+                    <button type="submit" class="qv-boton">Guardar mi mirada</button>
+                    <button type="button" id="mirada-borrar" class="qv-boton qv-boton--secundario" hidden>Borrar</button>
+                  </div>
+                  <p id="mirada-estado" class="mirada-estado" role="status"></p>
+                  <p id="mirada-entrada" class="mirada-entrada" hidden>
+                    <time id="mirada-fecha"></time>
+                    <span id="mirada-cita"></span>
+                  </p>
+                </form>
               </div>
             </div>
           </header>

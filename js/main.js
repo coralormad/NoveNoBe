@@ -2,7 +2,7 @@ import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, ratingToAngle, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
-import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
+import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
@@ -43,6 +43,7 @@ const ficha = {
   nota: document.querySelector('#ficha-nota'),
   notaCifra: document.querySelector('#ficha-nota-cifra'),
   votos: document.querySelector('#ficha-votos'),
+  notaPropia: document.querySelector('#ficha-nota-propia'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
@@ -53,6 +54,22 @@ const ficha = {
   reparto: document.querySelector('#ficha-reparto'),
   repartoVacio: document.querySelector('#ficha-reparto-vacio'),
 };
+
+// Tu mirada: formulario de la nota propia y el cuaderno (solo visible de noche)
+const mirada = {
+  form: document.querySelector('#mirada'),
+  rango: document.querySelector('#mirada-nota'),
+  cifra: document.querySelector('#mirada-cifra'),
+  texto: document.querySelector('#mirada-texto'),
+  borrar: document.querySelector('#mirada-borrar'),
+  estado: document.querySelector('#mirada-estado'),
+  entrada: document.querySelector('#mirada-entrada'),
+  fecha: document.querySelector('#mirada-fecha'),
+  cita: document.querySelector('#mirada-cita'),
+};
+let miradaId = null;      // id de TMDB de la película abierta
+let miradaTocada = false; // ¿ha movido el enfoque? Sin moverlo, no hay nota propia
+const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
 
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
@@ -594,6 +611,8 @@ function renderFicha(movie) {
     .filter(Boolean)
     .join(' · ');
   renderNota(movie);
+  mirada.estado.textContent = '';
+  renderMirada(movie.id);
 
   ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
     const li = document.createElement('li');
@@ -628,7 +647,74 @@ function renderNota(movie) {
   ficha.nota.style.setProperty('--visor-angulo', `${ratingToAngle(movie.rating)}deg`);
   ficha.nota.setAttribute('aria-label', `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`);
   ficha.notaCifra.textContent = movie.ratingText;
-  ficha.votos.textContent = `TMDB · ${movie.votesText}`;
+  ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
+}
+
+/** Pinta la mirada guardada de esa película (o el formulario vacío). La nota de TMDB no se toca. */
+function renderMirada(id) {
+  miradaId = id;
+  const guardada = loadMiradas()[id] ?? null;
+  const nota = guardada?.nota ?? null;
+
+  miradaTocada = nota !== null;
+  mirada.rango.value = nota ?? 5;
+  mirada.texto.value = guardada?.texto ?? '';
+  pintarCifraPropia(nota);
+  mirada.borrar.hidden = !guardada;
+
+  // El cuaderno: la última entrada guardada, como una anotación de observación
+  mirada.entrada.hidden = !guardada?.texto;
+  mirada.cita.textContent = guardada?.texto ?? '';
+  const fecha = guardada?.fecha ? new Date(guardada.fecha) : null;
+  mirada.fecha.dateTime = guardada?.fecha ?? '';
+  mirada.fecha.textContent = fecha && !Number.isNaN(fecha.getTime())
+    ? `Observada el ${FECHA_MIRADA.format(fecha)}`
+    : '';
+
+  // El aro interior del visor: tu nota (de noche). Sin nota, el aro queda vacío
+  ficha.nota.toggleAttribute('data-propia', nota !== null);
+  ficha.nota.style.setProperty('--visor-propia', `${ratingToAngle(nota ?? 0)}deg`);
+  ficha.notaPropia.textContent = nota === null ? '' : nota.toFixed(1);
+}
+
+/** La cifra del enfoque: «¿Y tú?» hasta que mueves el rango; después, tu nota nítida. */
+function pintarCifraPropia(nota) {
+  mirada.cifra.textContent = nota === null ? '¿Y tú?' : nota.toFixed(1);
+  mirada.cifra.toggleAttribute('data-vacia', nota === null);
+}
+
+function handleMiradaInput() {
+  miradaTocada = true;
+  pintarCifraPropia(Number(mirada.rango.value));
+}
+
+function handleMiradaSubmit(event) {
+  event.preventDefault(); // sin recargar la página
+  if (miradaId === null) return;
+  const nueva = {
+    nota: miradaTocada ? mirada.rango.value : null,
+    texto: mirada.texto.value,
+    fecha: new Date().toISOString(),
+  };
+  if (nueva.nota === null && !nueva.texto.trim()) {
+    mirada.estado.textContent = 'Mueve el enfoque o escribe algo antes de guardar.';
+    return;
+  }
+  const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
+  mirada.estado.textContent = ok
+    ? 'Tu mirada queda guardada en este navegador.'
+    : 'No se ha podido guardar: el navegador bloquea el almacenamiento.';
+  if (ok) renderMirada(miradaId);
+}
+
+function handleMiradaBorrar() {
+  if (miradaId === null) return;
+  const ok = saveMiradas(removeMirada(loadMiradas(), miradaId));
+  mirada.estado.textContent = ok ? 'Mirada borrada.' : 'No se ha podido borrar.';
+  if (ok) {
+    renderMirada(miradaId);
+    mirada.rango.focus(); // el botón Borrar desaparece: el foco no se pierde
+  }
 }
 
 /** Tocar o pulsar el visor deja la nota enfocada (en móvil no hay hover). */
@@ -716,6 +802,13 @@ document.querySelectorAll('.fila-flechas')
 pelis.pestanas.addEventListener('click', handlePestanaClick);
 ficha.ventana.addEventListener('toggle', showMap);
 ficha.nota.addEventListener('click', toggleNota);
+mirada.rango.addEventListener('input', handleMiradaInput);
+mirada.form.addEventListener('submit', handleMiradaSubmit);
+mirada.borrar.addEventListener('click', handleMiradaBorrar);
+// Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
+window.addEventListener('storage', (event) => {
+  if (event.key === MIRADAS_KEY && miradaId !== null) renderMirada(miradaId);
+});
 pelis.mas.addEventListener('click', () => {
   const accion = radiografia.genero
     ? () => fillGenre(pelis.rejilla.children.length + MIN_VISIBLES) // con filtro: 12 más de ese género
