@@ -142,14 +142,23 @@ export const clampNota = (valor) => {
   return Number.isFinite(n) ? Math.min(Math.max(Math.round(n * 2) / 2, 0), 10) : null;
 };
 
-/** Pura: limpia una mirada. Sin nota y sin texto no hay nada que guardar → null. */
+/** Pura: nivel del test de Bechdel (0-3, entero). Sin responder o inválido → null. 0 es una respuesta válida. */
+export const clampBechdel = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const n = Number(valor);
+  return Number.isInteger(n) && n >= 0 && n <= 3 ? n : null;
+};
+
+/** Pura: limpia una mirada. Sin nota, sin texto y sin Bechdel no hay nada que guardar → null.
+ *  Las miradas guardadas antes de existir el test se leen igual (bechdel: null). */
 export function sanitizeMirada(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const nota = clampNota(raw.nota);
   const texto = typeof raw.texto === 'string' ? raw.texto.trim().slice(0, MAX_TEXTO) : '';
-  if (nota === null && !texto) return null;
+  const bechdel = clampBechdel(raw.bechdel);
+  if (nota === null && !texto && bechdel === null) return null;
   const fecha = typeof raw.fecha === 'string' ? raw.fecha : null;
-  return { nota, texto, fecha };
+  return { nota, texto, bechdel, fecha };
 }
 
 /** Pura: limpia el objeto leído (claves que no son ids, miradas vacías o corruptas). */

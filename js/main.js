@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToArc, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToArc, bechdelText, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -69,6 +69,8 @@ const mirada = {
   piloto: document.querySelector('#mirada-piloto'),
   reescribir: document.querySelector('#mirada-reescribir'),
   enfoque: document.querySelector('#mirada-enfoque'),
+  bechdel: document.querySelector('#mirada-bechdel'),
+  pasos: document.querySelector('.maquina-bechdel'),
 };
 const PILOTO = Object.freeze({ vacia: 'Sin calibrar', calibrando: 'Calibrando', revelada: 'Lectura revelada' });
 let miradaId = null;      // id de TMDB de la película abierta
@@ -660,9 +662,12 @@ function renderMirada(id) {
   const guardada = loadMiradas()[id] ?? null;
   const nota = guardada?.nota ?? null;
 
+  const bechdel = guardada?.bechdel ?? null;
+
   miradaTocada = nota !== null;
   mirada.rango.value = nota ?? 5;
   mirada.texto.value = guardada?.texto ?? '';
+  marcarBechdel(bechdel);
   pintarCifraPropia(nota);
   mirada.borrar.hidden = !guardada;
   setPiloto(guardada ? 'revelada' : 'vacia');
@@ -671,6 +676,7 @@ function renderMirada(id) {
   mirada.form.toggleAttribute('data-revelada', Boolean(guardada));
   mirada.entrada.hidden = !guardada;
   mirada.enfoque.textContent = nota === null ? '' : `Tu enfoque ${nota.toFixed(1)}`;
+  mirada.bechdel.textContent = bechdel === null ? '' : `Bechdel: ${bechdelText(bechdel)}`;
   mirada.cita.textContent = guardada?.texto ?? '';
   const fecha = guardada?.fecha ? new Date(guardada.fecha) : null;
   mirada.fecha.dateTime = guardada?.fecha ?? '';
@@ -679,6 +685,32 @@ function renderMirada(id) {
     : '';
 
   pintarAroPropio(nota);
+  pintarBechdel(bechdel);
+}
+
+/** Marca el peldaño guardado (o ninguno). Asignar .value no desmarca: se recorre cada radio. */
+function marcarBechdel(nivel) {
+  mirada.form.elements.bechdel.forEach((radio) => {
+    radio.checked = radio.value === String(nivel);
+  });
+}
+
+/** Lee el peldaño elegido: null si no se ha respondido (0 sí es una respuesta). */
+const leerBechdel = () => {
+  const valor = mirada.form.elements.bechdel.value;
+  return valor === '' ? null : Number(valor);
+};
+
+/** Las marcas de la mirilla: una por cada nivel superado del test (solo de noche). */
+function pintarBechdel(nivel) {
+  if (nivel === null) ficha.nota.removeAttribute('data-bechdel');
+  else ficha.nota.dataset.bechdel = String(nivel);
+}
+
+/** Al elegir un peldaño, la mirilla responde en directo (vista previa, como el enfoque). */
+function handleBechdelChange() {
+  pintarBechdel(leerBechdel());
+  setPiloto('calibrando');
 }
 
 /** El aro interior de la mirilla: tu nota (solo de noche). Sin nota, el aro queda vacío. */
@@ -717,10 +749,11 @@ function handleMiradaSubmit(event) {
   const nueva = {
     nota: miradaTocada ? mirada.rango.value : null,
     texto: mirada.texto.value,
+    bechdel: leerBechdel(),
     fecha: new Date().toISOString(),
   };
-  if (nueva.nota === null && !nueva.texto.trim()) {
-    mirada.estado.textContent = 'Escribe lo que viste o calibra tu enfoque antes de revelar.';
+  if (nueva.nota === null && !nueva.texto.trim() && nueva.bechdel === null) {
+    mirada.estado.textContent = 'Escribe lo que viste, pasa el test o calibra tu enfoque antes de revelar.';
     return;
   }
   const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
@@ -841,6 +874,7 @@ mirada.rango.addEventListener('input', handleMiradaInput);
 mirada.form.addEventListener('submit', handleMiradaSubmit);
 mirada.borrar.addEventListener('click', handleMiradaBorrar);
 mirada.reescribir.addEventListener('click', handleMiradaReescribir);
+mirada.pasos.addEventListener('change', handleBechdelChange);
 // Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
 window.addEventListener('storage', (event) => {
   if (event.key === MIRADAS_KEY && miradaId !== null) renderMirada(miradaId);

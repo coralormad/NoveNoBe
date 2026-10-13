@@ -256,3 +256,14 @@ export function insertAt(ids, id, indice) {
 
 /** Pura: nota (0-10) → porción del aro de la mirilla (0-100, el pathLength del SVG). Acotada. */
 export const ratingToArc = (rating) => Math.min(Math.max(Number(rating) || 0, 0), 10) * 10;
+
+/** Las cuatro lecturas posibles del test de Bechdel, de 0 (no hay dos mujeres con nombre) a 3 (lo pasa). */
+export const BECHDEL_LECTURAS = Object.freeze([
+  'No hay dos mujeres con nombre',
+  'Hay dos, pero no hablan entre ellas',
+  'Hablan, pero de un hombre',
+  'Hablan de otra cosa: lo pasa',
+]);
+
+/** Pura: nivel de Bechdel → frase cualitativa (sin cifras). Sin responder → cadena vacía. */
+export const bechdelText = (nivel) => BECHDEL_LECTURAS[nivel] ?? '';

@@ -303,7 +303,11 @@
                 <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
                   <svg class="visor-optica" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
                     <circle class="visor-borde" cx="50" cy="50" r="46"/>
-                    <path class="visor-marcas" d="M50 0v9M50 91v9M0 50h9M91 50h9"/>
+                    <!-- Marcas de enfoque. De noche, las tres últimas se encienden con tu test de Bechdel -->
+                    <path class="visor-marcas" d="M50 0v9"/>
+                    <path class="visor-marcas visor-marca-1" d="M91 50h9"/>
+                    <path class="visor-marcas visor-marca-2" d="M50 91v9"/>
+                    <path class="visor-marcas visor-marca-3" d="M0 50h9"/>
                     <circle class="visor-arco visor-arco--tmdb" cx="50" cy="50" r="46" pathLength="100" transform="rotate(-90 50 50)"/>
                     <circle class="visor-arco visor-arco--propia" cx="50" cy="50" r="38" pathLength="100" transform="rotate(-90 50 50)"/>
                   </svg>
@@ -356,6 +360,13 @@
                   <textarea id="mirada-texto" class="maquina-texto" rows="4" maxlength="600"
                     placeholder="Escribe lo que la nota no dice"></textarea>
                 </div>
+                <fieldset class="maquina-bechdel">
+                  <legend class="maquina-etiqueta">Test de Bechdel</legend>
+                  <label class="maquina-paso"><input type="radio" name="bechdel" value="0"><span>No hay dos mujeres con nombre</span></label>
+                  <label class="maquina-paso"><input type="radio" name="bechdel" value="1"><span>Hay dos, pero no hablan entre ellas</span></label>
+                  <label class="maquina-paso"><input type="radio" name="bechdel" value="2"><span>Hablan, pero de un hombre</span></label>
+                  <label class="maquina-paso"><input type="radio" name="bechdel" value="3"><span>Hablan de otra cosa: lo pasa</span></label>
+                </fieldset>
                 <div class="maquina-calibre">
                   <label for="mirada-nota" class="maquina-etiqueta">Tu enfoque</label>
                   <input id="mirada-nota" class="maquina-regla" type="range" min="0" max="10" step="0.5" value="5">
@@ -368,7 +379,7 @@
                 </div>
                 <p id="mirada-estado" class="maquina-estado" role="status"></p>
                 <p id="mirada-entrada" class="maquina-revelado" hidden>
-                  <span class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span></span>
+                  <span class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span><span id="mirada-bechdel"></span></span>
                   <span id="mirada-cita" class="maquina-cita"></span>
                 </p>
               </form>

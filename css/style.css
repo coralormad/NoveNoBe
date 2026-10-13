@@ -941,6 +941,12 @@ main { padding: 2rem var(--margen-lateral); }
    Otros nombres de animación: al cambiar de tema, la mirilla vuelve a calibrar (sin JS). */
 :root[data-theme="oscuro"] .visor-arco--tmdb { opacity: 0.5; animation-name: arco-dibuja-noche; }
 :root[data-theme="oscuro"] .visor-marcas { animation-name: visor-calibra-noche; }
+/* Tu test de Bechdel en la mirilla: cada nivel superado enciende una marca (derecha, abajo, izquierda) */
+:root[data-theme="oscuro"] :is(
+  .visor:is([data-bechdel="1"], [data-bechdel="2"], [data-bechdel="3"]) .visor-marca-1,
+  .visor:is([data-bechdel="2"], [data-bechdel="3"]) .visor-marca-2,
+  .visor[data-bechdel="3"] .visor-marca-3
+) { stroke: var(--lavanda-300); stroke-width: 2; }
 :root[data-theme="oscuro"] .visor-arco--propia {
   stroke: var(--lavanda-300); stroke-width: 3; opacity: 1;
   stroke-dasharray: var(--arco-propia, 0) 100;
@@ -1038,6 +1044,25 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina-texto:focus { outline: none; } /* el foco lo marcan las esquinas de la placa */
 .maquina-texto::placeholder { color: var(--color-texto-suave); font-style: italic; }
 
+/* El test de Bechdel: una escalera de cuatro peldaños. Al elegir uno, los anteriores quedan superados */
+.maquina-bechdel { display: grid; gap: 0.35rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.maquina-bechdel legend { margin-bottom: 0.4rem; padding: 0; }
+.maquina-paso {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; cursor: pointer;
+  font-size: var(--texto-s); color: var(--color-texto-suave);
+  transition: color var(--dur-rapida);
+}
+.maquina-paso input {
+  -webkit-appearance: none; appearance: none; flex: none; margin: 0;
+  width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--color-borde-control);
+  transition: background-color var(--dur-rapida), border-color var(--dur-rapida);
+}
+.maquina-paso input:checked { background: var(--lavanda-300); border-color: var(--lavanda-300); }
+.maquina-paso:has(input:checked) { color: var(--color-texto); }
+.maquina-paso:has(~ .maquina-paso input:checked) input { border-color: var(--lavanda-300); } /* superados */
+.maquina-paso input:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.maquina-paso:hover { color: var(--color-texto); }
+
 /* El calibre: una regla con una muesca. Hasta que la mueves, la cifra dice «¿Y tú?» */
 .maquina-calibre { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.4rem 1rem; }
 .maquina-etiqueta { grid-column: 1 / -1; }
@@ -1068,7 +1093,7 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
 /* Dos estados de la máquina: escribiendo (placa + calibre + revelar) o revelada (resultado + reescribir) */
 .maquina-reescribir,
-.maquina[data-revelada] :is(.maquina-placa, .maquina-calibre, .maquina-revelar) { display: none; }
+.maquina[data-revelada] :is(.maquina-placa, .maquina-bechdel, .maquina-calibre, .maquina-revelar) { display: none; }
 .maquina[data-revelada] .maquina-reescribir { display: inline; }
 .maquina:not([data-revelada]) .maquina-revelado { display: none; } /* mientras escribes, no se repite */
 .maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
