@@ -341,11 +341,11 @@
                 <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
                   <svg class="visor-optica" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
                     <circle class="visor-borde" cx="50" cy="50" r="46"/>
-                    <!-- Marcas de enfoque. De noche, las tres últimas se encienden con tu test de Bechdel -->
+                    <!-- Marcas de enfoque: calibran al aparecer -->
                     <path class="visor-marcas" d="M50 0v9"/>
-                    <path class="visor-marcas visor-marca-1" d="M91 50h9"/>
-                    <path class="visor-marcas visor-marca-2" d="M50 91v9"/>
-                    <path class="visor-marcas visor-marca-3" d="M0 50h9"/>
+                    <path class="visor-marcas" d="M91 50h9"/>
+                    <path class="visor-marcas" d="M50 91v9"/>
+                    <path class="visor-marcas" d="M0 50h9"/>
                     <circle class="visor-arco visor-arco--tmdb" cx="50" cy="50" r="46" pathLength="100" transform="rotate(-90 50 50)"/>
                     <circle class="visor-arco visor-arco--propia" cx="50" cy="50" r="38" pathLength="100" transform="rotate(-90 50 50)"/>
                   </svg>
@@ -377,7 +377,6 @@
             <ul>
               <li><a data-seccion="tecnica">Ficha técnica</a></li>
               <li><a data-seccion="reparto">Reparto</a></li>
-              <li><a data-seccion="examen">Test de Bechdel</a></li>
             </ul>
           </nav>
 
@@ -444,36 +443,6 @@
               </div>
               <ul id="ficha-reparto" class="patio" tabindex="0" aria-labelledby="ficha-reparto-titulo"></ul>
               <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
-            </section>
-
-            <!-- D. El examen: el test de Bechdel, fuera de la máquina.
-                 De día se ven las preguntas; las respuestas, a oscuras. Se guarda al terminar (localStorage) -->
-            <section id="seccion-examen" class="ficha-seccion" aria-labelledby="examen-titulo" tabindex="-1">
-              <h3 id="examen-titulo" class="sobretitulo">Test de Bechdel</h3>
-              <div class="ficha-par examen-par">
-                <ol id="examen-criterios" class="examen-criterios" aria-label="Criterios del test"></ol>
-                <div class="examen-mesa">
-                  <p class="ficha-rendija solo-dia">Las preguntas se ven; <span>las respuestas, a oscuras.</span></p>
-                  <button type="button" id="examen-apagar" class="qv-boton solo-dia">Apagar la luz</button>
-                  <!-- Una pregunta cada vez; Sí avanza, No lo detiene -->
-                  <fieldset id="bechdel" class="maquina-bechdel solo-noche" data-estado="examen" data-marcas="0">
-                    <legend class="maquina-etiqueta">El examen</legend>
-                    <ol class="examen-marcas" aria-hidden="true"><li></li><li></li><li></li></ol>
-                    <div class="examen-pantalla" aria-live="polite">
-                      <p id="bechdel-pregunta" class="examen-pregunta"></p>
-                      <p id="bechdel-veredicto" class="examen-veredicto"></p>
-                      <p id="bechdel-resultado" class="examen-resultado"></p>
-                      <p id="bechdel-significado" class="examen-significado"></p>
-                    </div>
-                    <div class="examen-respuestas">
-                      <button type="button" class="examen-respuesta" data-respuesta="si">Sí</button>
-                      <button type="button" class="examen-respuesta" data-respuesta="no">No</button>
-                    </div>
-                    <button type="button" id="bechdel-repetir" class="maquina-borrar examen-repetir">Repetir el examen</button>
-                  </fieldset>
-                  <p id="examen-estado" class="maquina-estado solo-noche" role="status"></p>
-                </div>
-              </div>
             </section>
           </div> <!-- /ficha-cuerpo -->
         </div> <!-- /ficha-contenido -->
