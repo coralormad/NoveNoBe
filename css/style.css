@@ -964,11 +964,25 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .visor:is(:hover, :focus-visible, [aria-pressed="true"]) .visor-cifra { clip-path: inset(0); filter: none; }
 .visor-propia { position: absolute; color: var(--lavanda-300); }
-.visor:not([data-propia]) .visor-propia { display: none; }
-:root[data-theme="oscuro"] .visor[data-propia] .visor-cifra { visibility: hidden; } /* de noche manda tu nota */
 
-.ficha-votos { opacity: 0; transition: opacity var(--dur-media); } /* reserva su sitio: no hay saltos */
-.ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
+/* De día no hay nota pública que enfocar si TMDB no tiene votos: la mirilla no aparece */
+:root[data-theme="claro"] .visor[data-sin-tmdb] { display: none; }
+
+/* De noche lo oculto se hace visible: la cifra pública se retira (no hay media lectura ni desenfoque)
+   y el centro es tuyo, nítido. Sin nota, la mirilla pregunta. Al mirarla, la lente se acerca. */
+:root[data-theme="oscuro"] .visor-cifra { display: none; }
+:root[data-theme="oscuro"] .visor:not([data-propia]) .visor-propia::before {
+  content: '¿Y tú?'; font-family: var(--fuente-titulos); font-style: italic; font-weight: 400; font-size: 0.8rem;
+}
+:root[data-theme="oscuro"] .visor { transition: scale var(--dur-media) var(--curva-cine); }
+:root[data-theme="oscuro"] .visor:is(:hover, :focus-visible) { scale: 1.14; }
+:root[data-theme="oscuro"] .visor:is(:hover, :focus-visible) .visor-arco--propia { stroke-width: 4; }
+
+/* La leyenda: de día se descubre al mirar la nota pública; de noche la tuya está a la vista */
+.ficha-votos { transition: opacity var(--dur-media); }
+:root[data-theme="claro"] .ficha-votos { opacity: 0; } /* reserva su sitio: no hay saltos */
+:root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
+:root[data-theme="oscuro"] .ficha-votos { color: var(--lavanda-300); }
 
 @keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
 @keyframes visor-calibra-noche { from { transform: rotate(45deg);  opacity: 0; } } /* gira al revés: mira otra vez */

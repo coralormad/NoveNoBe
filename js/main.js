@@ -1,11 +1,11 @@
 import { MovieCatalog } from './catalog.js';
-import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
+import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
-import { COORDENADAS_PAISES } from '../data/paises.js';
+import { COORDENADAS_PAISES, fetchCountryCoords } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
@@ -44,6 +44,7 @@ const ficha = {
   notaCifra: document.querySelector('#ficha-nota-cifra'),
   votos: document.querySelector('#ficha-votos'),
   notaPropia: document.querySelector('#ficha-nota-propia'),
+  leyendaPropia: document.querySelector('#ficha-leyenda-propia'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
@@ -82,6 +83,8 @@ let bechdelEtapa = 0;     // pregunta del examen en pantalla (0-2)
 let bechdelNivel = null;  // resultado del examen (0-3); null mientras no termina
 const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
 
+let etiquetaTmdb = ''; // lo que la mirilla dice de día (nota pública de TMDB)
+
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
 let countryMap = null; // se crea la primera vez que se abre la ventana del mapa
@@ -95,7 +98,10 @@ let genreController = null; // petición de género en curso
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
+  etiquetarVisor(); // la mirilla cambia de función: de día enfoca la nota pública, de noche lleva a la tuya
 }
+
+const esNoche = () => document.documentElement.dataset.theme === 'oscuro';
 
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
@@ -589,7 +595,10 @@ async function loadFicha(id) {
     ficha.contenido.hidden = false;
     ficha.titulo.focus({ preventScroll: true });
 
-    fichaMarcadores = toMarkers(movie.countries, COORDENADAS_PAISES);
+    const codes = movie.countries.map(({ iso_3166_1 }) => iso_3166_1);
+    const coords = await fetchCountryCoords(codes, { signal: fichaController.signal });
+    fichaMarcadores = toMarkers(movie.countries, coords);
+
     ficha.ventana.hidden = fichaMarcadores.length === 0; // sin coordenadas, no hay nada que mirar
     showMap();
     return true;
@@ -651,14 +660,26 @@ function renderFicha(movie) {
 
 /** Visor de la nota: el anillo muestra la nota real; la cifra y los votos se descubren al mirarla. */
 function renderNota(movie) {
-  const sinVotos = movie.voteCount === 0; // sin votos no hay nota que enfocar
-  ficha.nota.hidden = sinVotos;
+  const sinVotos = movie.voteCount === 0; // sin votos no hay nota pública que enfocar (tu mirada sí existe)
+  ficha.nota.toggleAttribute('data-sin-tmdb', sinVotos);
   ficha.votos.hidden = sinVotos;
   ficha.nota.setAttribute('aria-pressed', 'false'); // cada película empieza a medio leer
   ficha.nota.style.setProperty('--arco-tmdb', ratingToArc(movie.rating));
-  ficha.nota.setAttribute('aria-label', `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`);
-  ficha.notaCifra.textContent = movie.ratingText;
+  etiquetaTmdb = sinVotos ? 'Sin nota de TMDB' : `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`;
+  ficha.notaCifra.textContent = sinVotos ? '' : movie.ratingText;
   ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
+}
+
+/** Qué anuncia la mirilla a un lector de pantalla: depende del tema y de si ya hay nota propia. */
+function etiquetarVisor() {
+  if (!esNoche()) {
+    ficha.nota.setAttribute('aria-label', etiquetaTmdb);
+    return;
+  }
+  const propia = ficha.notaPropia.textContent;
+  ficha.nota.setAttribute('aria-label', propia
+    ? `Tu mirada: ${propia} sobre 10. Ir a tu lectura`
+    : 'Aún no has calibrado tu mirada. Ir a tu lectura');
 }
 
 /** Pinta la mirada guardada de esa película (o el formulario vacío). La nota de TMDB no se toca. */
@@ -744,6 +765,10 @@ function pintarAroPropio(nota) {
   ficha.nota.toggleAttribute('data-propia', nota !== null);
   ficha.nota.style.setProperty('--arco-propia', ratingToArc(nota ?? 0));
   ficha.notaPropia.textContent = nota === null ? '' : nota.toFixed(1);
+  ficha.leyendaPropia.textContent = nota === null
+    ? 'Tu enfoque · sin calibrar · baja a «Lo que no se ve»'
+    : `Tu enfoque · ${nota.toFixed(1)} · nuestra mirada`;
+  etiquetarVisor();
 }
 
 /** El piloto de la máquina: un solo indicador con tres estados. */
@@ -811,8 +836,13 @@ function handleMiradaBorrar() {
   }
 }
 
-/** Tocar o pulsar el visor deja la nota enfocada (en móvil no hay hover). */
+/** De día, tocar o pulsar el visor deja la nota pública enfocada (en móvil no hay hover).
+ *  De noche no hay nada que destapar: la mirilla lleva a tu lectura. */
 function toggleNota() {
+  if (esNoche()) {
+    goToSection('mirada');
+    return;
+  }
   const enfocada = ficha.nota.getAttribute('aria-pressed') === 'true';
   ficha.nota.setAttribute('aria-pressed', String(!enfocada));
 }

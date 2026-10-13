@@ -322,7 +322,11 @@
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-                <p id="ficha-votos" class="ficha-votos" aria-hidden="true"></p>
+                <!-- La leyenda de la mirilla: de día, la versión oficial (se descubre al mirar); de noche, la tuya (a la vista) -->
+                <p class="ficha-votos" aria-hidden="true">
+                  <span id="ficha-votos" class="solo-dia"></span>
+                  <span id="ficha-leyenda-propia" class="solo-noche"></span>
+                </p>
               </div>
             </div>
           </header>
