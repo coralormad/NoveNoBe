@@ -1222,29 +1222,37 @@ main { padding: 2rem var(--margen-lateral); }
   .ficha-nav a { transition: none; }
 }
 
-/* ---------- Ficha: reparto como patio de ventanas ---------- */
+/* ---------- Ficha: reparto como fachada de ventanas ---------- */
 /* El edificio de enfrente: cada persona es una ventana en penumbra que se enciende al mirarla.
-   Ratón: se enciende la que miras. Teclado: al enfocar el patio se encienden todas. */
+   Ratón: se enciende la que miras. Teclado: al enfocar el patio se encienden todas.
+   La fachada ocupa el ancho de la ficha y se enmarca con la misma línea fina que la ficha técnica. */
+.seccion-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.patio-pista {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.ficha-seccion:has(.patio[hidden]) .patio-pista { display: none; }
+
 .patio {
-  --ventanas-fila: 3;
+  --ventanas-fila: 4;
   --ventana-penumbra: grayscale(0.85) brightness(0.45);
   --ventana-luz: color-mix(in srgb, var(--lavanda-300) 30%, transparent);
-  list-style: none; margin: 0; max-width: 760px;
-  display: grid; grid-template-columns: repeat(var(--ventanas-fila), 1fr);
-  gap: clamp(1rem, 2.5vw, 1.5rem) clamp(0.75rem, 2vw, 1.25rem);
-  padding: clamp(1rem, 2.5vw, 1.5rem);
-  background: var(--color-atenuado); border-radius: var(--radio);
+  list-style: none; margin: 0;
+  display: grid; grid-template-columns: repeat(var(--ventanas-fila), minmax(0, 1fr));
+  gap: clamp(1rem, 2.5vw, 1.5rem) clamp(0.5rem, 1.5vw, 1.25rem);
+  padding-block: clamp(1rem, 2.5vw, 1.5rem);
+  border-block: 1px solid var(--color-borde);
 }
 :root[data-theme="claro"] .patio {
   --ventana-penumbra: grayscale(0.7) contrast(0.85) brightness(1.08); /* de día, el cristal refleja el cielo */
   --ventana-luz: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
 }
-@media (min-width: 640px) { .patio { --ventanas-fila: 4; } }
+@media (min-width: 1024px) { .patio { --ventanas-fila: 8; } } /* una sola planta */
 .patio[hidden] { display: none; }
 .fila-flechas[hidden], .carrusel[hidden] { display: none; } /* lo usan los demás carruseles */
 .patio:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
 
-.persona { display: grid; gap: 0.25rem; }
+.persona { display: grid; gap: 0.25rem; align-content: start; }
 .persona-foto {
   position: relative;
   aspect-ratio: 2 / 3;
@@ -1253,7 +1261,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: var(--color-secundario);
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px var(--color-borde); /* el marco de la ventana */
+  outline: 3px solid var(--color-borde); outline-offset: -3px; /* el marco, por dentro: no se sale de la fachada */
 }
 .persona-foto::after { /* la lámpara del cuarto: luz cálida desde arriba */
   content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -1265,7 +1273,7 @@ main { padding: 2rem var(--margen-lateral); }
   filter: var(--ventana-penumbra); transition: filter var(--dur-lenta) var(--curva-cine);
 }
 .persona-iniciales { font-family: var(--fuente-titulos); font-size: 1.75rem; color: var(--color-texto-suave); }
-.persona-nombre { font-weight: 700; margin-top: 0.5rem; }
+.persona-nombre { font-weight: 700; margin-top: 0.5rem; font-size: var(--texto-s); }
 .persona-personaje {
   font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
   opacity: 0; translate: 0 -4px;
@@ -1286,6 +1294,7 @@ main { padding: 2rem var(--margen-lateral); }
 /* En pantallas táctiles no hay «mirar sin tocar»: el personaje se lee siempre */
 @media (hover: none) {
   .persona-personaje { opacity: 1; translate: 0 0; }
+  .patio-pista { display: none; } /* sin ratón no hay «mirar»: la pista sobra */
 }
 @media (prefers-reduced-motion: reduce) {
   .persona-img, .persona-foto::after, .persona-personaje { transition: none; }
