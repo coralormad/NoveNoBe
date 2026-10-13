@@ -292,47 +292,46 @@
         <p id="ficha-estado" class="ficha-estado" role="status"></p>
 
         <div id="ficha-contenido" class="ficha-contenido" hidden>
+          <!-- A. Apertura: el fotograma es la escena; póster e información, el primer plano -->
           <header class="ficha-cabecera">
             <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
             <div class="ficha-cabecera-cuerpo">
               <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
               <div class="ficha-info">
+                <p id="ficha-meta" class="ficha-meta"></p>
                 <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
                 <p id="ficha-original" class="ficha-original" hidden></p>
-                <p id="ficha-meta" class="ficha-meta"></p>
-                <p id="ficha-nota" class="ficha-nota"></p>
-                <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
-                <dl id="ficha-equipo" class="ficha-equipo"></dl>
+                <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
+                <p id="ficha-nota" class="ficha-nota"></p>
               </div>
             </div>
           </header>
 
           <nav id="ficha-nav" class="ficha-nav" aria-label="Secciones de la película">
             <ul>
+              <li><a data-seccion="tecnica">Ficha técnica</a></li>
               <li><a data-seccion="reparto">Reparto</a></li>
-              <li><a data-seccion="mapa">Países</a></li>
             </ul>
           </nav>
 
           <div class="ficha-cuerpo">
-            <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
-              <div class="fila-cabecera">
-                <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
-                <div class="fila-flechas" id="reparto-flechas">
-                  <button type="button" data-flecha="izquierda" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la izquierda">‹</button>
-                  <button type="button" data-flecha="derecha" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la derecha">›</button>
-                </div>
-              </div>
-              <ul id="ficha-reparto" class="carrusel carrusel-reparto"></ul>
-              <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
+            <!-- B. Ficha técnica y origen: los países, en texto; el mapa, plegado tras la ventana -->
+            <section id="seccion-tecnica" class="ficha-seccion" aria-labelledby="ficha-tecnica-titulo" tabindex="-1">
+              <h3 id="ficha-tecnica-titulo" class="sobretitulo">Ficha técnica</h3>
+              <dl id="ficha-equipo" class="ficha-equipo"></dl>
+              <details id="ficha-ventana" class="ficha-ventana">
+                <summary>¿Desde dónde se mira? <span class="ficha-ventana-pista" aria-hidden="true"></span></summary>
+                <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
+              </details>
             </section>
 
-            <section id="seccion-mapa" class="ficha-seccion" aria-labelledby="ficha-mapa-titulo" tabindex="-1">
-              <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
-              <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
-              <p id="ficha-paises" class="ficha-paises"></p>
+            <!-- C. Reparto: el patio de enfrente; cada persona, una ventana que se enciende al mirarla -->
+            <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
+              <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+              <ul id="ficha-reparto" class="patio" tabindex="0" aria-labelledby="ficha-reparto-titulo"></ul>
+              <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
             </section>
           </div> <!-- /ficha-cuerpo -->
         </div> <!-- /ficha-contenido -->

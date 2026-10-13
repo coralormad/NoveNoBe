@@ -858,33 +858,187 @@ main { padding: 2rem var(--margen-lateral); }
   .entrada-talon { transition: none; }
 }
 
-/* 16. FICHA (mínimo provisional; se completa en el paso 3) -------------------- */
-.ficha-mapa { height: 180px; border-radius: var(--radio); }
-.ficha-fondo { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+/* 16. FICHA -------------------------------------------------------------------- */
+/* De noche el fotograma es penumbra; de día, una imagen lavada por la luz */
+.ficha {
+  --ficha-fondo-filtro: saturate(0.7) brightness(0.5);
+  --ficha-fondo-opacidad: 1;
+  display: grid; gap: 1.5rem; width: 100%; max-width: 1200px; margin-inline: auto;
+}
+:root[data-theme="claro"] .ficha {
+  --ficha-fondo-filtro: grayscale(0.4) brightness(1.15);
+  --ficha-fondo-opacidad: 0.3;
+}
 
-/* ---------- Ficha: reparto ---------- */
-.carrusel-reparto { --tarjetas-visibles: 3.3; list-style: none; margin: 0; padding-inline: 0; }
-.persona { flex: 0 0 var(--ancho-tarjeta); scroll-snap-align: start; display: grid; gap: 0.25rem; }
+.ficha-volver,
+.ficha-meta,
+.ficha-nota,
+.ficha-nav a,
+.ficha-equipo dt,
+.ficha-ventana-pista {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.ficha-volver { justify-self: start; text-decoration: none; }
+.ficha-volver::before { content: '← '; }
+.ficha-volver:hover { color: var(--color-texto); }
+.ficha-estado:empty { display: none; }
+.ficha-contenido { display: grid; gap: 2.5rem; }
+.ficha :is(p, h2, h3, dl, dd, ul) { margin: 0; }
+.ficha-titulo:focus:not(:focus-visible),
+.ficha-seccion:focus:not(:focus-visible) { outline: none; }
+
+/* A. Apertura: el fotograma se funde con la página y deja el primer plano al póster */
+.ficha-cabecera { position: relative; isolation: isolate; border-radius: var(--radio); overflow: hidden; }
+.ficha-fondo {
+  position: absolute; inset: 0; z-index: -1;
+  width: 100%; height: 100%; object-fit: cover; object-position: center 25%;
+  filter: var(--ficha-fondo-filtro); opacity: var(--ficha-fondo-opacidad);
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+          mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+}
+.ficha-cabecera-cuerpo {
+  display: grid; grid-template-columns: minmax(150px, 250px) 1fr;
+  align-items: end; gap: clamp(1.5rem, 4vw, 3rem);
+  padding: clamp(9rem, 28vh, 16rem) clamp(1rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
+}
+.ficha-poster {
+  width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover;
+  border-radius: var(--radio); box-shadow: var(--sombra-tarjeta);
+}
+.ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
+.ficha-titulo {
+  font-family: var(--fuente-titulos); font-size: var(--titulo-m);
+  line-height: var(--interlineado-titulo); text-wrap: balance;
+}
+.ficha-original { font-family: var(--fuente-titulos); font-style: italic; color: var(--color-texto-suave); }
+.ficha-eslogan { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); color: var(--color-primario); }
+.ficha-eslogan::before { content: '«'; }
+.ficha-eslogan::after { content: '»'; }
+.ficha-sinopsis { line-height: var(--interlineado-texto); }
+.ficha-generos { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ficha-generos li {
+  padding: 0.25rem 0.75rem; border: 1px solid var(--color-borde-control); border-radius: 999px;
+  font-size: var(--texto-xs);
+}
+
+@media (max-width: 640px) {
+  .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .ficha-poster { width: 160px; }
+  .ficha-generos { justify-content: center; }
+}
+
+/* Índice de la ficha: discreto, como los rótulos de un guion */
+.ficha-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 1.75rem; border-bottom: 1px solid var(--color-borde); }
+.ficha-nav a {
+  display: inline-block; padding: 0.75rem 0; margin-bottom: -1px;
+  text-decoration: none; border-bottom: 1px solid transparent;
+  transition: color var(--dur-rapida), border-color var(--dur-rapida);
+}
+.ficha-nav a:hover { color: var(--color-texto); border-color: currentColor; }
+
+.ficha-cuerpo { display: grid; gap: 3.5rem; }
+.ficha-seccion { display: grid; gap: 1.25rem; scroll-margin-top: 6rem; }
+
+/* B. Ficha técnica: filas editoriales, cargo en Courier y nombre en Playfair */
+.ficha-equipo { display: grid; grid-template-columns: max-content 1fr; column-gap: 2rem; max-width: 760px; }
+.ficha-equipo :is(dt, dd) { padding-block: 0.85rem; border-top: 1px solid var(--color-borde); }
+.ficha-equipo dt { padding-top: 1.1rem; }
+.ficha-equipo dd { font-family: var(--fuente-titulos); font-size: var(--texto-l); line-height: 1.3; }
+
+/* La ventana: el mapa queda plegado y se descubre como quien sube la persiana */
+.ficha-ventana { max-width: 760px; border-block: 1px solid var(--color-borde); }
+.ficha-ventana summary {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  padding: 0.85rem 0; cursor: pointer; list-style: none;
+  font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l);
+}
+.ficha-ventana summary::-webkit-details-marker { display: none; }
+.ficha-ventana-pista::before { content: 'Abrir el mapa ＋'; }
+.ficha-ventana[open] .ficha-ventana-pista::before { content: 'Cerrar －'; }
+.ficha-ventana summary:hover .ficha-ventana-pista { color: var(--color-texto); }
+.ficha-mapa {
+  height: clamp(220px, 34vw, 320px); margin-bottom: 1rem;
+  border-radius: var(--radio); isolation: isolate; /* las capas de Leaflet no tapan la cabecera fija */
+}
+.ficha-ventana[open] .ficha-mapa { animation: persiana-sube var(--dur-lenta) var(--curva-persiana); }
+@keyframes persiana-sube {
+  from { clip-path: inset(100% 0 0 0); }
+  to   { clip-path: inset(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ficha-ventana[open] .ficha-mapa { animation: none; }
+  .ficha-nav a { transition: none; }
+}
+
+/* ---------- Ficha: reparto como patio de ventanas ---------- */
+/* El edificio de enfrente: cada persona es una ventana en penumbra que se enciende al mirarla.
+   Ratón: se enciende la que miras. Teclado: al enfocar el patio se encienden todas. */
+.patio {
+  --ventanas-fila: 3;
+  --ventana-penumbra: grayscale(0.85) brightness(0.45);
+  --ventana-luz: color-mix(in srgb, var(--lavanda-300) 30%, transparent);
+  list-style: none; margin: 0; max-width: 760px;
+  display: grid; grid-template-columns: repeat(var(--ventanas-fila), 1fr);
+  gap: clamp(1rem, 2.5vw, 1.5rem) clamp(0.75rem, 2vw, 1.25rem);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  background: var(--color-atenuado); border-radius: var(--radio);
+}
+:root[data-theme="claro"] .patio {
+  --ventana-penumbra: grayscale(0.7) contrast(0.85) brightness(1.08); /* de día, el cristal refleja el cielo */
+  --ventana-luz: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
+}
+@media (min-width: 640px) { .patio { --ventanas-fila: 4; } }
+.patio[hidden] { display: none; }
+.fila-flechas[hidden], .carrusel[hidden] { display: none; } /* lo usan los demás carruseles */
+.patio:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+
+.persona { display: grid; gap: 0.25rem; }
 .persona-foto {
   position: relative;
   aspect-ratio: 2 / 3;
-  border-radius: var(--radio);
+  border-radius: 3px;
   overflow: hidden;
   background: var(--color-secundario);
   display: grid;
   place-items: center;
+  box-shadow: 0 0 0 3px var(--color-borde); /* el marco de la ventana */
 }
-.persona-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.persona-foto::after { /* la lámpara del cuarto: luz cálida desde arriba */
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 15%, var(--ventana-luz), transparent 70%);
+  opacity: 0; transition: opacity var(--dur-lenta) var(--curva-cine);
+}
+.persona-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  filter: var(--ventana-penumbra); transition: filter var(--dur-lenta) var(--curva-cine);
+}
 .persona-iniciales { font-family: var(--fuente-titulos); font-size: 1.75rem; color: var(--color-texto-suave); }
-.persona-nombre { font-weight: 700; }
-.persona-personaje { font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave); }
+.persona-nombre { font-weight: 700; margin-top: 0.5rem; }
+.persona-personaje {
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
+  opacity: 0; translate: 0 -4px;
+  transition: opacity var(--dur-media) var(--curva-cine), translate var(--dur-media) var(--curva-cine);
+}
 .persona-nombre, .persona-personaje {
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.fila-flechas[hidden], .carrusel[hidden] { display: none; }
 
-@media (min-width: 768px)  { .carrusel-reparto { --tarjetas-visibles: 5.3; } }
-@media (min-width: 1200px) { .carrusel-reparto { --tarjetas-visibles: 7.3; } }
+/* Encender la ventana: se ve el rostro y se descubre a quién interpreta */
+.patio .persona:hover .persona-img,
+.patio:focus-visible .persona-img { filter: none; }
+.patio .persona:hover .persona-foto::after,
+.patio:focus-visible .persona-foto::after { opacity: 1; }
+.patio .persona:hover .persona-personaje,
+.patio:focus-visible .persona-personaje { opacity: 1; translate: 0 0; }
+
+/* En pantallas táctiles no hay «mirar sin tocar»: el personaje se lee siempre */
+@media (hover: none) {
+  .persona-personaje { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .persona-img, .persona-foto::after, .persona-personaje { transition: none; }
+}
 
 /* ---------- Películas ---------- */
 .peliculas { padding: 2rem var(--margen-lateral) 3rem; display: grid; gap: 1.25rem; }

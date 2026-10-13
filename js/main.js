@@ -47,15 +47,15 @@ const ficha = {
   equipo: document.querySelector('#ficha-equipo'),
   nav: document.querySelector('#ficha-nav'),
   mapa: document.querySelector('#ficha-mapa'),
-  paises: document.querySelector('#ficha-paises'),
+  ventana: document.querySelector('#ficha-ventana'),
   reparto: document.querySelector('#ficha-reparto'),
   repartoVacio: document.querySelector('#ficha-reparto-vacio'),
-  repartoFlechas: document.querySelector('#reparto-flechas'),
 };
 
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
-let countryMap = null; // se crea la primera vez que se abre una ficha
+let countryMap = null; // se crea la primera vez que se abre la ventana del mapa
+let fichaMarcadores = []; // países de la película abierta, listos para el mapa
 let scrollInicio = 0; // para volver al mismo punto del inicio
 
 let controller = null; // petición en curso (variable de módulo, no global)
@@ -71,7 +71,7 @@ function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
   applyTheme(next);
   saveTheme(next);
-  if (!ficha.vista.hidden) countryMap?.refresh();
+  if (!ficha.vista.hidden && ficha.ventana.open) countryMap?.refresh();
 }
 
 // ---------- Pintado (sin innerHTML) ----------
@@ -556,11 +556,12 @@ async function loadFicha(id) {
     renderFicha(movie);
     document.title = `${movie.title} · NoveNoBé`;
     ficha.estado.textContent = '';
-    ficha.contenido.hidden = false; // primero visible: Leaflet necesita medir el contenedor
+    ficha.contenido.hidden = false;
     ficha.titulo.focus({ preventScroll: true });
 
-    countryMap ??= new CountryMap(ficha.mapa);
-    countryMap.show(toMarkers(movie.countries, COORDENADAS_PAISES));
+    fichaMarcadores = toMarkers(movie.countries, COORDENADAS_PAISES);
+    ficha.ventana.hidden = fichaMarcadores.length === 0; // sin coordenadas, no hay nada que mirar
+    showMap();
     return true;
   } catch (error) {
     if (error.name === 'AbortError') return false;
@@ -570,6 +571,13 @@ async function loadFicha(id) {
       : toUserMessage(error);
     return false;
   }
+}
+
+/** El mapa vive plegado: solo se pinta con la ventana abierta (Leaflet necesita medir el contenedor). */
+function showMap() {
+  if (!ficha.ventana.open) return;
+  countryMap ??= new CountryMap(ficha.mapa);
+  countryMap.show(fichaMarcadores);
 }
 
 function renderFicha(movie) {
@@ -596,21 +604,21 @@ function renderFicha(movie) {
   ficha.eslogan.hidden = !movie.tagline;
   ficha.eslogan.textContent = movie.tagline;
   ficha.sinopsis.textContent = movie.overview;
-  renderEquipo(pickCrew(movie.credits.crew));
-  renderReparto(pickCast(movie.credits.cast));
+  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
+  renderEquipo(withOrigin(pickCrew(movie.credits.crew), nombres));
+  renderReparto(pickCast(movie.credits.cast, MAX_REPARTO));
 
   ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
     link.href = movieHref(movie.id, link.dataset.seccion);
   });
 
-  const nombres = movie.countries.map(({ iso_3166_1: code, name }) => countryName(code, name));
-  ficha.paises.textContent = nombres.length ? nombres.join(' · ') : 'Sin países de producción registrados.';
   ficha.mapa.setAttribute('aria-label', nombres.length
     ? `Mapa de los países de producción: ${nombres.join(', ')}`
     : 'Mapa sin países de producción');
 }
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
+const MAX_REPARTO = 8; // dos plantas de cuatro ventanas: se observa de un vistazo, sin carrusel
 const personTemplate = document.querySelector('#plantilla-persona');
 
 /** Pura: «Morgan Freeman» → «MF». Para quien no tiene foto en TMDB. */
@@ -637,9 +645,7 @@ function renderReparto(cast) {
   const hayReparto = cast.length > 0;
   ficha.reparto.replaceChildren(...cast.map(createPerson));
   ficha.reparto.hidden = !hayReparto;
-  ficha.repartoFlechas.hidden = !hayReparto;
   ficha.repartoVacio.hidden = hayReparto;
-  ficha.reparto.scrollLeft = 0; // nueva película → empieza por la primera persona
 }
 
 /** Pura: clasificación → texto. Si no es la española, dice de qué país es. */
@@ -649,6 +655,10 @@ const certificationText = (cert) => {
     ? cert.certification
     : `${cert.certification} (${countryName(cert.country, cert.country)})`;
 };
+
+/** Pura: añade la fila «Origen» a la ficha técnica solo si hay países. No muta `roles`. */
+const withOrigin = (roles, paises) =>
+  paises.length ? [...roles, { label: 'Origen', names: paises }] : roles;
 
 function renderEquipo(roles) {
   ficha.equipo.replaceChildren(...roles.flatMap(({ label, names }) => {
@@ -684,6 +694,7 @@ els.genres.addEventListener('click', handleGenreClick);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 pelis.pestanas.addEventListener('click', handlePestanaClick);
+ficha.ventana.addEventListener('toggle', showMap);
 pelis.mas.addEventListener('click', () => {
   const accion = radiografia.genero
     ? () => fillGenre(pelis.rejilla.children.length + MIN_VISIBLES) // con filtro: 12 más de ese género
