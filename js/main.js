@@ -1163,6 +1163,8 @@ function enablePointerLight(container, selector) {
     });
   });
 }
+enablePointerLight(radiografia.capsulas, '.capsula'); // Películas: la Marquesina
+enablePointerLight(els.genres, '.capsula');           // Inicio: los géneros comparten la misma luz
 enablePointerLight(ficha.ventana, '.ficha-mapa');
 
 // ---------- Arranque ----------
