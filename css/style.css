@@ -125,8 +125,25 @@ main { padding: 2rem var(--margen-lateral); }
 /* 5. FILAS Y CARRUSEL ------------------------------------- */
 .fila { display: grid; gap: 1rem; }
 
-.fila-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.fila-cabecera h2 { font-size: var(--titulo-s); }
+/* Cabecera de fila: el titular (sobretítulo + título) a la izquierda y las flechas, al pie, a la derecha */
+.fila-cabecera { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+/* Un solo estilo para los títulos de fila: «Lo que no te puedes perder» (h3), «En boca de todos» y «Para ti» (h2)
+   se ven iguales aunque su nivel en el documento sea distinto. La jerarquía la marca el título del bloque */
+.fila-cabecera :is(h2, h3), .fila-titulo {
+  font-family: var(--fuente-titulos); font-size: var(--titulo-s); font-weight: 700;
+  line-height: var(--interlineado-titulo); text-wrap: balance;
+}
+.descubre-titulo { font-size: var(--titulo-m); text-wrap: balance; }
+.generos-marco + .fila-cabecera { margin-top: 1.25rem; } /* la tira de géneros es un control: respira antes de la fila */
+
+/* «En boca de todos» · foco y penumbra: al mirar una película, las demás se apagan un poco.
+   Solo con ratón (en táctil no hay «mirar» sin pulsar); es lo que la distingue de la selección editorial */
+@media (hover: hover) {
+  .fila--boca .tarjeta { transition: opacity var(--dur-media) var(--curva-cine), filter var(--dur-media) var(--curva-cine); }
+  .fila--boca .carrusel:has(.tarjeta:is(:hover, :focus-within)) .tarjeta:not(:hover, :focus-within) {
+    opacity: 0.45; filter: grayscale(0.6) brightness(0.85);
+  }
+}
 
 .sobretitulo {
   font-family: var(--fuente-detalle);

@@ -244,6 +244,16 @@ export function filterByWatched(lista, observadas, filtro = 'todas', campo = 'id
 export const numeroDeColeccion = (indice) => String(indice + 1).padStart(2, '0');
 
 /**
+ * Pura: quita de unos resultados de TMDB las películas que ya se muestran en otra fila.
+ * @param {Array<{id:number}>} results @param {Array<{id:number}>} yaVistas
+ * @returns {Array} array nuevo (no muta)
+ */
+export function excludeIds(results, yaVistas) {
+  const ids = new Set(yaVistas.map(({ id }) => id));
+  return results.filter(({ id }) => !ids.has(id));
+}
+
+/**
  * Pura: ¿queda contenido fuera de plano a cada lado de una tira con scroll horizontal?
  * El margen de 2px evita parpadeos por redondeos de subpíxel.
  * @returns {{ antes: boolean, despues: boolean }}

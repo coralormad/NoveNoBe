@@ -63,12 +63,13 @@ export async function getMovieList(type, { page = 1, signal } = {}) {
   return request(`/movie/${type}`, { page, region: 'ES' }, signal);
 }
 
-export function discoverMovies({ genreId, page = 1, signal } = {}) {
+// Por defecto, lo más popular; «Lo que no te puedes perder» la pide por nota y con muchos votos
+export function discoverMovies({ genreId, page = 1, signal, sortBy = 'popularity.desc', minVotes = 100 } = {}) {
   return request('/discover/movie', {
     page,
-    sort_by: 'popularity.desc',
+    sort_by: sortBy,
     include_adult: false,
-    'vote_count.gte': 100,
+    'vote_count.gte': minVotes,
     ...(genreId && { with_genres: genreId }),
   }, signal);
 }

@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToArc, fotogramas, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds, bordesDeScroll } from './utils.js';
+import { debounce, ratingToArc, fotogramas, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds, bordesDeScroll, excludeIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
@@ -31,6 +31,7 @@ const els = {
   genres: document.querySelector('#generos'),
   genresMarco: document.querySelector('#generos-marco'),
   genreRow: document.querySelector('#fila-genero'),
+  genreCriterio: document.querySelector('#genero-criterio'),
 };
 
 // Ficha: referencias y estado propio de la ficha (ámbito de módulo, no globales)
@@ -109,6 +110,7 @@ let scrollInicio = 0; // para volver al mismo punto del inicio
 
 let controller = null; // petición en curso (variable de módulo, no global)
 let genreController = null; // petición de género en curso
+let tendencias = Promise.resolve([]); // «En boca de todos»: la fila de género no repite sus películas
 
 // ---------- Tema (NUEVO 5d) ----------
 function applyTheme(theme) {
@@ -259,11 +261,20 @@ function vigilarBordes(tira, marco) {
   new ResizeObserver(actualizar).observe(tira);
 }
 
-function loadGenreRow(genreId) {
+/** «Lo que no te puedes perder»: no es otra lista de populares. Son las mejor valoradas del género,
+ *  con al menos 500 votos (consenso, no una rareza con tres votos), y sin las que ya están en tendencias. */
+function loadGenreRow(genreId, nombre) {
   genreController?.abort();
   genreController = new AbortController();
   const { signal } = genreController;
-  return loadRow(els.genreRow, () => discoverMovies({ genreId, signal }));
+  if (nombre) els.genreCriterio.textContent = `Las mejor valoradas de ${nombre}`;
+  return loadRow(els.genreRow, async () => {
+    const [data, enBoca] = await Promise.all([
+      discoverMovies({ genreId, signal, sortBy: 'vote_average.desc', minVotes: 500 }),
+      tendencias,
+    ]);
+    return { ...data, results: excludeIds(data.results, enBoca) };
+  });
 }
 
 function handleGenreClick(event) {
@@ -273,15 +284,15 @@ function handleGenreClick(event) {
   button.setAttribute('aria-pressed', 'true');
   // La elegida entra entera en plano (si estaba cortada por un borde)
   button.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-  loadGenreRow(Number(button.dataset.genreId));
+  loadGenreRow(Number(button.dataset.genreId), button.textContent);
 }
 
 async function initGenres() {
   try {
     const genres = await getGenres();
-    const firstId = genres[0]?.id;
-    renderGenreChips(genres, firstId);
-    return firstId ? loadGenreRow(firstId) : [];
+    const [first] = genres;
+    renderGenreChips(genres, first?.id);
+    return first ? loadGenreRow(first.id, first.name) : [];
   } catch (error) {
     if (error.name === 'AbortError') return [];
     renderRowMessage(els.genreRow, toUserMessage(error));
@@ -1227,6 +1238,8 @@ const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
   avisoLista: document.querySelector('#mi-lista-aviso'),
 });
 
+tendencias = loadRow(els.trending, () => getTrending()); // antes que los géneros: su fila la necesita
+
 // «Para ti» usa la misma tarjeta que el resto de filas (se le pasa la función: no duplica código)
 const paraTi = new ParaTi({
   seccion: document.querySelector('#para-ti'),
@@ -1238,7 +1251,7 @@ const paraTi = new ParaTi({
 Promise.allSettled([
   startRouter(handleRoute),
   loadHero(hero),
-  loadRow(els.trending, () => getTrending()).then(fillEmblem),
+  tendencias.then(fillEmblem),
   initGenres(),
   paraTi.actualizar(),
 ]);
