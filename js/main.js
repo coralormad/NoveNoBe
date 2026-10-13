@@ -13,6 +13,7 @@ import { CatalogCharts } from './charts.js';
 import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
 import { activarMiLista, crearBotonLista, asignarBotonLista, entradaDesdeMovie } from './miLista.js';
+import { ParaTi } from './paraTi.js';
 
 
 const MIN_QUERY = 2;
@@ -1226,10 +1227,19 @@ const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
   avisoLista: document.querySelector('#mi-lista-aviso'),
 });
 
+// «Para ti» usa la misma tarjeta que el resto de filas (se le pasa la función: no duplica código)
+const paraTi = new ParaTi({
+  seccion: document.querySelector('#para-ti'),
+  fila: document.querySelector('#fila-para-ti'),
+  fuentes: document.querySelector('#para-ti-fuentes'),
+  flechas: document.querySelector('#para-ti-flechas'),
+}, { crearTarjeta: createCard });
+
 Promise.allSettled([
   startRouter(handleRoute),
   loadHero(hero),
   loadRow(els.trending, () => getTrending()).then(fillEmblem),
   initGenres(),
+  paraTi.actualizar(),
 ]);
 

@@ -163,6 +163,35 @@ main { padding: 2rem var(--margen-lateral); }
 
 .fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
 
+/* Titular de fila con sobretítulo (el porqué de lo que se ve, en pequeño, encima del título) */
+.fila-titular { display: grid; gap: 0.35rem; min-width: 0; }
+
+/* «Para ti» sin nada guardado: tres ventanas apagadas y cómo encenderlas. Sin fingir recomendaciones */
+.carrusel:has(> .para-ti-vacio) { display: block; }
+.para-ti-vacio {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1.25rem 2rem;
+  padding: 1.5rem clamp(1rem, 3vw, 2rem);
+  border: 1px dashed var(--color-borde-control); border-radius: var(--radio);
+}
+.para-ti-ventanas { display: flex; gap: 0.5rem; }
+.para-ti-ventanas span {
+  width: clamp(38px, 6vw, 56px); aspect-ratio: 2 / 3; border-radius: 4px;
+  border: 1px solid var(--color-borde-control);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lavanda-100) 10%, transparent), transparent);
+}
+.para-ti-ventanas span:nth-child(2) { /* la del medio, a punto de encenderse */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lavanda-300) 35%, transparent), transparent 85%);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--lavanda-300) 60%, transparent);
+}
+.para-ti-texto { display: grid; gap: 0.35rem; max-width: 52ch; }
+.para-ti-titulo { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.3; }
+.para-ti-pasos { color: var(--color-texto-suave); }
+.para-ti-mas {
+  display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%;
+  border: 1px solid var(--color-borde-control); font-family: var(--fuente-detalle); line-height: 1; color: var(--color-texto);
+}
+@media (max-width: 599px) { .para-ti-vacio { grid-template-columns: 1fr; } }
+
 /* Tira de géneros: una sola fila que se desliza. El borde con más géneros se funde (como el
    borde de un visor) y, con ratón, aparece una flecha discreta. En táctil, el gesto de siempre. */
 .generos-marco {

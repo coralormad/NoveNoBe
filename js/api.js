@@ -77,6 +77,11 @@ export function getRecommendations(id, { signal } = {}) {
   return request(`/movie/${id}/recommendations`, {}, signal);
 }
 
+// Parecidas por géneros y palabras clave: el plan B cuando TMDB no tiene recomendaciones de una película
+export function getSimilar(id, { signal } = {}) {
+  return request(`/movie/${id}/similar`, {}, signal);
+}
+
 let genresPromise = null; // memoria: los géneros no cambian durante la visita
 
 export function getGenres() {
