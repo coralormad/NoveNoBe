@@ -283,3 +283,33 @@ export const avanzarBechdel = (etapa, si) => {
   const siguiente = etapa + 1;
   return { etapa: siguiente, nivel: siguiente === BECHDEL_PREGUNTAS.length ? siguiente : null };
 };
+
+/** Los tres criterios, enunciados como hechos (se ven siempre, de día y de noche). */
+export const BECHDEL_CRITERIOS = Object.freeze([
+  'Aparecen al menos dos mujeres con nombre',
+  'Hablan entre ellas',
+  'Hablan de algo que no sea un hombre',
+]);
+
+/** Lo que significa cada desenlace (índice = criterios superados). */
+export const BECHDEL_SIGNIFICADOS = Object.freeze([
+  'La historia no les da sitio: no llegan a ser dos con nombre propio.',
+  'Están, pero no se cruzan: cada una vive en la órbita de otros.',
+  'Se hablan, pero el centro de la conversación sigue siendo un hombre.',
+  'Tienen voz propia y algo que decirse. Es el mínimo, no la meta.',
+]);
+
+/** Cómo se lee cada criterio en la mesa del examen. */
+export const VEREDICTO_CRITERIO = Object.freeze({
+  superado: 'Sí', detenido: 'No', actual: 'En examen', pendiente: 'Sin examinar',
+});
+
+/** Pura: estado de cada criterio según la etapa y el nivel.
+ *  En curso (nivel null): superados, el actual y pendientes. Terminado: superados, el que lo detuvo y pendientes. */
+export const estadoCriterios = (etapa, nivel) =>
+  BECHDEL_CRITERIOS.map((_, i) => {
+    const tope = nivel ?? etapa;
+    if (i < tope) return 'superado';
+    if (i === tope) return nivel === null ? 'actual' : 'detenido';
+    return 'pendiente';
+  });

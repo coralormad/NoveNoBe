@@ -1104,8 +1104,42 @@ main { padding: 2rem var(--margen-lateral); }
 .examen-repetir { justify-self: start; }
 
 /* Dos estados: examinando (pregunta + Sí / No) o hecho (resultado + repetir) */
-.maquina-bechdel[data-estado="examen"] :is(.examen-resultado, .examen-repetir),
+.maquina-bechdel[data-estado="examen"] :is(.examen-resultado, .examen-veredicto, .examen-significado, .examen-repetir),
 .maquina-bechdel[data-estado="hecho"] :is(.examen-pregunta, .examen-respuestas) { display: none; }
+
+/* D. El examen como sección propia: los criterios a un lado y la mesa del examen al otro
+   (misma rejilla y misma línea de enfoque que la ficha técnica y tu lectura) */
+.examen-criterios { list-style: none; margin: 0; padding: 0; }
+.examen-criterios li {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  padding-block: 0.85rem; border-top: 1px solid var(--color-borde);
+  transition: filter var(--dur-lenta) var(--curva-cine), opacity var(--dur-lenta) var(--curva-cine);
+}
+.examen-criterios li:last-child { border-bottom: 1px solid var(--color-borde); }
+.criterio-texto { font-family: var(--fuente-titulos); font-size: var(--texto-l); line-height: 1.3; }
+.criterio-veredicto {
+  flex-shrink: 0; font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+/* De noche, cada criterio dice cómo va: lo no examinado queda desenfocado */
+:root[data-theme="oscuro"] .examen-criterios li[data-estado="pendiente"] { filter: blur(1.5px); opacity: 0.55; }
+:root[data-theme="oscuro"] .examen-criterios li[data-estado="superado"] .criterio-veredicto { color: var(--lavanda-300); }
+:root[data-theme="oscuro"] .examen-criterios li[data-estado="actual"] .criterio-texto { font-style: italic; color: var(--lavanda-300); }
+:root[data-theme="oscuro"] .examen-criterios li[data-estado="detenido"] .criterio-texto {
+  text-decoration: line-through; text-decoration-color: var(--lavanda-300); text-decoration-thickness: 1px;
+}
+
+.examen-mesa { display: grid; gap: 1.25rem; align-content: start; }
+#examen-apagar { justify-self: start; }
+.examen-veredicto { margin: 0; font-family: var(--fuente-titulos); font-size: var(--titulo-s); line-height: var(--interlineado-titulo); }
+.maquina-bechdel[data-pasa] .examen-veredicto { color: var(--lavanda-300); }
+.examen-significado { margin: 0; max-width: 46ch; color: var(--color-texto-suave); }
+@media (min-width: 1024px) {
+  .examen-mesa { align-self: stretch; padding-left: clamp(1.5rem, 3vw, 2.5rem); border-left: 1px solid var(--color-borde); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .examen-criterios li { transition: none; }
+}
 
 /* El calibre: una regla con una muesca. Hasta que la mueves, la cifra dice «¿Y tú?» */
 .maquina-calibre { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.4rem 1rem; }
