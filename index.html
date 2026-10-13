@@ -266,8 +266,21 @@
 
     <!-- 4. VISTA CATÁLOGO (Mi lista) -->
     <div id="vista-catalogo" class="vista" hidden>
-      <section class="catalogo">
-        <h2 id="catalogo-titulo"></h2>
+      <section class="catalogo mi-lista" aria-labelledby="catalogo-titulo">
+        <header class="ml-cabecera">
+          <div class="ml-titular">
+            <p class="ml-etiqueta">Historias en observación</p>
+            <h2 id="catalogo-titulo">Mi lista</h2>
+            <p class="ml-entradilla">Historias guardadas. Miradas pendientes.</p>
+          </div>
+          <p class="ml-cartela">No todo lo que guardas<br> lo has visto de verdad.</p>
+        </header>
+        <div id="mi-lista-filtros" class="ml-filtros" role="group" aria-label="Filtrar mi lista" hidden>
+          <button type="button" class="ml-filtro" data-filtro="todas" aria-pressed="true">Todas</button>
+          <button type="button" class="ml-filtro" data-filtro="pendientes" aria-pressed="false">Por descubrir</button>
+          <button type="button" class="ml-filtro" data-filtro="observadas" aria-pressed="false">Ya observadas</button>
+        </div>
+        <div id="mi-lista-aviso" class="ml-aviso" role="status"></div>
         <div id="catalogo-grid" class="qv-lista"></div> <!-- Mi lista: las favoritas de «Qué ver» -->
       </section>
     </div> <!-- /vista-catalogo -->
@@ -279,47 +292,46 @@
         <p id="ficha-estado" class="ficha-estado" role="status"></p>
 
         <div id="ficha-contenido" class="ficha-contenido" hidden>
+          <!-- A. Apertura: el fotograma es la escena; póster e información, el primer plano -->
           <header class="ficha-cabecera">
             <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
             <div class="ficha-cabecera-cuerpo">
               <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
               <div class="ficha-info">
+                <p id="ficha-meta" class="ficha-meta"></p>
                 <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
                 <p id="ficha-original" class="ficha-original" hidden></p>
-                <p id="ficha-meta" class="ficha-meta"></p>
-                <p id="ficha-nota" class="ficha-nota"></p>
-                <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
-                <dl id="ficha-equipo" class="ficha-equipo"></dl>
+                <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
+                <p id="ficha-nota" class="ficha-nota"></p>
               </div>
             </div>
           </header>
 
           <nav id="ficha-nav" class="ficha-nav" aria-label="Secciones de la película">
             <ul>
+              <li><a data-seccion="tecnica">Ficha técnica</a></li>
               <li><a data-seccion="reparto">Reparto</a></li>
-              <li><a data-seccion="mapa">Países</a></li>
             </ul>
           </nav>
 
           <div class="ficha-cuerpo">
-            <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
-              <div class="fila-cabecera">
-                <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
-                <div class="fila-flechas" id="reparto-flechas">
-                  <button type="button" data-flecha="izquierda" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la izquierda">‹</button>
-                  <button type="button" data-flecha="derecha" data-objetivo="ficha-reparto" aria-label="Desplazar el reparto a la derecha">›</button>
-                </div>
-              </div>
-              <ul id="ficha-reparto" class="carrusel carrusel-reparto"></ul>
-              <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
+            <!-- B. Ficha técnica y origen: los países, en texto; el mapa, plegado tras la ventana -->
+            <section id="seccion-tecnica" class="ficha-seccion" aria-labelledby="ficha-tecnica-titulo" tabindex="-1">
+              <h3 id="ficha-tecnica-titulo" class="sobretitulo">Ficha técnica</h3>
+              <dl id="ficha-equipo" class="ficha-equipo"></dl>
+              <details id="ficha-ventana" class="ficha-ventana">
+                <summary>¿Desde dónde se mira? <span class="ficha-ventana-pista" aria-hidden="true"></span></summary>
+                <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
+              </details>
             </section>
 
-            <section id="seccion-mapa" class="ficha-seccion" aria-labelledby="ficha-mapa-titulo" tabindex="-1">
-              <h3 id="ficha-mapa-titulo" class="sobretitulo">¿Desde dónde se mira?</h3>
-              <div id="ficha-mapa" class="ficha-mapa" role="img"></div>
-              <p id="ficha-paises" class="ficha-paises"></p>
+            <!-- C. Reparto: el patio de enfrente; cada persona, una ventana que se enciende al mirarla -->
+            <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
+              <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+              <ul id="ficha-reparto" class="patio" tabindex="0" aria-labelledby="ficha-reparto-titulo"></ul>
+              <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
             </section>
           </div> <!-- /ficha-cuerpo -->
         </div> <!-- /ficha-contenido -->
@@ -328,10 +340,40 @@
   </main>
   
   <!-- 6. FOOTER -->
-  <footer class="pie">
-    <p>NoveNoBé</p>
-    <p>Una historia para cada versión de ti</p>
-    <p>Datos de películas: TMDB</p>
+  <!-- Último plano: la frase enmarcada como en un visor, la marca y los créditos reales -->
+  <footer class="cierre">
+    <figure class="cierre-plano">
+      <blockquote class="cierre-frase">
+        <p>Lo importante no siempre está a primera vista.</p>
+      </blockquote>
+      <figcaption class="cierre-pista">
+        <span class="solo-dia">Apaga la luz y mira otra vez.</span>
+        <span class="solo-noche">Ahora ya lo sabes.</span>
+      </figcaption>
+    </figure>
+
+    <div class="cierre-fila">
+      <div class="cierre-marca">
+        <p class="cierre-logo">NoveNoBé</p>
+        <p class="cierre-lema">Una historia para cada versión de ti</p>
+      </div>
+
+      <nav class="cierre-nav" aria-label="Secundaria">
+        <ul>
+          <li><a href="#/">Inicio</a></li>
+          <li><a href="#/que-ver">Qué ver</a></li>
+          <li><a href="#/peliculas">Películas</a></li>
+          <li><a href="#/mi-lista">Mi lista</a></li>
+        </ul>
+      </nav>
+
+      <div class="cierre-creditos">
+        <p>Datos e imágenes de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>.
+          Este producto usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
+        <p>Coral de Pablos Ormad · The Bridge · 2026 ·
+          <a href="https://github.com/coralormad/NoveNoBe" target="_blank" rel="noopener">Código en GitHub</a></p>
+      </div>
+    </div>
   </footer>
 
   <!-- Plantilla de tarjeta: main.js la clona por cada película -->

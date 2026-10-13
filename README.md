@@ -6,7 +6,7 @@
 
 El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitchcock como referencia. El **tema claro** son las luces de la sala encendidas: la superficie, lo que se intuye. El **tema oscuro** es la revelación: se apagan las luces y aparece lo que estaba oculto.
 
-🔗 **Demo:** _[enlace de GitHub Pages]_
+🔗 **Demo:** [coralormad.github.io/NoveNoBe](https://coralormad.github.io/NoveNoBe/)
 
 ---
 
@@ -19,6 +19,11 @@ El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitch
 | Ficha con mapa | Qué ver |
 |---|---|
 | ![Ficha de película con el mapa de países](img/capturas/ficha.png) | ![Observatorio de Qué ver](img/capturas/que-ver.png) |
+
+
+| Tema claro: la superficie | Tema oscuro: la revelación |
+|---|---|
+| ![Tarjeta de Qué ver en tema claro, con la revelación velada](img/capturas/tema-claro.png) | ![La misma tarjeta en tema oscuro, con la revelación legible](img/capturas/tema-oscuro.png) |
 
 ---
 

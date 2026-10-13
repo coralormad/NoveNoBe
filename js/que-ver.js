@@ -2,7 +2,8 @@
 // Cuatro preguntas (una por plano), cada respuesta enciende una ventana de enfrente y,
 // al final, las recomendaciones se revelan enfocándose. La lógica vive en recomendador.js (pura).
 import { DIMENSIONES, recomendar, explicar } from './recomendador.js';
-import { loadFavorites, saveFavorites, toggleFavorite } from './storage.js';
+import { loadFavorites, saveFavorites, loadObserved, saveObserved, toggleId } from './storage.js';
+import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, insertAt } from './utils.js';
 import { getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { movieHref } from './router.js';
@@ -25,9 +26,17 @@ export class QueVer {
   #favoritas = loadFavorites();
   #posters = new Map(); // tmdbId → URL del póster (caché: cada póster se pide una sola vez)
   #miLista = null;      // contenedor de «Mi lista» (opcional)
+  #filtrosLista = null; // botones Todas / Por descubrir / Ya observadas
+  #observadas = loadObserved();
+  #filtro = 'todas';
+  #avisoLista = null;   // línea de estado de Mi lista (anuncia filtros y permite deshacer)
+  #deshacer = null;     // última película quitada: { id, indice, titulo }
 
-  /** @param {HTMLElement} raiz  @param {{ miLista?: HTMLElement }} opciones */
-  constructor(raiz, { miLista = null } = {}) {
+  /**
+   * @param {HTMLElement} raiz
+   * @param {{ miLista?: HTMLElement, filtrosLista?: HTMLElement, avisoLista?: HTMLElement }} opciones
+   */
+  constructor(raiz, { miLista = null, filtrosLista = null, avisoLista = null } = {}) {
     const $ = (selector) => raiz.querySelector(selector);
     this.#els = {
       seccion: $('.que-ver'), // aquí vive --enfoque (lo leen la fachada y la rendija)
@@ -56,7 +65,13 @@ export class QueVer {
     categorias.addEventListener('click', (event) => this.#onFavorita(event));
     reiniciar.addEventListener('click', () => this.#reiniciar());
     this.#miLista = miLista;
-    miLista?.addEventListener('click', (event) => this.#onFavorita(event));
+    miLista?.addEventListener('click', (event) => this.#onMiLista(event));
+    this.#filtrosLista = filtrosLista;
+    filtrosLista?.addEventListener('click', (event) => this.#onFiltro(event));
+    this.#avisoLista = avisoLista;
+    avisoLista?.addEventListener('click', (event) => {
+      if (event.target.closest('[data-deshacer]')) this.#deshacerQuitar();
+    });
 
     this.#pintarPregunta();
   }
@@ -213,6 +228,15 @@ export class QueVer {
     cartel.append(cartela);
     this.#cargarPoster(pelicula, cartel);
 
+    // En Mi lista: número de colección sobre el cartel (orden de guardado, no una cifra)
+    if (item.numero) {
+      const numero = document.createElement('span');
+      numero.className = 'ml-numero';
+      numero.setAttribute('aria-hidden', 'true');
+      numero.textContent = `${item.numero} / NNB`;
+      cartel.append(numero);
+    }
+
     const cuerpo = document.createElement('div');
     cuerpo.className = 'qv-hallazgo-cuerpo';
 
@@ -252,7 +276,23 @@ export class QueVer {
     favorita.dataset.favorita = pelicula.id;
     this.#pintarFavorita(favorita, pelicula.titulo);
 
-    cuerpo.append(favorita);
+    if (item.numero) {
+      // Solo en Mi lista: «Por descubrir» ⇄ «Ya observada», junto al botón de quitar
+      const acciones = document.createElement('div');
+      acciones.className = 'ml-acciones';
+      const estado = document.createElement('button');
+      estado.type = 'button';
+      estado.className = 'ml-estado';
+      estado.dataset.observada = pelicula.id;
+      this.#pintarEstado(estado, pelicula.titulo);
+      favorita.classList.add('ml-quitar');
+      favorita.textContent = 'Quitar'; // en Mi lista ya está guardada: la acción es quitarla (aria-label lo detalla)
+      favorita.removeAttribute('aria-pressed'); // aquí no es un interruptor, es una acción
+      acciones.append(estado, favorita);
+      cuerpo.append(acciones);
+    } else {
+      cuerpo.append(favorita);
+    }
     tarjeta.append(cartel, cuerpo);
     return tarjeta;
   }
@@ -307,13 +347,17 @@ export class QueVer {
     const boton = event.target.closest('[data-favorita]');
     if (!boton) return;
     const id = Number(boton.dataset.favorita);
-    this.#favoritas = toggleFavorite(this.#favoritas, id);
+    const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
+    const indice = this.#favoritas.indexOf(id);
+    this.#favoritas = toggleId(this.#favoritas, id);
     saveFavorites(this.#favoritas);
     if (this.#miLista?.contains(boton)) {
-      this.pintarMiLista(); // quitada desde Mi lista: la tarjeta desaparece
+      // Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic)
+      this.#deshacer = { id, indice, titulo };
+      this.#pintarLista();
+      this.#anunciar(`Has quitado «${titulo}» de tu lista.`, { deshacer: true });
       return;
     }
-    const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
     this.#pintarFavorita(boton, titulo);
   }
 
@@ -326,25 +370,129 @@ export class QueVer {
 
   // ---------- Mi lista ----------
 
-  /** Pinta las favoritas guardadas, en el orden en que se guardaron. Sin favoritas, invita a descubrir. */
+  /** Clics dentro de Mi lista: marcar como vista o quitar de la lista. */
+  #onMiLista(event) {
+    const estado = event.target.closest('[data-observada]');
+    if (!estado) return this.#onFavorita(event);
+    this.#observadas = toggleId(this.#observadas, Number(estado.dataset.observada));
+    saveObserved(this.#observadas);
+    if (this.#filtro === 'todas') {
+      this.#pintarEstado(estado, estado.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent);
+    } else {
+      this.#pintarLista(); // con un filtro activo, la tarjeta cambia de grupo y sale de la vista
+    }
+  }
+
+  #onFiltro(event) {
+    const boton = event.target.closest('[data-filtro]');
+    if (!boton || !FILTROS_LISTA.includes(boton.dataset.filtro)) return;
+    this.#filtro = boton.dataset.filtro;
+    this.#pintarLista();
+    this.#anunciar(`Mostrando: ${boton.textContent.toLowerCase()}.`, { visible: false });
+  }
+
+  /** Devuelve la última película quitada a su sitio. La recupera del aviso, no de una copia de la lista. */
+  #deshacerQuitar() {
+    if (!this.#deshacer) return;
+    const { id, indice, titulo } = this.#deshacer;
+    this.#favoritas = insertAt(loadFavorites(), id, indice);
+    saveFavorites(this.#favoritas);
+    this.#deshacer = null;
+    this.#pintarLista();
+    this.#anunciar(`«${titulo}» vuelve a tu lista.`);
+  }
+
+  /** Línea de estado: los lectores de pantalla la anuncian (role="status"). */
+  #anunciar(texto, { deshacer = false, visible = true } = {}) {
+    if (!this.#avisoLista) return;
+    const mensaje = document.createElement('span');
+    mensaje.textContent = texto;
+    const partes = [mensaje];
+    if (deshacer) {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'ml-deshacer';
+      boton.dataset.deshacer = '';
+      boton.textContent = 'Deshacer';
+      partes.push(boton);
+    }
+    this.#avisoLista.classList.toggle('sr-only', !visible);
+    this.#avisoLista.replaceChildren(...partes);
+  }
+
+  #pintarEstado(boton, titulo) {
+    const vista = this.#observadas.includes(Number(boton.dataset.observada));
+    boton.setAttribute('aria-pressed', String(vista));
+    boton.textContent = vista ? 'Ya observada' : 'Por descubrir';
+    boton.setAttribute('aria-label', vista ? `${titulo}: ya observada. Marcar como por descubrir` : `${titulo}: por descubrir. Marcar como ya observada`);
+  }
+
+  /** Al entrar en Mi lista: se pinta con lo último guardado y el aviso anterior se retira. */
   pintarMiLista() {
+    this.#deshacer = null;
+    this.#avisoLista?.replaceChildren();
+    this.#pintarLista();
+  }
+
+  /**
+   * Pinta Mi lista: las favoritas en el orden en que se guardaron, filtradas por su estado.
+   * Cada tarjeta conserva su número de colección aunque haya un filtro activo.
+   */
+  #pintarLista() {
     if (!this.#miLista) return;
     this.#favoritas = loadFavorites();
+    this.#observadas = loadObserved();
     const guardadas = this.#favoritas
       .map((id) => peliculas.find((p) => p.id === id))
       .filter(Boolean); // ids que ya no están en el catálogo se ignoran
 
+    // Los filtros solo tienen sentido con algo guardado
+    if (this.#filtrosLista) {
+      this.#filtrosLista.hidden = guardadas.length === 0;
+      this.#filtrosLista.querySelectorAll('[data-filtro]').forEach((boton) =>
+        boton.setAttribute('aria-pressed', String(boton.dataset.filtro === this.#filtro)));
+    }
+
     if (guardadas.length === 0) {
-      const vacio = document.createElement('p');
-      vacio.className = 'qv-lista-vacia';
-      const enlace = document.createElement('a');
-      enlace.href = '#/que-ver';
-      enlace.textContent = 'Descubre qué ver';
-      vacio.append('Aún no has guardado ninguna película. ', enlace, ' y guarda las que te llamen.');
-      this.#miLista.replaceChildren(vacio);
+      this.#miLista.replaceChildren(this.#crearVacio(
+        'Todavía no has guardado ninguna mirada.',
+        'Lo que guardes aquí te esperará, visto o por ver.',
+        { href: '#/que-ver', texto: 'Descubre qué ver' }));
       return;
     }
-    this.#miLista.replaceChildren(...guardadas.map((pelicula, i) => this.#crearHallazgo({ pelicula }, i)));
+
+    const visibles = filterByWatched(guardadas, this.#observadas, this.#filtro);
+    if (visibles.length === 0) {
+      const textos = this.#filtro === 'pendientes'
+        ? ['No queda nada por descubrir.', 'Todo lo que guardaste ya ha pasado ante tus ojos.']
+        : ['Aún no has marcado ninguna como vista.', 'Cuando veas una, márcala: la lista recordará tu mirada.'];
+      this.#miLista.replaceChildren(this.#crearVacio(...textos));
+      return;
+    }
+
+    this.#miLista.replaceChildren(...visibles.map((pelicula, i) =>
+      this.#crearHallazgo({ pelicula, numero: numeroDeColeccion(guardadas.indexOf(pelicula)) }, i)));
+  }
+
+  /** Estado vacío con la misma voz que el resto: una cartela, una línea y, si toca, una salida. */
+  #crearVacio(titulo, texto, enlace = null) {
+    const vacio = document.createElement('div');
+    vacio.className = 'ml-vacio';
+    const cartela = document.createElement('p');
+    cartela.className = 'ml-vacio-titulo';
+    cartela.textContent = titulo;
+    const linea = document.createElement('p');
+    linea.className = 'ml-vacio-texto';
+    linea.textContent = texto;
+    vacio.append(cartela, linea);
+    if (enlace) {
+      const a = document.createElement('a');
+      a.className = 'ml-vacio-enlace';
+      a.href = enlace.href;
+      a.textContent = enlace.texto;
+      vacio.append(a);
+    }
+    return vacio;
   }
 
   /** Al volver a «Qué ver», los botones reflejan lo que se haya cambiado en Mi lista. */

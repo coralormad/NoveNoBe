@@ -88,39 +88,44 @@ export function saveTheme(theme) {
     return false;
   }
 }
-// ---------- Favoritas (Qué ver) ----------
+// ---------- Listas de ids: favoritas y observadas (Mi lista) ----------
+// Las dos listas comparten las mismas funciones: un único sistema, dos claves.
 const FAVORITES_KEY = 'novenobe_favoritos';
+const OBSERVED_KEY = 'novenobe_observadas';
 
 /** Pura: limpia lo leído (datos corruptos, tipos raros o repetidos) → ids enteros únicos. */
-export const sanitizeFavorites = (raw) =>
+export const sanitizeIds = (raw) =>
   Array.isArray(raw) ? [...new Set(raw.filter(Number.isInteger))] : [];
 
 /** Pura: añade el id si no está y lo quita si está. Devuelve un array nuevo (no muta). */
-export const toggleFavorite = (ids, id) =>
+export const toggleId = (ids, id) =>
   ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
 
-/**
- * Lee las favoritas guardadas. Si no hay, o el JSON está roto, devuelve []. Nunca lanza.
- * @returns {number[]}
- */
-export function loadFavorites() {
+/** Lee una lista de ids. Si no hay, o el JSON está roto, devuelve []. Nunca lanza. */
+function readIds(key) {
   try {
-    return sanitizeFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY)));
+    return sanitizeIds(JSON.parse(localStorage.getItem(key)));
   } catch {
     return [];
   }
 }
 
-/**
- * Guarda las favoritas.
- * @param {number[]} ids
- * @returns {boolean} true si se guardó.
- */
-export function saveFavorites(ids) {
+/** Guarda una lista de ids. Devuelve true si se guardó (false si el navegador lo bloquea). */
+function writeIds(key, ids) {
   try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(sanitizeFavorites(ids)));
+    localStorage.setItem(key, JSON.stringify(sanitizeIds(ids)));
     return true;
   } catch {
     return false;
   }
 }
+
+/** @returns {number[]} ids de las películas guardadas en Mi lista */
+export const loadFavorites = () => readIds(FAVORITES_KEY);
+/** @param {number[]} ids @returns {boolean} */
+export const saveFavorites = (ids) => writeIds(FAVORITES_KEY, ids);
+
+/** @returns {number[]} ids de las películas marcadas como vistas */
+export const loadObserved = () => readIds(OBSERVED_KEY);
+/** @param {number[]} ids @returns {boolean} */
+export const saveObserved = (ids) => writeIds(OBSERVED_KEY, ids);
