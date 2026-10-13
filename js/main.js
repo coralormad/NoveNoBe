@@ -387,7 +387,11 @@ function markMenu(vista) {
   });
 }
 
+/** Cambiar de vista es un corte de plano: el salto es instantáneo (el scroll suave queda para las secciones). */
+const saltarA = (top) => window.scrollTo({ top, behavior: 'instant' });
+
 async function handleRoute(route) {
+  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
   if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
   vistaActual = route.vista;
   markMenu(route.vista);
@@ -396,7 +400,7 @@ async function handleRoute(route) {
     showView('ficha');
     if (route.id !== fichaActual) {   // otra película → pedirla
       fichaActual = route.id;
-      window.scrollTo(0, 0);
+      saltarA(0);
       const ok = await loadFicha(route.id);
       if (!ok) return;                // error o cancelada: no hay sección a la que ir
     }
@@ -410,7 +414,7 @@ async function handleRoute(route) {
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
   if (route.vista === 'que-ver') queVer.refrescarFavoritas(); // por si se quitó alguna desde Mi lista
-  window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
+  saltarA(route.vista === 'inicio' ? scrollInicio : 0);
 }
 
 // ---------- Películas ----------
@@ -595,7 +599,7 @@ function handlePestanaClick(event) {
 function goToSection(seccion) {
   const destino = seccion && document.getElementById(`seccion-${seccion}`);
   if (!destino) {
-    window.scrollTo(0, 0);
+    saltarA(0);
     ficha.titulo.focus({ preventScroll: true });
     return;
   }

@@ -313,7 +313,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: smooth; background-color: var(--color-fondo); }
+  html { scroll-behavior: auto; background-color: var(--color-fondo); } /* sin desplazamientos animados */
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
