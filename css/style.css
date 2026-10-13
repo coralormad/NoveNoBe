@@ -6,10 +6,28 @@
 
 /* 1. TOKENS ----------------------------------------------- */
 :root {
-  /* Tipografía híbrida */
+  /* Tipografía: familias */
   --fuente-titulos: 'Playfair Display', Georgia, serif;
   --fuente-texto: 'Manrope', system-ui, sans-serif;
   --fuente-detalle: 'Courier Prime', 'Courier New', monospace;
+
+  /* Tipografía: 4 familias, cada una con un único papel */
+  --fuente-marca: 'Schibsted Grotesk', var(--fuente-texto);  /* solo la marca y el «9» */
+
+  /* Escala tipográfica: 8 pasos para toda la web */
+  --texto-meta: 0.75rem;   /* metadatos y etiquetas (Courier, mayúsculas) */
+  --texto-xs: 0.8rem;      /* textos auxiliares */
+  --texto-s: 0.9rem;       /* interfaz secundaria */
+  --texto-m: 1rem;         /* cuerpo */
+  --texto-l: 1.25rem;      /* destacados y cartelas */
+  --titulo-s: clamp(1.45rem, 3vw, 2rem);    /* subtítulos de bloque */
+  --titulo-m: clamp(1.8rem, 4vw, 2.6rem);   /* títulos de sección */
+  --titulo-l: clamp(2.6rem, 7vw, 4.5rem);   /* portada */
+
+  /* Ritmo del texto */
+  --interlineado-titulo: 1.1;
+  --interlineado-texto: 1.5;
+  --tracking-meta: 0.14em;  /* espaciado de los metadatos en mayúsculas */
 
   /* Escala de lavandas (compartida) */
   --lavanda-100: #9B719B;
@@ -92,12 +110,12 @@ body {
   background-attachment: fixed;
   color: var(--color-texto);
   font-family: var(--fuente-texto);
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: var(--texto-m);
+  line-height: var(--interlineado-texto);
   transition: color var(--transicion);
 }
 
-h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: 1.15; }
+h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: var(--interlineado-titulo); }
 ::selection { background: var(--lavanda-100); color: var(--lavanda-900); }
 
 /* 4. LAYOUT ----------------------------------------------- */
@@ -108,13 +126,13 @@ main { padding: 2rem var(--margen-lateral); }
 .fila { display: grid; gap: 1rem; }
 
 .fila-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.fila-cabecera h2 { font-size: 1.4rem; }
+.fila-cabecera h2 { font-size: var(--titulo-s); }
 
 .sobretitulo {
   font-family: var(--fuente-detalle);
-  font-size: 0.75rem;
+  font-size: var(--texto-meta);
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-meta);
   color: var(--color-texto-suave);
 }
 
@@ -124,7 +142,7 @@ main { padding: 2rem var(--margen-lateral); }
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--color-borde-control);
-  font-size: 1.25rem;
+  font-size: var(--texto-l);
   transition: background-color var(--transicion);
 }
 .fila-flechas button:hover { background: var(--color-secundario); }
@@ -153,7 +171,7 @@ main { padding: 2rem var(--margen-lateral); }
   border-radius: 999px;
   border: 1px solid var(--color-borde-control);
   color: var(--color-texto-suave);
-  font-size: 0.85rem;
+  font-size: var(--texto-s);
   white-space: nowrap;
 }
 .generos button[aria-pressed="true"] {
@@ -255,7 +273,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 .tarjeta-accion {
   position: absolute; inset-inline: 0; top: calc(46% + 38px);
-  font-family: var(--fuente-detalle); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   color: var(--lavanda-900); text-align: center;
   opacity: 0; transform: translateY(-4px); transition: opacity 300ms 200ms, transform 300ms 200ms;
 }
@@ -267,7 +285,7 @@ main { padding: 2rem var(--margen-lateral); }
   height: 22px; min-width: 46px; overflow: hidden;
   display: flex; flex-direction: column;
   border-radius: 999px; background: var(--lavanda-700); color: #211526;
-  font-family: var(--fuente-detalle); font-size: 0.7rem; font-weight: 700;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 700;
 }
 .tarjeta-capsula span {
   display: grid; place-items: center; flex: 0 0 22px; padding-inline: 0.5rem;
@@ -281,7 +299,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* Título: máximo 2 líneas → todas las tarjetas miden lo mismo */
 .tarjeta-titulo {
-  font-size: 0.95rem; line-height: 1.25; min-height: 2.5em;
+  font-size: var(--texto-s); line-height: 1.25; min-height: 2.5em;
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
@@ -301,7 +319,6 @@ main { padding: 2rem var(--margen-lateral); }
 @media (min-width: 850px) {
   :root { --gap: 20px; }
   .carrusel { --tarjetas-visibles: 5.4; }
-  .fila-cabecera h2 { font-size: 1.6rem; }
 }
 
 /* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
@@ -347,7 +364,7 @@ main { padding: 2rem var(--margen-lateral); }
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-size: 0.85rem;
+  font-size: var(--texto-s);
   color: var(--color-texto-suave);
   text-decoration: none;
   white-space: nowrap;
@@ -411,7 +428,7 @@ main { padding: 2rem var(--margen-lateral); }
   height: 20px;
   border-radius: 50%;
   background: var(--color-primario);
-  font-size: 0.7rem;
+  font-size: var(--texto-meta);
   line-height: 1;
   transition: transform var(--transicion);
 }
@@ -441,19 +458,19 @@ main { padding: 2rem var(--margen-lateral); }
   border-radius: 4px;
   background: var(--color-fondo);
   color: var(--color-texto);
-  font-size: 1rem;
+  font-size: var(--texto-m);
 }
 #buscador::placeholder { color: var(--color-texto-suave); }
 
 #resultados-busqueda { display: grid; gap: 0.25rem; margin-top: 0.5rem; max-height: 60svh; overflow-y: auto; }
-#resultados-busqueda li[data-id] { padding: 0.5rem; font-size: 0.9rem; }
+#resultados-busqueda li[data-id] { padding: 0.5rem; font-size: var(--texto-s); }
 
 .historial-item { width: 100%; min-height: 44px; padding: 0 0.5rem; border-radius: 4px; text-align: left; }
 .historial-item:hover { background: var(--color-secundario); }
 .historial-borrar {
   padding: 0.5rem;
   font-family: var(--fuente-detalle);
-  font-size: 0.8rem;
+  font-size: var(--texto-xs);
   color: var(--color-texto-suave);
   text-decoration: underline;
 }
@@ -509,11 +526,11 @@ main { padding: 2rem var(--margen-lateral); }
 .diapositiva-titulo {
   font-family: var(--fuente-titulos);
   font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 1.1;
+  line-height: var(--interlineado-titulo);
   text-wrap: balance;
 }
 .diapositiva-desc {
-  color: var(--color-texto-suave); line-height: 1.6;
+  color: var(--color-texto-suave); line-height: var(--interlineado-texto);
   display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 .diapositiva-boton {
@@ -525,8 +542,8 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* Logo "media lectura": en claro solo la mitad superior; al interactuar se completa */
 .hero-logo {
-  font-family: 'Schibsted Grotesk', var(--fuente-texto);
-  font-weight: 800; font-size: clamp(2.6rem, 7vw, 4.5rem);
+  font-family: var(--fuente-marca);
+  font-weight: 800; font-size: var(--titulo-l);
   line-height: 1; letter-spacing: -0.03em;
 }
 .hero-logo b { font-weight: inherit; color: var(--lavanda-300); }            /* #B08FB0 sobre oscuro ≈ 6:1 */
@@ -642,8 +659,8 @@ main { padding: 2rem var(--margen-lateral); }
 /* Nombre de la diapositiva: solo escritorio, al pasar el ratón o con foco */
 .hero-indice-nombre {
   position: absolute; top: calc(100% + 0.5rem); left: 50%; translate: -50% 0;
-  font-family: var(--fuente-detalle); font-size: 0.7rem; font-weight: 700;
-  letter-spacing: 0.15em; text-transform: uppercase; white-space: nowrap;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 700;
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; white-space: nowrap;
   color: var(--color-texto-suave);
   opacity: 0; pointer-events: none;
   transition: opacity var(--dur-media);
@@ -660,11 +677,11 @@ main { padding: 2rem var(--margen-lateral); }
   position: absolute; z-index: 3;
   right: clamp(1rem, 3vw, 1.75rem); bottom: clamp(1rem, 3vw, 1.75rem);
   display: flex; align-items: center; gap: 0.5rem;
-  font-family: var(--fuente-detalle); font-size: 0.8rem; color: var(--color-texto-suave);
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
 }
 .hero-controles button {
   width: 40px; height: 40px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 1.2rem; color: var(--color-texto);
+  display: grid; place-items: center; font-size: var(--texto-l); color: var(--color-texto);
   border: 1px solid var(--color-borde-control);
   background: color-mix(in srgb, var(--color-fondo) 60%, transparent);
   backdrop-filter: blur(6px);
@@ -694,7 +711,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 .emblema { display: none; margin: 0; }
 .emblema-svg { width: 100%; height: auto; }
-.emblema-nueve { font-family: 'Schibsted Grotesk', var(--fuente-texto); font-weight: 800; font-size: 300px; }
+.emblema-nueve { font-family: var(--fuente-marca); font-weight: 800; font-size: 300px; }
 .emblema-relleno { fill: var(--color-primario); }
 
 /* Lamas: claras en oscuro y oscuras en claro (como el diseño original) */
@@ -710,7 +727,7 @@ main { padding: 2rem var(--margen-lateral); }
   display: flex;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-borde);
-  font-family: var(--fuente-detalle); font-size: 0.95rem; font-weight: 700;
+  font-family: var(--fuente-detalle); font-size: var(--texto-s); font-weight: 700;
   letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--color-texto);
 }
@@ -832,20 +849,20 @@ main { padding: 2rem var(--margen-lateral); }
 
 .entrada-sesion,
 .entrada-datos dt {
-  font-family: var(--fuente-detalle); font-size: 0.75rem;
-  letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-texto-suave);
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
 }
-.entrada-titulo { font-family: var(--fuente-titulos); font-size: 1.6rem; line-height: 1.1; }
+.entrada-titulo { font-family: var(--fuente-titulos); font-size: var(--titulo-s); line-height: var(--interlineado-titulo); }
 .entrada-datos { display: flex; gap: 2rem; margin: 0.5rem 0 0; }
 .entrada-datos dd {
-  margin: 0; font-family: 'Schibsted Grotesk', var(--fuente-texto);
+  margin: 0; font-family: var(--fuente-marca);
   font-weight: 800; font-size: 2.6rem; line-height: 1; color: var(--lavanda-300);
 }
 .entrada-sello {
   rotate: -14deg;
   padding: 0.3rem 0.5rem; border: 2px solid currentColor; border-radius: 4px;
-  font-family: var(--fuente-detalle); font-weight: 700; font-size: 0.85rem;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--lavanda-300);
+  font-family: var(--fuente-detalle); font-weight: 700; font-size: var(--texto-s);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--lavanda-300);
 }
 :root[data-theme="claro"] :is(.entrada-datos dd, .entrada-sello) { color: var(--lavanda-100); }
 
@@ -872,7 +889,7 @@ main { padding: 2rem var(--margen-lateral); }
 .persona-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .persona-iniciales { font-family: var(--fuente-titulos); font-size: 1.75rem; color: var(--color-texto-suave); }
 .persona-nombre { font-weight: 700; }
-.persona-personaje { font-family: var(--fuente-detalle); font-size: 0.8rem; color: var(--color-texto-suave); }
+.persona-personaje { font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave); }
 .persona-nombre, .persona-personaje {
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -883,13 +900,13 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* ---------- Películas ---------- */
 .peliculas { padding: 2rem var(--margen-lateral) 3rem; display: grid; gap: 1.25rem; }
-.peliculas h2 { font-family: var(--fuente-titulos); font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.peliculas h2 { font-family: var(--fuente-titulos); font-size: var(--titulo-m); }
 
 /* Pestañas: mismo lenguaje que el menú (rendija de luz) */
 .pestanas { display: flex; gap: 1.5rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--color-borde); }
 .pestanas button {
   position: relative; min-height: 44px; white-space: nowrap;
-  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   color: var(--color-texto-suave); transition: color var(--transicion);
 }
 .pestanas button::after {
@@ -908,7 +925,7 @@ main { padding: 2rem var(--margen-lateral); }
 .boton-mas {
   justify-self: center; min-height: 44px; padding: 0.6rem 1.6rem;
   border: 1px solid var(--color-borde-control); border-radius: 999px;
-  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   transition: background-color var(--transicion);
 }
 .boton-mas:hover { background: var(--color-secundario); }
@@ -1035,7 +1052,7 @@ main { padding: 2rem var(--margen-lateral); }
   .escaparate-guino {
     display: block; position: absolute; left: 0; right: 0; top: -2.2rem; z-index: 25;
     margin: 0; text-align: center; pointer-events: none;
-    font-family: var(--fuente-titulos); font-style: italic; font-size: 1rem; letter-spacing: 0.04em;
+    font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-m); letter-spacing: 0.04em;
     color: var(--color-texto-suave);
     opacity: 0; filter: blur(6px); transform: translateY(4px);
     transition: opacity 1100ms ease, filter 1100ms var(--curva-cine), transform 1100ms var(--curva-cine);
@@ -1057,7 +1074,7 @@ main { padding: 2rem var(--margen-lateral); }
 .escaparate-info { display: grid; justify-items: center; gap: 0.4rem; min-height: 4.2em; text-align: center; }
 .escaparate-titulo {
   font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
-  font-size: clamp(1.35rem, 2.4vw, 1.8rem); line-height: 1.15;
+  font-size: var(--titulo-s); line-height: var(--interlineado-titulo);
   text-wrap: balance; max-width: 22ch; color: var(--color-primario);
 }
 /* La misma rendija de luz del menú y las cápsulas, bajo el título */
@@ -1066,7 +1083,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: linear-gradient(90deg, transparent, var(--color-foco) 25%, var(--color-foco) 75%, transparent);
 }
 .escaparate-generos {
-  font-family: var(--fuente-detalle); font-size: 0.72rem; letter-spacing: 0.16em;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta);
   text-transform: uppercase; color: var(--color-texto-suave);
 }
 
@@ -1082,13 +1099,13 @@ main { padding: 2rem var(--margen-lateral); }
   position: relative; isolation: isolate;
   min-height: 44px; padding: 0.45rem 1.05rem;
   border: 1px solid var(--color-borde-control); border-radius: 999px;
-  font-family: var(--fuente-texto); font-size: 0.9rem; line-height: 1.1;
+  font-family: var(--fuente-texto); font-size: var(--texto-s); line-height: var(--interlineado-titulo);
   transition: transform var(--dur-rapida) var(--curva-cine), box-shadow var(--dur-rapida) var(--curva-cine),
               background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
 }
 /* Tamaño = peso real del género (sizeBucket en utils.js) */
-.capsula[data-tam="s"] { font-size: 0.8rem; padding-inline: 0.85rem; }
-.capsula[data-tam="l"] { font-family: var(--fuente-titulos); font-style: italic; font-size: 1.2rem; padding-inline: 1.3rem; }
+.capsula[data-tam="s"] { font-size: var(--texto-xs); padding-inline: 0.85rem; }
+.capsula[data-tam="l"] { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); padding-inline: 1.3rem; }
 
 /* Luz que sigue al cursor: --mx y --my llegan desde main.js */
 .capsula::before {
@@ -1139,8 +1156,8 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 .qv-cabecera { grid-area: cabecera; display: grid; gap: 0.6rem; max-width: 46ch; }
-.qv-cabecera h2 { font-family: var(--fuente-titulos); font-size: clamp(2rem, 4.5vw, 3rem); line-height: 1.05; }
-.qv-entradilla { color: var(--color-texto-suave); line-height: 1.55; }
+.qv-cabecera h2 { font-family: var(--fuente-titulos); font-size: var(--titulo-m); line-height: var(--interlineado-titulo); }
+.qv-entradilla { color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
 
 /* --- La fachada de enfrente: 12 ventanas que se encienden ----------------------- */
 .qv-fachada {
@@ -1190,7 +1207,7 @@ main { padding: 2rem var(--margen-lateral); }
 .qv-escena { grid-area: escena; display: grid; gap: 1.1rem; min-width: 0; }
 .qv-escena[hidden], .qv-resultados[hidden] { display: none; }
 .qv-progreso {
-  font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.16em;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta);
   text-transform: uppercase; color: var(--color-texto-suave);
 }
 /* Rendija de luz que se abre con las respuestas (la misma luz del menú y las cápsulas) */
@@ -1204,9 +1221,9 @@ main { padding: 2rem var(--margen-lateral); }
 .qv-pregunta { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 1.1rem; }
 .qv-pregunta-titulo {
   padding: 0; font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
-  font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.15; text-wrap: balance;
+  font-size: var(--titulo-s); line-height: var(--interlineado-titulo); text-wrap: balance;
 }
-.qv-pregunta-subtitulo { margin-top: -0.4rem; color: var(--color-texto-suave); line-height: 1.5; }
+.qv-pregunta-subtitulo { margin-top: -0.4rem; color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
 .qv-opciones { display: grid; gap: 0.75rem; }
 @media (min-width: 600px) { .qv-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
@@ -1218,8 +1235,8 @@ main { padding: 2rem var(--margen-lateral); }
 }
 /* El radio real sigue ahí (teclado y lectores de pantalla), pero no se ve: la opción entera es el control */
 .qv-radio { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-.qv-opcion-etiqueta { font-family: var(--fuente-titulos); font-style: italic; font-size: 1.2rem; line-height: 1.2; }
-.qv-opcion-pista { font-size: 0.9rem; line-height: 1.45; color: var(--color-texto-suave); }
+.qv-opcion-etiqueta { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.2; }
+.qv-opcion-pista { font-size: var(--texto-s); line-height: var(--interlineado-texto); color: var(--color-texto-suave); }
 /* Rendija bajo la elegida, como en las cápsulas */
 .qv-opcion::after {
   content: ''; position: absolute; left: 1.1rem; right: 35%; bottom: -1px; height: 2px;
@@ -1236,12 +1253,12 @@ main { padding: 2rem var(--margen-lateral); }
 .qv-opcion:has(.qv-radio:checked)::after { transform: scaleX(1); }
 .qv-opcion:has(.qv-radio:focus-visible) { outline: 2px solid var(--color-foco); outline-offset: 3px; }
 
-.qv-aviso { min-height: 1.4em; font-size: 0.9rem; color: var(--color-foco); }
+.qv-aviso { min-height: 1.4em; font-size: var(--texto-s); color: var(--color-foco); }
 .qv-acciones { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
 .qv-boton {
   min-height: 44px; padding: 0.6rem 1.6rem; border-radius: 999px;
   border: 1px solid var(--color-primario); background: var(--color-primario); color: var(--color-sobre-primario);
-  font-family: var(--fuente-detalle); font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   transition: background-color var(--dur-rapida), color var(--dur-rapida), box-shadow var(--dur-rapida);
 }
 .qv-boton:hover { box-shadow: var(--capsula-halo); }
@@ -1252,7 +1269,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* --- Resultados: hallazgos que se enfocan ---------------------------------------- */
 .qv-resultados { grid-area: resultados; display: grid; gap: 1.75rem; justify-items: start; }
-.qv-resultados-titulo { font-family: var(--fuente-titulos); font-size: clamp(1.6rem, 3.5vw, 2.3rem); }
+.qv-resultados-titulo { font-family: var(--fuente-titulos); font-size: var(--titulo-s); }
 .qv-resultados-titulo:focus { outline: none; }
 .qv-categorias { display: grid; gap: 2.25rem 2.5rem; width: 100%; }
 @media (min-width: 900px) {
@@ -1266,10 +1283,10 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .qv-grupo { display: grid; gap: 1rem; align-content: start; }
 .qv-grupo-titulo {
-  font-family: var(--fuente-detalle); font-size: 0.75rem; font-weight: 400; letter-spacing: 0.16em;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); font-weight: 400; letter-spacing: var(--tracking-meta);
   text-transform: uppercase; color: var(--color-texto-suave);
 }
-.qv-grupo-vacio { color: var(--color-texto-suave); font-size: 0.9rem; line-height: 1.5; max-width: 40ch; }
+.qv-grupo-vacio { color: var(--color-texto-suave); font-size: var(--texto-s); line-height: var(--interlineado-texto); max-width: 40ch; }
 @media (min-width: 700px) {
   .qv-grupo--ventana { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .qv-grupo--ventana .qv-grupo-titulo { grid-column: 1 / -1; }
@@ -1292,7 +1309,7 @@ main { padding: 2rem var(--margen-lateral); }
   .qv-grupo--mira .qv-hallazgo { grid-template-columns: minmax(130px, 210px) minmax(0, 1fr); gap: 1.5rem 2rem; }
   .qv-grupo--mira .qv-cartel { width: auto; }
 }
-.qv-grupo--mira .qv-hallazgo-titulo { font-size: clamp(1.6rem, 3vw, 2.2rem); }
+.qv-grupo--mira .qv-hallazgo-titulo { font-size: var(--titulo-s); }
 
 .qv-cartel {
   position: relative; aspect-ratio: 2 / 3; overflow: hidden; border-radius: var(--radio);
@@ -1303,8 +1320,8 @@ main { padding: 2rem var(--margen-lateral); }
   box-shadow: var(--sombra-tarjeta), inset 0 0 0 1px var(--color-borde);
   transition: transform var(--dur-media) var(--curva-cine), box-shadow var(--dur-media) var(--curva-cine);
 }
-.qv-cartela { font-family: var(--fuente-titulos); font-style: italic; font-size: 0.95rem; line-height: 1.2; color: var(--color-texto); }
-.qv-grupo--mira .qv-cartela { font-size: 1.3rem; }
+.qv-cartela { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-s); line-height: 1.2; color: var(--color-texto); }
+.qv-grupo--mira .qv-cartela { font-size: var(--texto-l); }
 .qv-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-lenta); }
 .qv-cartel.con-poster .qv-poster { opacity: 1; }
 @media (hover: hover) {
@@ -1315,24 +1332,24 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 .qv-hallazgo-cuerpo { display: grid; gap: 0.5rem; justify-items: start; min-width: 0; }
-.qv-hallazgo-titulo { font-family: var(--fuente-titulos); font-weight: 700; font-size: 1.2rem; line-height: 1.15; }
+.qv-hallazgo-titulo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); line-height: var(--interlineado-titulo); }
 .qv-hallazgo-titulo a { color: inherit; text-decoration: none; background: linear-gradient(var(--color-foco), var(--color-foco)) no-repeat 0 100% / 0 1px; transition: background-size var(--dur-media) var(--curva-cine); }
 .qv-hallazgo-titulo a:is(:hover, :focus-visible) { background-size: 100% 1px; }
-.qv-meta { font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-texto-suave); }
-.qv-sinopsis { line-height: 1.55; max-width: 60ch; }
+.qv-meta { font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave); }
+.qv-sinopsis { line-height: var(--interlineado-texto); max-width: 60ch; }
 /* El porqué, como una pista apuntada al margen */
 .qv-motivo {
   padding-left: 0.75rem; border-left: 2px solid var(--color-foco);
-  font-family: var(--fuente-detalle); font-size: 0.85rem; line-height: 1.5; color: var(--color-texto-suave);
+  font-family: var(--fuente-detalle); font-size: var(--texto-s); line-height: var(--interlineado-texto); color: var(--color-texto-suave);
 }
 /* Pista oculta: lo que no se ve a primera vista. Oscuro = revelación; claro = velada hasta acercarse */
 .qv-pista {
   display: grid; gap: 0.2rem; padding: 0.6rem 0.8rem; border-radius: 0 var(--radio) var(--radio) 0;
   background: color-mix(in srgb, var(--color-primario) 8%, transparent);
-  border-left: 2px solid var(--color-primario); font-size: 0.9rem; line-height: 1.45;
+  border-left: 2px solid var(--color-primario); font-size: var(--texto-s); line-height: var(--interlineado-texto);
 }
 .qv-pista-etiqueta, .qv-pista-aviso {
-  font-family: var(--fuente-detalle); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   color: var(--color-texto-suave);
 }
 .qv-pista-aviso { display: inline; } /* .solo-dia la oculta en oscuro */
@@ -1345,7 +1362,7 @@ main { padding: 2rem var(--margen-lateral); }
 .qv-favorita {
   min-height: 44px; padding: 0.45rem 1.1rem; border-radius: 999px;
   border: 1px solid var(--color-borde-control);
-  font-family: var(--fuente-detalle); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   transition: background-color var(--dur-rapida), color var(--dur-rapida), border-color var(--dur-rapida);
 }
 .qv-favorita:hover { border-color: var(--color-primario); }
@@ -1364,16 +1381,16 @@ main { padding: 2rem var(--margen-lateral); }
 :root[data-theme="claro"] .qv-grupo--noBuscabas .qv-hallazgo:is(:hover, :focus-within) .qv-cartel::after { opacity: 0; }
 }
 
-.qv-nota { font-size: 0.85rem; color: var(--color-texto-suave); }
+.qv-nota { font-size: var(--texto-s); color: var(--color-texto-suave); }
 
 /* Vista de catálogo (Mi lista): mismos márgenes y título que Películas */
 .catalogo { padding: 2rem var(--margen-lateral) 3rem; display: grid; gap: 1.5rem; }
-.catalogo h2 { font-family: var(--fuente-titulos); font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.catalogo h2 { font-family: var(--fuente-titulos); font-size: var(--titulo-m); }
 
 /* Mi lista: las favoritas con la misma tarjeta de los hallazgos */
 .qv-lista { display: grid; gap: 2rem 2.5rem; }
 @media (min-width: 900px) { .qv-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.qv-lista-vacia { color: var(--color-texto-suave); line-height: 1.6; }
+.qv-lista-vacia { color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
 .qv-lista-vacia a { color: var(--color-primario); text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
