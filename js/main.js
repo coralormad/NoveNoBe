@@ -4,7 +4,7 @@ import { Movie } from './Movie.js';
 import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
-import { CountryMap, toMarkers, countryName } from './map.js';
+import { CountryMap, toMarkers, countryName, mapLabel} from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
@@ -615,11 +615,11 @@ async function loadFicha(id) {
 
 /** El mapa vive plegado: solo se pinta con la ventana abierta (Leaflet necesita medir el contenedor). */
 function showMap() {
+  ficha.mapa.setAttribute('aria-label', mapLabel(fichaMarcadores));
   if (!ficha.ventana.open) return;
   countryMap ??= new CountryMap(ficha.mapa);
   countryMap.show(fichaMarcadores);
 }
-
 function renderFicha(movie) {
   ficha.fondo.src = movie.backdropUrl ?? movie.posterUrl;
   ficha.poster.src = movie.posterUrl;
@@ -955,22 +955,21 @@ radiografia.capsulas.addEventListener('focusout', (event) => {
 });
 
 /** La luz de cada cápsula sigue al ratón. Reutiliza la función pura de la inclinación. */
-function enableCapsuleLight(container) {
+function enablePointerLight(container, selector) {
   let frame = 0; // vive en el cierre: no es una variable global
   container.addEventListener('pointermove', (event) => {
     if (event.pointerType !== 'mouse') return;
-    const boton = event.target.closest('.capsula');
-    if (!boton) return;
+    const target = event.target.closest(selector);
+    if (!target) return;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      const { mx, my } = tiltFromPointer(event.clientX, event.clientY, boton.getBoundingClientRect());
-      boton.style.setProperty('--mx', `${mx.toFixed(1)}%`);
-      boton.style.setProperty('--my', `${my.toFixed(1)}%`);
+      const { mx, my } = tiltFromPointer(event.clientX, event.clientY, target.getBoundingClientRect());
+      target.style.setProperty('--mx', `${mx.toFixed(1)}%`);
+      target.style.setProperty('--my', `${my.toFixed(1)}%`);
     });
   });
 }
-enableCapsuleLight(radiografia.capsulas);
-enableCapsuleLight(els.genres); // los géneros de Inicio comparten la luz que sigue al cursor
+enablePointerLight(ficha.ventana, '.ficha-mapa');
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado

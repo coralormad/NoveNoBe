@@ -2006,3 +2006,76 @@ main { padding: 2rem var(--margen-lateral); }
   .cierre-nav ul { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .cierre-nav a, .cierre-creditos a { transition: none; } }
+
+/* Mapa: OpenStreetMap en negativo para el tema oscuro (cine noir) */
+:root:not([data-theme="claro"]) .mapa-teselas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.5);
+}
+
+/* 16. MAPA: «AJUSTAR EL FOCO» ---------------------------------------------
+   Lo que no miras está desenfocado; al decidir mirar, se revela.
+   Solo se desenfoca el fondo (tile-pane): el marcador del país siempre se lee. */
+.ficha-mapa {
+  --foco-color: var(--lavanda-300);
+  --foco-luz: color-mix(in srgb, var(--lavanda-300) 45%, transparent);
+  --foco-halo: color-mix(in srgb, var(--color-primario) 30%, transparent);
+  --foco-vineta: rgb(0 0 0 / 0.55);
+  --foco-blur: 1.6px;
+  transition: box-shadow 320ms var(--curva-cine);
+}
+:root[data-theme="claro"] .ficha-mapa {
+  --foco-color: var(--color-primario);
+  --foco-luz: color-mix(in srgb, #FFFFFF 40%, transparent);
+  --foco-vineta: transparent;
+  --foco-blur: 1px;
+}
+
+/* Fondo desenfocado en reposo */
+.ficha-mapa .leaflet-tile-pane {
+  filter: blur(var(--foco-blur)) saturate(0.6);
+  transition: filter 320ms var(--curva-cine);
+}
+
+/* Halo que sigue al cursor + viñeta de lente (por debajo del marcador) */
+.ficha-mapa::before {
+  content: ''; position: absolute; inset: 0; z-index: 350; pointer-events: none;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--foco-luz), transparent 55%);
+  box-shadow: inset 0 0 48px var(--foco-vineta);
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 320ms var(--curva-cine);
+}
+
+/* Esquinas de visor: 8 líneas dibujadas con gradientes, sin HTML extra */
+.ficha-mapa::after {
+  --l: 18px; --g: 1.5px; --c: var(--foco-color);
+  content: ''; position: absolute; inset: 10px 10px 28px; z-index: 700; pointer-events: none;
+  background:
+    linear-gradient(var(--c) 0 0) top left / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) top left / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) top right / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) top right / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) bottom left / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) bottom left / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) bottom right / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) bottom right / var(--g) var(--l);
+  background-repeat: no-repeat;
+  opacity: 0; scale: 1.06;
+  transition: opacity 320ms var(--curva-cine), scale 320ms var(--curva-cine);
+}
+
+/* Mirar: ratón o teclado */
+.ficha-mapa:is(:hover, :focus-visible) { box-shadow: 0 0 28px var(--foco-halo); }
+.ficha-mapa:is(:hover, :focus-visible) .leaflet-tile-pane { filter: none; }
+.ficha-mapa:is(:hover, :focus-visible)::before { opacity: 1; }
+.ficha-mapa:is(:hover, :focus-visible)::after { opacity: 1; scale: 1; }
+
+/* Táctil: no hay hover, el mapa se muestra ya enfocado */
+@media (hover: none) {
+  .ficha-mapa .leaflet-tile-pane { filter: none; }
+  .ficha-mapa::after { opacity: 1; scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ficha-mapa, .ficha-mapa::before, .ficha-mapa::after,
+  .ficha-mapa .leaflet-tile-pane { transition: none; }
+}
