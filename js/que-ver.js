@@ -2,9 +2,12 @@
 // Cuatro preguntas (una por plano), cada respuesta enciende una ventana de enfrente y,
 // al final, las recomendaciones se revelan enfocándose. La lógica vive en recomendador.js (pura).
 import { DIMENSIONES, recomendar, explicar } from './recomendador.js';
-import { loadFavorites, saveFavorites, loadObserved, saveObserved, toggleId } from './storage.js';
-import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, insertAt } from './utils.js';
-import { getMovieDetails } from './api.js';
+import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, genreNames } from './utils.js';
+import { getMovieDetails, getGenres } from './api.js';
+import {
+  cargarLista, quitar, reinsertar, cargarObservadas, alternarObservada,
+  entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista,
+} from './miLista.js';
 import { Movie } from './Movie.js';
 import { movieHref } from './router.js';
 import { peliculas } from '../data/movies.js';
@@ -23,14 +26,14 @@ export class QueVer {
   #els;
   #paso = 0;
   #respuestas = {};
-  #favoritas = loadFavorites();
   #posters = new Map(); // tmdbId → URL del póster (caché: cada póster se pide una sola vez)
   #miLista = null;      // contenedor de «Mi lista» (opcional)
   #filtrosLista = null; // botones Todas / Por descubrir / Ya observadas
-  #observadas = loadObserved();
+  #observadas = cargarObservadas(); // claves de las ya vistas
   #filtro = 'todas';
   #avisoLista = null;   // línea de estado de Mi lista (anuncia filtros y permite deshacer)
-  #deshacer = null;     // última película quitada: { id, indice, titulo }
+  #deshacer = null;     // última película quitada: { entrada, indice }
+  #generos = [];        // géneros de TMDB (id → nombre) para las películas guardadas desde fuera
 
   /**
    * @param {HTMLElement} raiz
@@ -55,14 +58,14 @@ export class QueVer {
     this.#crearFachada();
 
     // Listeners una sola vez: la vista se crea una vez y solo se repinta su contenido
-    const { form, pregunta, atras, categorias, reiniciar } = this.#els;
+    const { form, pregunta, atras, reiniciar } = this.#els;
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       this.#avanzar();
     });
     pregunta.addEventListener('change', (event) => this.#responder(event.target.value));
     atras.addEventListener('click', () => this.#irA(this.#paso - 1));
-    categorias.addEventListener('click', (event) => this.#onFavorita(event));
+    // Guardar en Mi lista no necesita listener aquí: la cápsula es la misma de toda la página (miLista.js)
     reiniciar.addEventListener('click', () => this.#reiniciar());
     this.#miLista = miLista;
     miLista?.addEventListener('click', (event) => this.#onMiLista(event));
@@ -74,6 +77,11 @@ export class QueVer {
     });
 
     this.#pintarPregunta();
+    // Los nombres de género de lo guardado desde fuera de «Qué ver» (la petición ya está en caché)
+    getGenres().then((generos) => {
+      this.#generos = generos;
+      if (this.#miLista && !this.#miLista.closest('.vista')?.hidden) this.#pintarLista();
+    }).catch(() => {}); // sin géneros, Mi lista se pinta igual (solo el año)
   }
 
   // ---------- Preguntas ----------
@@ -179,7 +187,7 @@ export class QueVer {
   // ---------- Resultados ----------
 
   #revelar() {
-    const recomendacion = recomendar(peliculas, this.#respuestas, this.#favoritas);
+    const recomendacion = recomendar(peliculas, this.#respuestas, favoritasLocales(cargarLista()));
     this.#els.form.hidden = true;
     this.#els.resultados.hidden = false;
     this.#sincronizarLuz(true);
@@ -253,11 +261,13 @@ export class QueVer {
 
     const meta = document.createElement('p');
     meta.className = 'qv-meta';
-    meta.textContent = `${pelicula.anio} · ${pelicula.genero}${pelicula.tipo === 'series' ? ' · Serie' : ''}`;
+    meta.textContent = [pelicula.anio, pelicula.genero, pelicula.tipo === 'series' && 'Serie'].filter(Boolean).join(' · ');
 
-    const sinopsis = document.createElement('p');
-    sinopsis.className = 'qv-sinopsis';
-    sinopsis.textContent = pelicula.sinopsis;
+    const sinopsis = pelicula.sinopsis ? document.createElement('p') : null; // lo guardado desde TMDB no trae sinopsis
+    if (sinopsis) {
+      sinopsis.className = 'qv-sinopsis';
+      sinopsis.textContent = pelicula.sinopsis;
+    }
 
     // En «Mi lista» no hay respuestas que explicar: el porqué solo aparece en los resultados
     const motivo = item.motivo ? document.createElement('p') : null;
@@ -266,15 +276,8 @@ export class QueVer {
       motivo.textContent = explicar(item);
     }
 
-    cuerpo.append(titulo, meta, sinopsis);
-    if (motivo) cuerpo.append(motivo);
+    cuerpo.append(...[titulo, meta, sinopsis, motivo].filter(Boolean));
     if (pelicula.pistaOculta) cuerpo.append(this.#crearPista(pelicula.pistaOculta));
-
-    const favorita = document.createElement('button');
-    favorita.type = 'button';
-    favorita.className = 'qv-favorita';
-    favorita.dataset.favorita = pelicula.id;
-    this.#pintarFavorita(favorita, pelicula.titulo);
 
     if (item.numero) {
       // Solo en Mi lista: «Por descubrir» ⇄ «Ya observada», junto al botón de quitar
@@ -283,14 +286,21 @@ export class QueVer {
       const estado = document.createElement('button');
       estado.type = 'button';
       estado.className = 'ml-estado';
-      estado.dataset.observada = pelicula.id;
+      estado.dataset.observada = pelicula.clave;
       this.#pintarEstado(estado, pelicula.titulo);
-      favorita.classList.add('ml-quitar');
-      favorita.textContent = 'Quitar'; // en Mi lista ya está guardada: la acción es quitarla (aria-label lo detalla)
-      favorita.removeAttribute('aria-pressed'); // aquí no es un interruptor, es una acción
-      acciones.append(estado, favorita);
+      // En Mi lista ya está guardada: la acción es quitarla (no es un interruptor) y se puede deshacer
+      const quitarBoton = document.createElement('button');
+      quitarBoton.type = 'button';
+      quitarBoton.className = 'qv-favorita ml-quitar';
+      quitarBoton.dataset.quitar = pelicula.clave;
+      quitarBoton.textContent = 'Quitar';
+      quitarBoton.setAttribute('aria-label', `Quitar «${pelicula.titulo}» de mi lista`);
+      acciones.append(estado, quitarBoton);
       cuerpo.append(acciones);
     } else {
+      // La misma cápsula que en el resto de la página: guardar aquí es guardar en todas partes
+      const favorita = crearBotonLista(entradaDesdeLocal(pelicula), 'texto');
+      favorita.classList.add('qv-favorita');
       cuerpo.append(favorita);
     }
     tarjeta.append(cartel, cuerpo);
@@ -321,12 +331,16 @@ export class QueVer {
   async #cargarPoster(pelicula, cartel) {
     if (!pelicula.tmdbId) return;
     try {
+      // Guardada desde TMDB: ya trae la ruta del póster (la clase Movie construye la URL, como en todas partes)
+      if (pelicula.posterPath) this.#posters.set(pelicula.tmdbId, new Movie({ poster_path: pelicula.posterPath }).posterUrl);
       if (!this.#posters.has(pelicula.tmdbId)) {
         const movie = new Movie(await getMovieDetails(pelicula.tmdbId));
         this.#posters.set(pelicula.tmdbId, movie.posterPath ? movie.posterUrl : null);
       }
       const url = this.#posters.get(pelicula.tmdbId);
-      if (!url || !cartel.isConnected) return; // sin póster o la tarjeta ya no está en pantalla
+      // Sin comprobar isConnected: con el póster en caché esto ocurre antes de que la tarjeta entre en la página
+      // (y entonces nunca se pintaba). Añadirlo a una tarjeta ya retirada no tiene efecto.
+      if (!url) return;
       const img = document.createElement('img');
       img.className = 'qv-poster';
       img.src = url;
@@ -341,41 +355,15 @@ export class QueVer {
     }
   }
 
-  // ---------- Favoritas ----------
-
-  #onFavorita(event) {
-    const boton = event.target.closest('[data-favorita]');
-    if (!boton) return;
-    const id = Number(boton.dataset.favorita);
-    const titulo = boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent;
-    const indice = this.#favoritas.indexOf(id);
-    this.#favoritas = toggleId(this.#favoritas, id);
-    saveFavorites(this.#favoritas);
-    if (this.#miLista?.contains(boton)) {
-      // Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic)
-      this.#deshacer = { id, indice, titulo };
-      this.#pintarLista();
-      this.#anunciar(`Has quitado «${titulo}» de tu lista.`, { deshacer: true });
-      return;
-    }
-    this.#pintarFavorita(boton, titulo);
-  }
-
-  #pintarFavorita(boton, titulo) {
-    const guardada = this.#favoritas.includes(Number(boton.dataset.favorita));
-    boton.setAttribute('aria-pressed', String(guardada));
-    boton.textContent = guardada ? 'En tu lista' : 'Guardar en mi lista';
-    boton.setAttribute('aria-label', guardada ? `Quitar ${titulo} de mi lista` : `Guardar ${titulo} en mi lista`);
-  }
-
   // ---------- Mi lista ----------
 
   /** Clics dentro de Mi lista: marcar como vista o quitar de la lista. */
   #onMiLista(event) {
+    const quitarBoton = event.target.closest('[data-quitar]');
+    if (quitarBoton) return this.#quitar(quitarBoton.dataset.quitar);
     const estado = event.target.closest('[data-observada]');
-    if (!estado) return this.#onFavorita(event);
-    this.#observadas = toggleId(this.#observadas, Number(estado.dataset.observada));
-    saveObserved(this.#observadas);
+    if (!estado) return;
+    this.#observadas = alternarObservada(estado.dataset.observada);
     if (this.#filtro === 'todas') {
       this.#pintarEstado(estado, estado.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent);
     } else {
@@ -391,15 +379,23 @@ export class QueVer {
     this.#anunciar(`Mostrando: ${boton.textContent.toLowerCase()}.`, { visible: false });
   }
 
-  /** Devuelve la última película quitada a su sitio. La recupera del aviso, no de una copia de la lista. */
+  /** Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic). */
+  #quitar(clave) {
+    const quitada = quitar(clave);
+    if (!quitada) return;
+    this.#deshacer = quitada;
+    this.#pintarLista();
+    this.#anunciar(`Has quitado «${quitada.entrada.titulo}» de tu lista.`, { deshacer: true });
+  }
+
+  /** Devuelve la última película quitada a su sitio (la instantánea guardada en el aviso, no una copia de la lista). */
   #deshacerQuitar() {
     if (!this.#deshacer) return;
-    const { id, indice, titulo } = this.#deshacer;
-    this.#favoritas = insertAt(loadFavorites(), id, indice);
-    saveFavorites(this.#favoritas);
+    const { entrada, indice } = this.#deshacer;
+    reinsertar(entrada, indice);
     this.#deshacer = null;
     this.#pintarLista();
-    this.#anunciar(`«${titulo}» vuelve a tu lista.`);
+    this.#anunciar(`«${entrada.titulo}» vuelve a tu lista.`);
   }
 
   /** Línea de estado: los lectores de pantalla la anuncian (role="status"). */
@@ -421,7 +417,7 @@ export class QueVer {
   }
 
   #pintarEstado(boton, titulo) {
-    const vista = this.#observadas.includes(Number(boton.dataset.observada));
+    const vista = this.#observadas.includes(boton.dataset.observada);
     boton.setAttribute('aria-pressed', String(vista));
     boton.textContent = vista ? 'Ya observada' : 'Por descubrir';
     boton.setAttribute('aria-label', vista ? `${titulo}: ya observada. Marcar como por descubrir` : `${titulo}: por descubrir. Marcar como ya observada`);
@@ -440,11 +436,8 @@ export class QueVer {
    */
   #pintarLista() {
     if (!this.#miLista) return;
-    this.#favoritas = loadFavorites();
-    this.#observadas = loadObserved();
-    const guardadas = this.#favoritas
-      .map((id) => peliculas.find((p) => p.id === id))
-      .filter(Boolean); // ids que ya no están en el catálogo se ignoran
+    this.#observadas = cargarObservadas();
+    const guardadas = cargarLista().map((entrada) => this.#vistaDe(entrada));
 
     // Los filtros solo tienen sentido con algo guardado
     if (this.#filtrosLista) {
@@ -456,12 +449,12 @@ export class QueVer {
     if (guardadas.length === 0) {
       this.#miLista.replaceChildren(this.#crearVacio(
         'Todavía no has guardado ninguna mirada.',
-        'Lo que guardes aquí te esperará, visto o por ver.',
+        'Guarda cualquier película con el botón + de su cartel o de su ficha: aquí te esperará, vista o por ver.',
         { href: '#/que-ver', texto: 'Descubre qué ver' }));
       return;
     }
 
-    const visibles = filterByWatched(guardadas, this.#observadas, this.#filtro);
+    const visibles = filterByWatched(guardadas, this.#observadas, this.#filtro, 'clave');
     if (visibles.length === 0) {
       const textos = this.#filtro === 'pendientes'
         ? ['No queda nada por descubrir.', 'Todo lo que guardaste ya ha pasado ante tus ojos.']
@@ -495,11 +488,21 @@ export class QueVer {
     return vacio;
   }
 
-  /** Al volver a «Qué ver», los botones reflejan lo que se haya cambiado en Mi lista. */
-  refrescarFavoritas() {
-    this.#favoritas = loadFavorites();
-    this.#els.categorias.querySelectorAll('[data-favorita]').forEach((boton) =>
-      this.#pintarFavorita(boton, boton.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent));
+  /** Lo que Mi lista pinta de cada película guardada: la instantánea y, si es del catálogo local,
+   *  su sinopsis y su pista oculta. Las de TMDB llevan el nombre de sus géneros. */
+  #vistaDe(entrada) {
+    const local = localDe(entrada);
+    return {
+      clave: entrada.clave,
+      titulo: entrada.titulo,
+      tmdbId: entrada.tmdbId,
+      anio: entrada.anio,
+      genero: local?.genero ?? genreNames(entrada.generos, this.#generos),
+      tipo: local?.tipo ?? 'peliculas',
+      sinopsis: local?.sinopsis ?? '',
+      pistaOculta: local?.pistaOculta ?? null,
+      posterPath: entrada.poster,
+    };
   }
 
   // ---------- Utilidades ----------

@@ -228,31 +228,20 @@ export const FILTROS_LISTA = Object.freeze(['todas', 'pendientes', 'observadas']
 
 /**
  * Pura: filtra las películas guardadas por su estado.
- * @param {Array<{id:number}>} lista - Películas guardadas.
- * @param {number[]} observadas - Ids de las ya vistas.
+ * @param {object[]} lista - Películas guardadas.
+ * @param {Array<number|string>} observadas - Identificadores de las ya vistas.
  * @param {'todas'|'pendientes'|'observadas'} [filtro='todas']
+ * @param {string} [campo='id'] - Qué propiedad identifica a cada película (Mi lista usa «clave»).
  * @returns {Array} Array nuevo (no muta la lista).
  */
-export function filterByWatched(lista, observadas, filtro = 'todas') {
-  if (filtro === 'observadas') return lista.filter(({ id }) => observadas.includes(id));
-  if (filtro === 'pendientes') return lista.filter(({ id }) => !observadas.includes(id));
+export function filterByWatched(lista, observadas, filtro = 'todas', campo = 'id') {
+  if (filtro === 'observadas') return lista.filter((item) => observadas.includes(item[campo]));
+  if (filtro === 'pendientes') return lista.filter((item) => !observadas.includes(item[campo]));
   return [...lista];
 }
 
 /** Pura: número de colección con dos cifras (0 → «01»). Es un orden, no una cifra que leer. */
 export const numeroDeColeccion = (indice) => String(indice + 1).padStart(2, '0');
-
-/**
- * Pura: inserta un id en una posición (para «Deshacer»). Si ya está, devuelve una copia sin cambios;
- * si la posición no es válida, lo añade al final.
- * @param {number[]} ids @param {number} id @param {number} indice
- * @returns {number[]} Array nuevo.
- */
-export function insertAt(ids, id, indice) {
-  if (ids.includes(id)) return [...ids];
-  const posicion = Number.isInteger(indice) && indice >= 0 ? Math.min(indice, ids.length) : ids.length;
-  return [...ids.slice(0, posicion), id, ...ids.slice(posicion)];
-}
 
 /**
  * Pura: ¿queda contenido fuera de plano a cada lado de una tira con scroll horizontal?

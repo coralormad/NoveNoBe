@@ -12,6 +12,7 @@ import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
+import { activarMiLista, crearBotonLista, entradaDesdeMovie } from './miLista.js';
 
 
 const MIN_QUERY = 2;
@@ -187,6 +188,8 @@ function createCard(movie) {
   card.querySelector('.capsula-anio').textContent = movie.year;
   card.querySelector('.capsula-nota').textContent = `★ ${movie.ratingText}`;
   card.querySelector('.tarjeta-titulo').textContent = movie.title;
+  // Mi lista desde cualquier cartel: la misma cápsula y la misma lógica en toda la página
+  card.querySelector('.tarjeta-pie').append(crearBotonLista(entradaDesdeMovie(movie)));
 
   return card;
 }
@@ -438,7 +441,6 @@ async function handleRoute(route) {
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
-  if (route.vista === 'que-ver') queVer.refrescarFavoritas(); // por si se quitó alguna desde Mi lista
   saltarA(route.vista === 'inicio' ? scrollInicio : 0);
 }
 
@@ -1203,6 +1205,7 @@ enablePointerLight(ficha.ventana, '.ficha-mapa');
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
+activarMiLista(); // un solo listener para todas las cápsulas de Mi lista (tarjetas, ficha, «Qué ver»)
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
 // Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
 const queVer = new QueVer(document.querySelector('#vista-que-ver'), {

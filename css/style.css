@@ -323,6 +323,54 @@ main { padding: 2rem var(--margen-lateral); }
   font-size: var(--texto-s); line-height: 1.25; min-height: 2.5em;
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+/* Pie: el título manda; la cápsula de Mi lista, pequeña, a su lado (fuera del póster: no compite con él) */
+.tarjeta-pie { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 0.4rem; }
+
+/* 6b. MI LISTA · la cápsula de guardar (la misma en tarjetas, «Qué ver» y la ficha) ----------
+   Un «+» que, al guardar, se dibuja como un visto. Guardada = rellena: se reconoce de un vistazo. */
+.lista-capsula {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  border: 1px solid var(--color-borde-control); border-radius: 999px;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; white-space: nowrap;
+  color: var(--color-texto);
+  transition: background-color var(--dur-rapida), border-color var(--dur-rapida), color var(--dur-rapida),
+              opacity var(--dur-media), transform var(--dur-rapida) var(--curva-cine);
+}
+.lista-capsula:hover { border-color: var(--color-primario); }
+.lista-capsula[aria-pressed="true"] {
+  background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario);
+}
+.lista-icono { width: 16px; height: 16px; flex-shrink: 0; overflow: visible; }
+.lista-icono path {
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  transform-box: fill-box; transform-origin: center;
+  transition: transform var(--dur-media) var(--curva-cine), opacity var(--dur-rapida), stroke-dashoffset var(--dur-media) var(--curva-cine);
+}
+.lista-visto { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
+.lista-capsula[aria-pressed="true"] .lista-mas { transform: rotate(45deg) scale(0); opacity: 0; }
+.lista-capsula[aria-pressed="true"] .lista-visto { stroke-dashoffset: 0; opacity: 1; }
+
+/* Compacta (tarjetas): solo el icono; el texto queda para el lector de pantalla y el title */
+.lista-capsula--compacto { width: 32px; height: 32px; }
+.lista-capsula--compacto .lista-texto {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.lista-capsula--compacto::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; } /* 44px de toque */
+/* Con ratón, la de una película sin guardar se retira hasta que miras la tarjeta. Táctil: siempre a la vista */
+@media (hover: hover) {
+  .tarjeta .lista-capsula--compacto:not([aria-pressed="true"]) { opacity: 0.45; }
+  .tarjeta:is(:hover, :focus-within) .lista-capsula--compacto { opacity: 1; }
+}
+
+/* Feedback inmediato y discreto: un latido de luz al pulsar, sin ventanas emergentes */
+.lista-pulso { animation: lista-pulso 480ms var(--curva-cine); }
+@keyframes lista-pulso {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--lavanda-300) 60%, transparent); }
+  40%  { transform: scale(1.12); }
+  100% { transform: scale(1); box-shadow: 0 0 0 10px transparent; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tarjeta-enlace,

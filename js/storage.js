@@ -88,47 +88,90 @@ export function saveTheme(theme) {
     return false;
   }
 }
-// ---------- Listas de ids: favoritas y observadas (Mi lista) ----------
-// Las dos listas comparten las mismas funciones: un único sistema, dos claves.
-const FAVORITES_KEY = 'novenobe_favoritos';
-const OBSERVED_KEY = 'novenobe_observadas';
+// ---------- Mi lista ----------
+// Antes guardaba ids del catálogo local de «Qué ver» (1, 2, 3…). Ahora guarda películas de toda la SPA,
+// identificadas por una clave: «t» + id de TMDB, o «l» + id local para lo que no está en TMDB (las series).
+// Las claves antiguas solo se leen una vez, para migrar (js/miLista.js).
+const FAVORITES_KEY = 'novenobe_favoritos';   // formato antiguo (solo lectura)
+const OBSERVED_KEY = 'novenobe_observadas';   // formato antiguo (solo lectura)
+export const LISTA_KEY = 'novenobe_lista';
+const LISTA_OBSERVADAS_KEY = 'novenobe_lista_observadas';
+const CLAVE_VALIDA = /^[tl]\d+$/;
 
 /** Pura: limpia lo leído (datos corruptos, tipos raros o repetidos) → ids enteros únicos. */
 export const sanitizeIds = (raw) =>
   Array.isArray(raw) ? [...new Set(raw.filter(Number.isInteger))] : [];
 
-/** Pura: añade el id si no está y lo quita si está. Devuelve un array nuevo (no muta). */
+/** Pura: añade el valor si no está y lo quita si está. Devuelve un array nuevo (no muta). */
 export const toggleId = (ids, id) =>
   ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
 
-/** Lee una lista de ids. Si no hay, o el JSON está roto, devuelve []. Nunca lanza. */
-function readIds(key) {
+/** Pura: claves únicas y bien formadas («t603», «l2»). */
+export const sanitizeClaves = (raw) =>
+  Array.isArray(raw) ? [...new Set(raw.filter((c) => typeof c === 'string' && CLAVE_VALIDA.test(c)))] : [];
+
+/** Pura: una película guardada, tal y como se pinta en Mi lista (una instantánea: no hace falta pedirla otra vez). */
+export function sanitizeEntrada(raw) {
+  if (!raw || typeof raw !== 'object' || typeof raw.clave !== 'string' || !CLAVE_VALIDA.test(raw.clave)) return null;
+  const titulo = typeof raw.titulo === 'string' ? raw.titulo.trim().slice(0, 200) : '';
+  return {
+    clave: raw.clave,
+    tmdbId: Number.isInteger(raw.tmdbId) ? raw.tmdbId : null,
+    titulo: titulo || 'Sin título',
+    anio: ['string', 'number'].includes(typeof raw.anio) ? String(raw.anio).slice(0, 4) : '',
+    poster: typeof raw.poster === 'string' && raw.poster.startsWith('/') ? raw.poster : null,
+    generos: Array.isArray(raw.generos) ? raw.generos.filter(Number.isInteger) : [],
+  };
+}
+
+/** Pura: lista limpia y sin repetidas (si una clave sale dos veces, se queda la primera). */
+export function sanitizeLista(raw) {
+  if (!Array.isArray(raw)) return [];
+  const vistas = new Set();
+  return raw.map(sanitizeEntrada).filter((entrada) => {
+    if (!entrada || vistas.has(entrada.clave)) return false;
+    vistas.add(entrada.clave);
+    return true;
+  });
+}
+
+/** Lee un JSON de localStorage. Si no existe devuelve `vacio`; si está roto o bloqueado, `roto`. Nunca lanza. */
+function readJson(key, { vacio, roto }) {
   try {
-    return sanitizeIds(JSON.parse(localStorage.getItem(key)));
+    const raw = localStorage.getItem(key);
+    return raw === null ? vacio : JSON.parse(raw);
   } catch {
-    return [];
+    return roto;
   }
 }
 
-/** Guarda una lista de ids. Devuelve true si se guardó (false si el navegador lo bloquea). */
-function writeIds(key, ids) {
+/** Guarda un JSON. Devuelve true si se guardó (false si el navegador lo bloquea). */
+function writeJson(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(sanitizeIds(ids)));
+    localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch {
     return false;
   }
 }
 
-/** @returns {number[]} ids de las películas guardadas en Mi lista */
-export const loadFavorites = () => readIds(FAVORITES_KEY);
-/** @param {number[]} ids @returns {boolean} */
-export const saveFavorites = (ids) => writeIds(FAVORITES_KEY, ids);
+/** @returns {number[]} formato antiguo: ids locales guardados desde «Qué ver» (solo para migrar) */
+export const loadFavorites = () => sanitizeIds(readJson(FAVORITES_KEY, { vacio: [], roto: [] }));
+/** @returns {number[]} formato antiguo: ids locales marcados como vistos (solo para migrar) */
+export const loadObserved = () => sanitizeIds(readJson(OBSERVED_KEY, { vacio: [], roto: [] }));
 
-/** @returns {number[]} ids de las películas marcadas como vistas */
-export const loadObserved = () => readIds(OBSERVED_KEY);
-/** @param {number[]} ids @returns {boolean} */
-export const saveObserved = (ids) => writeIds(OBSERVED_KEY, ids);
+/** @returns {object[]|null} Mi lista. null = nunca se ha guardado (toca migrar el formato antiguo). */
+export function loadLista() {
+  const raw = readJson(LISTA_KEY, { vacio: null, roto: [] });
+  return raw === null ? null : sanitizeLista(raw);
+}
+/** @param {object[]} lista @returns {boolean} */
+export const saveLista = (lista) => writeJson(LISTA_KEY, sanitizeLista(lista));
+
+/** @returns {string[]} claves de las películas de Mi lista marcadas como vistas */
+export const loadListaObservadas = () => sanitizeClaves(readJson(LISTA_OBSERVADAS_KEY, { vacio: [], roto: [] }));
+/** @param {string[]} claves @returns {boolean} */
+export const saveListaObservadas = (claves) => writeJson(LISTA_OBSERVADAS_KEY, sanitizeClaves(claves));
 
 // ---------- Tu mirada: nota propia + archivo de observaciones, por id de TMDB ----------
 // Independiente de TMDB: nunca se mezcla con vote_average.
