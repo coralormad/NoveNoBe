@@ -990,7 +990,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* La tira de película: la nota como fotogramas revelados (uno por punto; el último, a medio revelar).
    De día, la versión oficial está sin revelar y se revela al mirar la mirilla (como su leyenda).
-   De noche, la oficial queda tenue (como su aro) y tu tira, nítida, responde al calibrar. */
+   De noche, la oficial queda tenue (como su aro). Tu tira está en «Tu enfoque»: es el propio control. */
 .tiras { display: grid; gap: 0.6rem; width: min(100%, 300px); }
 .tira { display: grid; gap: 0.3rem; }
 .tira[hidden] { display: none; }
@@ -1016,6 +1016,24 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tira--oficial { --tira-color: var(--color-primario); }
 .tira--propia { --tira-color: var(--lavanda-300); }
+
+/* Tu enfoque: la tira es el control. El rango va encima, sin pista; solo se ve su cabezal,
+   alineado con los fotogramas (5px = relleno + borde de la tira). Teclado y lector: el rango de siempre. */
+.calibre-tira { position: relative; height: 32px; }
+.calibre-tira .tira-fotogramas { height: 32px; }
+.calibre-tira .tira-fotogramas li::before { transition: transform 120ms linear; } /* al arrastrar, sin escalonado */
+.calibre-tira .maquina-regla {
+  position: absolute; inset: 0 5px; width: calc(100% - 10px); height: 100%; margin: 0; cursor: ew-resize;
+}
+.calibre-tira .maquina-regla::-webkit-slider-runnable-track { height: 32px; background: none; }
+.calibre-tira .maquina-regla::-moz-range-track { height: 32px; background: none; }
+.calibre-tira .maquina-regla::-webkit-slider-thumb { width: 2px; height: 32px; margin-top: 0; }
+.calibre-tira .maquina-regla::-moz-range-thumb { width: 2px; height: 32px; }
+.calibre-tira .maquina-regla:focus-visible { outline: none; }
+.calibre-tira:has(.maquina-regla:focus-visible) .tira-fotogramas { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+@media (hover: hover) {
+  .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
+}
 
 /* De día: sin revelar hasta que miras la mirilla */
 :root[data-theme="claro"] .tira--oficial li::before { transform: scaleX(0); }

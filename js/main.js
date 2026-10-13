@@ -1119,6 +1119,7 @@ pelis.pestanas.addEventListener('click', handlePestanaClick);
 ficha.ventana.addEventListener('toggle', showMap);
 ficha.nota.addEventListener('click', toggleNota);
 mirada.rango.addEventListener('input', handleMiradaInput);
+mirada.rango.addEventListener('pointerdown', handleMiradaInput); // tocar la tira ya calibra, aunque caigas en el valor actual
 mirada.form.addEventListener('submit', handleMiradaSubmit);
 mirada.borrar.addEventListener('click', handleMiradaBorrar);
 mirada.reescribir.addEventListener('click', handleMiradaReescribir);
