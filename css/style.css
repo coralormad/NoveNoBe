@@ -2034,6 +2034,12 @@ main { padding: 2rem var(--margen-lateral); }
    un leve «hundimiento» al pulsar. Solo con ratón (hover: hover); en táctil,
    solo la respuesta al pulsar. Con movimiento reducido, sin desplazamientos.
    ========================================================= */
+:is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado) {
+  --boton-luz: var(--capsula-luz); /* contorno: la luz de las cápsulas */
+}
+:is(.diapositiva-boton, .qv-boton:not(.qv-boton--secundario)) {
+  --boton-luz: rgb(255 255 255 / 0.5); /* relleno: un destello blanco, visible de día y de noche */
+}
 :is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado,
     .icono-boton, .fila-flechas button, .ml-quitar, .ml-deshacer) {
   transition: transform var(--dur-rapida) var(--curva-cine), filter var(--dur-rapida),
@@ -2053,6 +2059,10 @@ main { padding: 2rem var(--margen-lateral); }
     background: color-mix(in srgb, var(--color-primario) 10%, transparent);
   }
   .ml-estado[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--color-primario) 18%, transparent); }
+  /* Rellenos y de contorno: la luz sigue al cursor por todo el botón (--mx --my desde main.js, como las cápsulas) */
+  :is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado, .ml-estado[aria-pressed="true"]):hover {
+    background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--boton-luz), transparent 65%);
+  }
   /* 3. Iconos y flechas: el círculo se ilumina, el icono no se mueve */
   .icono-boton:hover, .fila-flechas button:hover {
     background: var(--color-secundario); color: var(--color-texto);

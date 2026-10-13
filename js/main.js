@@ -1165,6 +1165,8 @@ function enablePointerLight(container, selector) {
   });
 }
 enablePointerLight(radiografia.capsulas, '.capsula'); // Películas: la Marquesina
+// Botones rellenos y de contorno: la misma luz, con un solo listener para toda la página (delegación)
+enablePointerLight(document, '.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado');
 enablePointerLight(els.genres, '.capsula');           // Inicio: los géneros comparten la misma luz
 enablePointerLight(ficha.ventana, '.ficha-mapa');
 
