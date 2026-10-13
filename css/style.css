@@ -102,12 +102,11 @@ button { cursor: pointer; background: none; border: none; }
 ul { list-style: none; }
 
 /* 3. BASE ------------------------------------------------- */
-html { scroll-behavior: smooth; }
+/* El color de la página vive en <html>: así la escena de fondo (z-index: -1) queda entre él y el contenido */
+html { scroll-behavior: smooth; background: var(--fondo-pagina); background-attachment: fixed; }
 
 body {
   min-height: 100svh;
-  background: var(--fondo-pagina);
-  background-attachment: fixed;
   color: var(--color-texto);
   font-family: var(--fuente-texto);
   font-size: var(--texto-m);
@@ -117,6 +116,55 @@ body {
 
 h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: var(--interlineado-titulo); }
 ::selection { background: var(--lavanda-100); color: var(--lavanda-900); }
+
+/* 3b. ESCENA DE FONDO --------------------------------------
+   El fondo deja de ser una superficie plana: es la habitación de enfrente vista por una ventana.
+   · fondo-luz: halos que dirigen la mirada (de noche, luz de luna lavanda; de día, sol entrando).
+   · fondo-persiana: la sombra (o la luz) de las lamas proyectada en la pared, solo en una zona.
+   · ::after: una viñeta fija, como el borde de un visor.
+   Profundidad: al hacer scroll, la luz se desplaza menos que la persiana, y las dos mucho menos que
+   el contenido (scrollTheme.js escribe --scroll de 0 a 1 solo en esta capa). La deriva lenta usa
+   `transform` y el scroll usa `translate`: son propiedades distintas y no se pisan. */
+:root {
+  --escena-halo-1: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
+  --escena-halo-2: rgb(120 58 120 / 0.16);
+  --escena-halo-3: rgb(70 36 82 / 0.32);
+  --escena-lama: rgb(218 203 218 / 0.055);
+  --escena-vineta: rgb(4 2 6 / 0.7);
+}
+:root[data-theme="claro"] {
+  --escena-halo-1: rgb(255 255 255 / 0.85);
+  --escena-halo-2: color-mix(in srgb, var(--lavanda-500) 40%, transparent);
+  --escena-halo-3: color-mix(in srgb, var(--lavanda-100) 14%, transparent);
+  --escena-lama: rgb(100 67 115 / 0.06);
+  --escena-vineta: rgb(98 81 106 / 0.14);
+}
+.fondo-escena { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.fondo-luz, .fondo-persiana { position: absolute; inset: -15% 0 -40%; will-change: translate, transform; }
+.fondo-luz {
+  background:
+    radial-gradient(ellipse 55% 40% at 80% 14%, var(--escena-halo-1), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 10% 52%, var(--escena-halo-2), transparent 70%),
+    radial-gradient(ellipse 70% 40% at 55% 92%, var(--escena-halo-3), transparent 72%);
+  translate: 0 calc(var(--scroll, 0) * -12%);
+  animation: fondo-deriva 60s ease-in-out infinite alternate;
+}
+.fondo-persiana {
+  background: repeating-linear-gradient(168deg, var(--escena-lama) 0 16px, transparent 16px 44px);
+  -webkit-mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
+          mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
+  translate: 0 calc(var(--scroll, 0) * -22%); /* más cerca: se mueve más que la luz */
+  animation: fondo-persiana 75s ease-in-out infinite alternate;
+}
+.fondo-escena::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 110% 85% at 50% 40%, transparent 55%, var(--escena-vineta) 100%);
+}
+@keyframes fondo-deriva   { to { transform: translate3d(-2%, 1.5%, 0) scale(1.06); } }
+@keyframes fondo-persiana { to { transform: translate3d(1.5%, 0, 0) rotate(-1deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .fondo-luz, .fondo-persiana { translate: none; animation: none; will-change: auto; } /* la luz se queda; el movimiento, no */
+}
 
 /* 4. LAYOUT ----------------------------------------------- */
 main { padding: 2rem var(--margen-lateral); }

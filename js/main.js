@@ -14,6 +14,7 @@ import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
 import { activarMiLista, crearBotonLista, asignarBotonLista, entradaDesdeMovie } from './miLista.js';
 import { ParaTi } from './paraTi.js';
+import { initScrollTheme } from './scrollTheme.js';
 
 
 const MIN_QUERY = 2;
@@ -1230,6 +1231,7 @@ enablePointerLight(ficha.ventana, '.ficha-mapa');
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
 activarMiLista(); // un solo listener para todas las cápsulas de Mi lista (tarjetas, ficha, «Qué ver»)
+initScrollTheme(document.querySelector('#fondo-escena')); // el fondo se mueve más despacio que el contenido
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
 // Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
 const queVer = new QueVer(document.querySelector('#vista-que-ver'), {

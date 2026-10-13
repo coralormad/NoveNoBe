@@ -25,6 +25,12 @@
           integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 </head>
 <body>
+  <!-- El fondo como una escena vista a través de una ventana: luz, sombra de persiana y viñeta.
+       Dos capas a distinta velocidad al hacer scroll (scrollTheme.js). Decorativo: se oculta a los lectores -->
+  <div id="fondo-escena" class="fondo-escena" aria-hidden="true">
+    <span class="fondo-luz"></span>
+    <span class="fondo-persiana"></span>
+  </div>
 
   <!-- 1. CABECERA -->
   <header class="cabecera">
