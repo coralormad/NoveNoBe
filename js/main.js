@@ -120,10 +120,16 @@ function renderMessage(text) {
 function renderResults(movies) {
   if (movies.length === 0) return renderMessage('Sin resultados.');
 
+  // Cada resultado es un enlace a la ficha: se abre con clic, toque o teclado (Tab + Enter)
   const items = movies.map((movie) => {
     const li = document.createElement('li');
-    li.textContent = `${movie.title} (${movie.year}) · ★ ${movie.ratingText}`;
-    li.dataset.id = movie.id;
+    const link = document.createElement('a');
+    link.className = 'resultado';
+    link.href = movieHref(movie.id);
+    link.textContent = [movie.title, movie.year && `(${movie.year})`, `· ★ ${movie.ratingText}`]
+      .filter(Boolean)
+      .join(' ');
+    li.append(link);
     return li;
   });
   els.results.replaceChildren(...items);
@@ -316,6 +322,12 @@ function handleKeydown(event) {
 }
 
 function handleResultsClick(event) {
+  // Elegir una película: el enlace cambia la URL (el router abre la ficha) y el panel se recoge
+  if (event.target.closest('a.resultado')) {
+    togglePanel();
+    return;
+  }
+
   const button = event.target.closest('button');
   if (!button) return;
 

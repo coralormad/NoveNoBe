@@ -452,7 +452,11 @@ main { padding: 2rem var(--margen-lateral); }
 #buscador::placeholder { color: var(--color-texto-suave); }
 
 #resultados-busqueda { display: grid; gap: 0.25rem; margin-top: 0.5rem; max-height: 60svh; overflow-y: auto; }
-#resultados-busqueda li[data-id] { padding: 0.5rem; font-size: var(--texto-s); }
+.resultado {
+  display: flex; align-items: center; min-height: 44px; padding: 0.5rem;
+  border-radius: 4px; font-size: var(--texto-s); color: inherit; text-decoration: none;
+}
+.resultado:hover, .resultado:focus-visible { background: var(--color-secundario); }
 
 .historial-item { width: 100%; min-height: 44px; padding: 0 0.5rem; border-radius: 4px; text-align: left; }
 .historial-item:hover { background: var(--color-secundario); }
