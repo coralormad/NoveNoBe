@@ -25,6 +25,9 @@ export function toMarkers(countries = [], coords = {}) {
     .filter(({ iso_3166_1: code }) => Object.hasOwn(coords, code))
     .map(({ iso_3166_1: code, name }) => ({ code, name: countryName(code, name), latlng: coords[code] }));
 }
+/** ¿Cargó Leaflet desde el CDN? Si no, la ficha sigue funcionando sin mapa. */
+export const mapaDisponible = () => typeof L !== 'undefined';
+
 // Texto accesible del mapa: «Mapa de producción: Estados Unidos y Francia»
 const listFormat = new Intl.ListFormat('es', { type: 'conjunction' });
 export const mapLabel = (markers = []) =>

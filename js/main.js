@@ -4,7 +4,7 @@ import { Movie } from './Movie.js';
 import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
-import { CountryMap, toMarkers, countryName, mapLabel} from './map.js';
+import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
 import { enableCardTilt, tiltFromPointer } from './tilt.js';
@@ -600,7 +600,8 @@ async function loadFicha(id) {
     const coords = { ...COORDENADAS_PAISES, ...apiCoords };
     fichaMarcadores = toMarkers(movie.countries, coords);
 
-    ficha.ventana.hidden = fichaMarcadores.length === 0; // sin coordenadas, no hay nada que mirar
+    // Sin coordenadas o sin Leaflet no hay nada que mirar (los países siguen en la ficha técnica)
+    ficha.ventana.hidden = fichaMarcadores.length === 0 || !mapaDisponible();
     showMap();
     return true;
   } catch (error) {
@@ -616,7 +617,7 @@ async function loadFicha(id) {
 /** El mapa vive plegado: solo se pinta con la ventana abierta (Leaflet necesita medir el contenedor). */
 function showMap() {
   ficha.mapa.setAttribute('aria-label', mapLabel(fichaMarcadores));
-  if (!ficha.ventana.open) return;
+  if (!ficha.ventana.open || !mapaDisponible()) return;
   countryMap ??= new CountryMap(ficha.mapa);
   countryMap.show(fichaMarcadores);
 }
