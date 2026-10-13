@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToArc, bechdelText, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, removeMirada } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName } from './map.js';
@@ -70,11 +70,16 @@ const mirada = {
   reescribir: document.querySelector('#mirada-reescribir'),
   enfoque: document.querySelector('#mirada-enfoque'),
   bechdel: document.querySelector('#mirada-bechdel'),
-  pasos: document.querySelector('.maquina-bechdel'),
+  examen: document.querySelector('#bechdel'),
+  pregunta: document.querySelector('#bechdel-pregunta'),
+  resultado: document.querySelector('#bechdel-resultado'),
+  repetir: document.querySelector('#bechdel-repetir'),
 };
 const PILOTO = Object.freeze({ vacia: 'Sin calibrar', calibrando: 'Calibrando', revelada: 'Lectura revelada' });
 let miradaId = null;      // id de TMDB de la película abierta
 let miradaTocada = false; // ¿ha movido el enfoque? Sin moverlo, no hay nota propia
+let bechdelEtapa = 0;     // pregunta del examen en pantalla (0-2)
+let bechdelNivel = null;  // resultado del examen (0-3); null mientras no termina
 const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
 
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
@@ -667,7 +672,9 @@ function renderMirada(id) {
   miradaTocada = nota !== null;
   mirada.rango.value = nota ?? 5;
   mirada.texto.value = guardada?.texto ?? '';
-  marcarBechdel(bechdel);
+  bechdelEtapa = 0;
+  bechdelNivel = bechdel;
+  pintarExamen(); // sin máquina de escribir: al abrir la ficha no se teclea nada
   pintarCifraPropia(nota);
   mirada.borrar.hidden = !guardada;
   setPiloto(guardada ? 'revelada' : 'vacia');
@@ -688,29 +695,48 @@ function renderMirada(id) {
   pintarBechdel(bechdel);
 }
 
-/** Marca el peldaño guardado (o ninguno). Asignar .value no desmarca: se recorre cada radio. */
-function marcarBechdel(nivel) {
-  mirada.form.elements.bechdel.forEach((radio) => {
-    radio.checked = radio.value === String(nivel);
-  });
+/** El examen de Bechdel: la pregunta de la etapa o, si ha terminado, el resultado.
+ *  El estado y las marcas van en atributos data-: el CSS decide qué se ve. */
+function pintarExamen({ teclear = false } = {}) {
+  const terminado = bechdelNivel !== null;
+  mirada.examen.dataset.estado = terminado ? 'hecho' : 'examen';
+  mirada.examen.dataset.marcas = String(terminado ? bechdelNivel : bechdelEtapa);
+  mirada.examen.toggleAttribute('data-pasa', bechdelNivel === BECHDEL_PREGUNTAS.length);
+  mirada.resultado.textContent = terminado ? bechdelText(bechdelNivel) : '';
+  mirada.pregunta.textContent = terminado ? '' : BECHDEL_PREGUNTAS[bechdelEtapa];
+  if (teclear) {
+    const linea = terminado ? mirada.resultado : mirada.pregunta;
+    linea.classList.remove('tecleando');
+    void linea.offsetWidth; // reinicia la animación aunque la clase ya estuviera
+    linea.classList.add('tecleando');
+  }
 }
 
-/** Lee el peldaño elegido: null si no se ha respondido (0 sí es una respuesta). */
-const leerBechdel = () => {
-  const valor = mirada.form.elements.bechdel.value;
-  return valor === '' ? null : Number(valor);
-};
+/** Responder Sí / No: una función pura decide la etapa siguiente; aquí solo se pinta. */
+function handleExamenClick(event) {
+  const boton = event.target.closest('[data-respuesta]');
+  if (!boton) return;
+  ({ etapa: bechdelEtapa, nivel: bechdelNivel } = avanzarBechdel(bechdelEtapa, boton.dataset.respuesta === 'si'));
+  pintarExamen({ teclear: true });
+  pintarBechdel(bechdelNivel ?? bechdelEtapa); // la mirilla enciende una marca por criterio superado
+  setPiloto('calibrando');
+  if (bechdelNivel !== null) mirada.repetir.focus(); // Sí / No desaparecen: el foco no se pierde
+}
+
+/** Volver a empezar el examen (no se guarda hasta revelar). */
+function handleExamenRepetir() {
+  bechdelEtapa = 0;
+  bechdelNivel = null;
+  pintarExamen({ teclear: true });
+  pintarBechdel(null);
+  setPiloto('calibrando');
+  mirada.examen.querySelector('[data-respuesta="si"]').focus();
+}
 
 /** Las marcas de la mirilla: una por cada nivel superado del test (solo de noche). */
 function pintarBechdel(nivel) {
   if (nivel === null) ficha.nota.removeAttribute('data-bechdel');
   else ficha.nota.dataset.bechdel = String(nivel);
-}
-
-/** Al elegir un peldaño, la mirilla responde en directo (vista previa, como el enfoque). */
-function handleBechdelChange() {
-  pintarBechdel(leerBechdel());
-  setPiloto('calibrando');
 }
 
 /** El aro interior de la mirilla: tu nota (solo de noche). Sin nota, el aro queda vacío. */
@@ -749,11 +775,11 @@ function handleMiradaSubmit(event) {
   const nueva = {
     nota: miradaTocada ? mirada.rango.value : null,
     texto: mirada.texto.value,
-    bechdel: leerBechdel(),
+    bechdel: bechdelNivel,
     fecha: new Date().toISOString(),
   };
   if (nueva.nota === null && !nueva.texto.trim() && nueva.bechdel === null) {
-    mirada.estado.textContent = 'Escribe lo que viste, pasa el test o calibra tu enfoque antes de revelar.';
+    mirada.estado.textContent = 'Escribe lo que viste, termina el test o calibra tu enfoque antes de revelar.';
     return;
   }
   const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
@@ -874,7 +900,8 @@ mirada.rango.addEventListener('input', handleMiradaInput);
 mirada.form.addEventListener('submit', handleMiradaSubmit);
 mirada.borrar.addEventListener('click', handleMiradaBorrar);
 mirada.reescribir.addEventListener('click', handleMiradaReescribir);
-mirada.pasos.addEventListener('change', handleBechdelChange);
+mirada.examen.addEventListener('click', handleExamenClick);
+mirada.repetir.addEventListener('click', handleExamenRepetir);
 // Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
 window.addEventListener('storage', (event) => {
   if (event.key === MIRADAS_KEY && miradaId !== null) renderMirada(miradaId);

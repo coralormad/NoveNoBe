@@ -360,12 +360,19 @@
                   <textarea id="mirada-texto" class="maquina-texto" rows="4" maxlength="600"
                     placeholder="Escribe lo que la nota no dice"></textarea>
                 </div>
-                <fieldset class="maquina-bechdel">
+                <!-- El test de Bechdel como examen: una pregunta cada vez; Sí avanza, No lo detiene -->
+                <fieldset id="bechdel" class="maquina-bechdel" data-estado="examen" data-marcas="0">
                   <legend class="maquina-etiqueta">Test de Bechdel</legend>
-                  <label class="maquina-paso"><input type="radio" name="bechdel" value="0"><span>No hay dos mujeres con nombre</span></label>
-                  <label class="maquina-paso"><input type="radio" name="bechdel" value="1"><span>Hay dos, pero no hablan entre ellas</span></label>
-                  <label class="maquina-paso"><input type="radio" name="bechdel" value="2"><span>Hablan, pero de un hombre</span></label>
-                  <label class="maquina-paso"><input type="radio" name="bechdel" value="3"><span>Hablan de otra cosa: lo pasa</span></label>
+                  <ol class="examen-marcas" aria-hidden="true"><li></li><li></li><li></li></ol>
+                  <div class="examen-pantalla" aria-live="polite">
+                    <p id="bechdel-pregunta" class="examen-pregunta"></p>
+                    <p id="bechdel-resultado" class="examen-resultado"></p>
+                  </div>
+                  <div class="examen-respuestas">
+                    <button type="button" class="examen-respuesta" data-respuesta="si">Sí</button>
+                    <button type="button" class="examen-respuesta" data-respuesta="no">No</button>
+                  </div>
+                  <button type="button" id="bechdel-repetir" class="maquina-borrar examen-repetir">Repetir el examen</button>
                 </fieldset>
                 <div class="maquina-calibre">
                   <label for="mirada-nota" class="maquina-etiqueta">Tu enfoque</label>

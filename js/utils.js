@@ -267,3 +267,19 @@ export const BECHDEL_LECTURAS = Object.freeze([
 
 /** Pura: nivel de Bechdel → frase cualitativa (sin cifras). Sin responder → cadena vacía. */
 export const bechdelText = (nivel) => BECHDEL_LECTURAS[nivel] ?? '';
+
+/** Las tres preguntas del test, en orden. Cada «sí» supera un criterio. */
+export const BECHDEL_PREGUNTAS = Object.freeze([
+  '¿Aparecen al menos dos mujeres con nombre?',
+  '¿Hablan entre ellas?',
+  '¿Hablan de algo que no sea un hombre?',
+]);
+
+/** Pura: responde la pregunta de la etapa actual.
+ *  Sí → pasa a la siguiente (y, tras la última, nivel 3). No → el examen se detiene: nivel = criterios superados.
+ *  Devuelve un objeto nuevo { etapa, nivel }; nivel es null mientras el examen sigue. */
+export const avanzarBechdel = (etapa, si) => {
+  if (!si) return { etapa, nivel: etapa };
+  const siguiente = etapa + 1;
+  return { etapa: siguiente, nivel: siguiente === BECHDEL_PREGUNTAS.length ? siguiente : null };
+};

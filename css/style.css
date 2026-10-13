@@ -1044,24 +1044,50 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina-texto:focus { outline: none; } /* el foco lo marcan las esquinas de la placa */
 .maquina-texto::placeholder { color: var(--color-texto-suave); font-style: italic; }
 
-/* El test de Bechdel: una escalera de cuatro peldaños. Al elegir uno, los anteriores quedan superados */
-.maquina-bechdel { display: grid; gap: 0.35rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+/* El test de Bechdel como examen: una pregunta cada vez, tecleada; Sí avanza, No lo detiene */
+.maquina-bechdel { display: grid; gap: 0.75rem; margin: 0; padding: 0; border: 0; min-width: 0; }
 .maquina-bechdel legend { margin-bottom: 0.4rem; padding: 0; }
-.maquina-paso {
-  display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0; cursor: pointer;
-  font-size: var(--texto-s); color: var(--color-texto-suave);
-  transition: color var(--dur-rapida);
+
+/* Tres marcas, de la misma familia que la mirilla: una por criterio superado */
+.examen-marcas { display: flex; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.examen-marcas li {
+  width: 18px; height: 2px; background: var(--color-borde-control);
+  transition: background-color var(--dur-media), width var(--dur-media) var(--curva-cine);
 }
-.maquina-paso input {
-  -webkit-appearance: none; appearance: none; flex: none; margin: 0;
-  width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--color-borde-control);
-  transition: background-color var(--dur-rapida), border-color var(--dur-rapida);
+.maquina-bechdel:is([data-marcas="1"], [data-marcas="2"], [data-marcas="3"]) li:nth-child(1),
+.maquina-bechdel:is([data-marcas="2"], [data-marcas="3"]) li:nth-child(2),
+.maquina-bechdel[data-marcas="3"] li:nth-child(3) { width: 28px; background: var(--lavanda-300); }
+
+/* La pantalla: la pregunta (o el resultado) en letra de máquina */
+.examen-pregunta, .examen-resultado {
+  margin: 0; min-height: 1.6em;
+  font-family: var(--fuente-detalle); font-size: var(--texto-m); line-height: 1.6; color: var(--color-texto);
 }
-.maquina-paso input:checked { background: var(--lavanda-300); border-color: var(--lavanda-300); }
-.maquina-paso:has(input:checked) { color: var(--color-texto); }
-.maquina-paso:has(~ .maquina-paso input:checked) input { border-color: var(--lavanda-300); } /* superados */
-.maquina-paso input:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
-.maquina-paso:hover { color: var(--color-texto); }
+.examen-resultado { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); }
+.maquina-bechdel[data-pasa] .examen-resultado { color: var(--lavanda-300); }
+/* Máquina de escribir: el texto ya está en el DOM (el lector de pantalla lo lee entero); solo se destapa a saltos */
+.tecleando { animation: teclea 0.9s steps(24, end) both; }
+.examen-pregunta.tecleando::after {
+  content: '▌'; margin-left: 0.15em; color: var(--lavanda-300);
+  animation: cursor-parpadea 0.8s steps(1) 0.9s 3;
+}
+@keyframes teclea { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cursor-parpadea { 50% { opacity: 0; } }
+
+.examen-respuestas { display: flex; gap: 0.75rem; }
+.examen-respuesta {
+  min-width: 4.5rem; min-height: 44px; padding: 0.4rem 1.2rem; border-radius: 999px;
+  border: 1px solid var(--color-borde-control); background: none; color: var(--color-texto);
+  font-family: var(--fuente-detalle); font-size: var(--texto-xs); letter-spacing: var(--tracking-meta); text-transform: uppercase;
+  cursor: pointer; transition: border-color var(--dur-rapida), color var(--dur-rapida);
+}
+.examen-respuesta:hover { border-color: var(--lavanda-300); color: var(--lavanda-300); }
+.examen-respuesta:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.examen-repetir { justify-self: start; }
+
+/* Dos estados: examinando (pregunta + Sí / No) o hecho (resultado + repetir) */
+.maquina-bechdel[data-estado="examen"] :is(.examen-resultado, .examen-repetir),
+.maquina-bechdel[data-estado="hecho"] :is(.examen-pregunta, .examen-respuestas) { display: none; }
 
 /* El calibre: una regla con una muesca. Hasta que la mueves, la cifra dice «¿Y tú?» */
 .maquina-calibre { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.4rem 1rem; }
