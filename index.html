@@ -327,6 +327,18 @@
                   <span id="ficha-votos" class="solo-dia"></span>
                   <span id="ficha-leyenda-propia" class="solo-noche"></span>
                 </p>
+                <!-- La tira de película: la nota como fotogramas revelados (uno por punto; el último, a medio revelar).
+                     De día, la versión oficial se revela al mirar la mirilla; de noche se suma tu tira -->
+                <div class="tiras" aria-hidden="true">
+                  <div id="tira-oficial" class="tira tira--oficial">
+                    <span class="tira-etiqueta">La versión oficial</span>
+                    <ol class="tira-fotogramas"></ol>
+                  </div>
+                  <div id="tira-propia" class="tira tira--propia solo-noche">
+                    <span class="tira-etiqueta">Tu mirada</span>
+                    <ol class="tira-fotogramas"></ol>
+                  </div>
+                </div>
               </div>
             </div>
           </header>

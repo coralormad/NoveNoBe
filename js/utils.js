@@ -257,6 +257,11 @@ export function insertAt(ids, id, indice) {
 /** Pura: nota (0-10) → porción del aro de la mirilla (0-100, el pathLength del SVG). Acotada. */
 export const ratingToArc = (rating) => Math.min(Math.max(Number(rating) || 0, 0), 10) * 10;
 
+/** Pura: nota 0-10 → cuánto se revela cada fotograma de la tira (1 = revelado, 0 = sin revelar).
+ *  Un fotograma por punto; el último, en proporción (6,7 → seis enteros y el séptimo al 70 %). */
+export const fotogramas = (nota, total = 10) =>
+  Array.from({ length: total }, (_, i) => Math.round(Math.min(Math.max((Number(nota) || 0) - i, 0), 1) * 100) / 100);
+
 /** Las cuatro lecturas posibles del test de Bechdel, de 0 (no hay dos mujeres con nombre) a 3 (lo pasa). */
 export const BECHDEL_LECTURAS = Object.freeze([
   'No hay dos mujeres con nombre',

@@ -988,6 +988,44 @@ main { padding: 2rem var(--margen-lateral); }
 :root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
 :root[data-theme="oscuro"] .ficha-votos { color: var(--lavanda-300); }
 
+/* La tira de película: la nota como fotogramas revelados (uno por punto; el último, a medio revelar).
+   De día, la versión oficial está sin revelar y se revela al mirar la mirilla (como su leyenda).
+   De noche, la oficial queda tenue (como su aro) y tu tira, nítida, responde al calibrar. */
+.tiras { display: grid; gap: 0.6rem; width: min(100%, 300px); }
+.tira { display: grid; gap: 0.3rem; }
+.tira[hidden] { display: none; }
+.tira-etiqueta {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.tira-fotogramas {
+  --perforacion: color-mix(in srgb, var(--color-texto-suave) 55%, transparent);
+  list-style: none; margin: 0; padding: 8px 4px;
+  display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px;
+  border: 1px solid var(--color-borde); border-radius: 3px;
+  background: /* las perforaciones del celuloide, arriba y abajo */
+    repeating-linear-gradient(90deg, var(--perforacion) 0 4px, transparent 4px 9px) left 4px top 2px / calc(100% - 8px) 3px no-repeat,
+    repeating-linear-gradient(90deg, var(--perforacion) 0 4px, transparent 4px 9px) left 4px bottom 2px / calc(100% - 8px) 3px no-repeat,
+    var(--color-atenuado);
+}
+.tira-fotogramas li { position: relative; height: 14px; overflow: hidden; border: 1px solid var(--color-borde); }
+.tira-fotogramas li::before { /* lo revelado del fotograma */
+  content: ''; position: absolute; inset: 0; background: var(--tira-color);
+  transform-origin: left; transform: scaleX(var(--revelado, 0));
+  transition: transform var(--dur-media) var(--curva-cine) calc(var(--i, 0) * 45ms);
+}
+.tira--oficial { --tira-color: var(--color-primario); }
+.tira--propia { --tira-color: var(--lavanda-300); }
+
+/* De día: sin revelar hasta que miras la mirilla */
+:root[data-theme="claro"] .tira--oficial li::before { transform: scaleX(0); }
+:root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .tira--oficial li::before {
+  transform: scaleX(var(--revelado, 0));
+}
+/* De noche: la versión oficial se queda en segundo plano */
+:root[data-theme="oscuro"] .tira--oficial { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) { .tira-fotogramas li::before { transition: none; } }
+
 @keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
 @keyframes visor-calibra-noche { from { transform: rotate(45deg);  opacity: 0; } } /* gira al revés: mira otra vez */
 @keyframes arco-dibuja         { from { stroke-dasharray: 0 100; } }
@@ -1238,6 +1276,7 @@ main { padding: 2rem var(--margen-lateral); }
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .ficha-poster-marco { width: 160px; }
   .visor { --visor-tam: 56px; right: 0.4rem; bottom: 0.4rem; }
+  .tiras { justify-self: center; }
   .ficha-generos { justify-content: center; }
 }
 

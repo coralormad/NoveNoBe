@@ -1,7 +1,7 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, ratingToArc, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
+import { debounce, ratingToArc, fotogramas, bechdelText, BECHDEL_PREGUNTAS, avanzarBechdel, BECHDEL_CRITERIOS, BECHDEL_SIGNIFICADOS, VEREDICTO_CRITERIO, estadoCriterios, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
 import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
@@ -45,6 +45,8 @@ const ficha = {
   votos: document.querySelector('#ficha-votos'),
   notaPropia: document.querySelector('#ficha-nota-propia'),
   leyendaPropia: document.querySelector('#ficha-leyenda-propia'),
+  tiraOficial: document.querySelector('#tira-oficial'),
+  tiraPropia: document.querySelector('#tira-propia'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
@@ -692,6 +694,22 @@ function renderNota(movie) {
   etiquetaTmdb = sinVotos ? 'Sin nota de TMDB' : `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`;
   ficha.notaCifra.textContent = sinVotos ? '' : movie.ratingText;
   ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
+  ficha.tiraOficial.hidden = sinVotos;
+  pintarTira(ficha.tiraOficial, sinVotos ? null : movie.rating);
+}
+
+/** La tira de película: diez fotogramas; --revelado (0-1) dice cuánto se ve de cada uno. El CSS lo pinta. */
+function pintarTira(tira, nota) {
+  const lista = tira.querySelector('.tira-fotogramas');
+  if (lista.children.length === 0) { // se crean una vez; después solo cambian sus variables
+    lista.append(...fotogramas(0).map((_, i) => {
+      const li = document.createElement('li');
+      li.style.setProperty('--i', i); // cada fotograma se revela un instante después del anterior
+      return li;
+    }));
+  }
+  fotogramas(nota ?? 0).forEach((revelado, i) => lista.children[i].style.setProperty('--revelado', revelado));
+  tira.toggleAttribute('data-vacia', nota === null);
 }
 
 /** Qué anuncia la mirilla a un lector de pantalla: depende del tema y de si ya hay nota propia. */
@@ -884,6 +902,7 @@ function pintarAroPropio(nota) {
   ficha.nota.toggleAttribute('data-propia', nota !== null);
   ficha.nota.style.setProperty('--arco-propia', ratingToArc(nota ?? 0));
   ficha.notaPropia.textContent = nota === null ? '' : nota.toFixed(1);
+  pintarTira(ficha.tiraPropia, nota); // tu tira responde en directo al calibrar
   ficha.leyendaPropia.textContent = nota === null
     ? 'Tu enfoque · sin calibrar · baja a «Lo que no se ve»'
     : `Tu enfoque · ${nota.toFixed(1)} · nuestra mirada`;
