@@ -12,7 +12,7 @@ import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
-import { activarMiLista, crearBotonLista, entradaDesdeMovie } from './miLista.js';
+import { activarMiLista, crearBotonLista, asignarBotonLista, entradaDesdeMovie } from './miLista.js';
 
 
 const MIN_QUERY = 2;
@@ -47,7 +47,7 @@ const ficha = {
   votos: document.querySelector('#ficha-votos'),
   notaPropia: document.querySelector('#ficha-nota-propia'),
   leyendaPropia: document.querySelector('#ficha-leyenda-propia'),
-  tiraOficial: document.querySelector('#tira-oficial'),
+  notaFila: document.querySelector('#ficha-nota-fila'),
   tiraPropia: document.querySelector('#tira-propia'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
@@ -98,6 +98,7 @@ let bechdelNivel = null;  // resultado del examen (0-3); null mientras no termin
 const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
 
 let etiquetaTmdb = ''; // lo que la mirilla dice de día (nota pública de TMDB)
+let fichaLista = null;  // la cápsula de Mi lista de la ficha: se crea una vez y cambia de película
 
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
@@ -688,6 +689,7 @@ function renderFicha(movie) {
     .filter(Boolean)
     .join(' · ');
   renderNota(movie);
+  renderBotonLista(movie);
   mirada.estado.textContent = '';
   renderMirada(movie.id);
 
@@ -725,8 +727,18 @@ function renderNota(movie) {
   etiquetaTmdb = sinVotos ? 'Sin nota de TMDB' : `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`;
   ficha.notaCifra.textContent = sinVotos ? '' : movie.ratingText;
   ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
-  ficha.tiraOficial.hidden = sinVotos;
-  pintarTira(ficha.tiraOficial, sinVotos ? null : movie.rating);
+}
+
+/** La cápsula de Mi lista ocupa el sitio de la antigua tira oficial: la nota se mira; la película se guarda.
+ *  Es la misma cápsula de las tarjetas (miLista.js): guardar aquí la marca en toda la página. */
+function renderBotonLista(movie) {
+  const entrada = entradaDesdeMovie(movie);
+  if (fichaLista) {
+    asignarBotonLista(fichaLista, entrada);
+    return;
+  }
+  fichaLista = crearBotonLista(entrada, 'ficha');
+  ficha.notaFila.prepend(fichaLista);
 }
 
 /** La tira de película: diez fotogramas; --revelado (0-1) dice cuánto se ve de cada uno. El CSS lo pinta. */

@@ -1067,16 +1067,20 @@ main { padding: 2rem var(--margen-lateral); }
 :root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
 :root[data-theme="oscuro"] .ficha-votos { color: var(--lavanda-300); }
 
-/* La tira de película: la nota como fotogramas revelados (uno por punto; el último, a medio revelar).
-   De día, la versión oficial está sin revelar y se revela al mirar la mirilla (como su leyenda).
-   De noche, la oficial queda tenue (como su aro). Tu tira está en «Tu enfoque»: es el propio control. */
-.tiras { display: grid; gap: 0.6rem; width: min(100%, 300px); }
+/* La fila de la nota: la cápsula de Mi lista (acción, siempre a la vista) y la leyenda de la mirilla,
+   que de día se descubre al mirarla. La cápsula es la de las tarjetas, en su versión con texto. */
+.ficha-nota-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.1rem; }
+.lista-capsula--ficha {
+  min-height: 44px; padding: 0.5rem 1.15rem 0.5rem 0.95rem;
+  background: color-mix(in srgb, var(--color-fondo) 55%, transparent);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); /* legible sobre el fotograma */
+}
+.lista-capsula--ficha:hover { transform: translateY(-1px); box-shadow: var(--capsula-halo); }
+.lista-capsula--ficha[aria-pressed="true"] { background: var(--color-primario); }
+
+/* La tira de película (solo «Tu enfoque»): tu nota como fotogramas revelados; es el propio control. */
 .tira { display: grid; gap: 0.3rem; }
 .tira[hidden] { display: none; }
-.tira-etiqueta {
-  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
-  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
-}
 .tira-fotogramas {
   --perforacion: color-mix(in srgb, var(--color-texto-suave) 55%, transparent);
   list-style: none; margin: 0; padding: 8px 4px;
@@ -1093,7 +1097,6 @@ main { padding: 2rem var(--margen-lateral); }
   transform-origin: left; transform: scaleX(var(--revelado, 0));
   transition: transform var(--dur-media) var(--curva-cine) calc(var(--i, 0) * 45ms);
 }
-.tira--oficial { --tira-color: var(--color-primario); }
 .tira--propia { --tira-color: var(--lavanda-300); }
 
 /* Tu enfoque: la tira es el control. El rango va encima, sin pista; solo se ve su cabezal,
@@ -1114,13 +1117,6 @@ main { padding: 2rem var(--margen-lateral); }
   .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
 }
 
-/* De día: sin revelar hasta que miras la mirilla */
-:root[data-theme="claro"] .tira--oficial li::before { transform: scaleX(0); }
-:root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .tira--oficial li::before {
-  transform: scaleX(var(--revelado, 0));
-}
-/* De noche: la versión oficial se queda en segundo plano */
-:root[data-theme="oscuro"] .tira--oficial { opacity: 0.5; }
 @media (prefers-reduced-motion: reduce) { .tira-fotogramas li::before { transition: none; } }
 
 @keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
@@ -1373,7 +1369,7 @@ main { padding: 2rem var(--margen-lateral); }
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .ficha-poster-marco { width: 160px; }
   .visor { --visor-tam: 56px; right: 0.4rem; bottom: 0.4rem; }
-  .tiras { justify-self: center; }
+  .ficha-nota-fila { justify-content: center; }
   .ficha-generos { justify-content: center; }
 }
 

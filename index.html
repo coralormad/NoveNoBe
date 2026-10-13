@@ -331,18 +331,14 @@
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-                <!-- La leyenda de la mirilla: de día, la versión oficial (se descubre al mirar); de noche, la tuya (a la vista) -->
-                <p class="ficha-votos" aria-hidden="true">
-                  <span id="ficha-votos" class="solo-dia"></span>
-                  <span id="ficha-leyenda-propia" class="solo-noche"></span>
-                </p>
-                <!-- La tira de película: la nota como fotogramas revelados (uno por punto; el último, a medio revelar).
-                     De día se revela al mirar la mirilla. Tu tira vive abajo, en «Tu enfoque»: allí se calibra -->
-                <div class="tiras" aria-hidden="true">
-                  <div id="tira-oficial" class="tira tira--oficial">
-                    <span class="tira-etiqueta">La versión oficial</span>
-                    <ol class="tira-fotogramas"></ol>
-                  </div>
+                <!-- La nota y lo que haces con ella: la cápsula de Mi lista (main.js la crea con miLista.js)
+                     y, a su lado, la leyenda de la mirilla: de día, la versión oficial (se descubre al mirar);
+                     de noche, la tuya (a la vista). Tu tira vive abajo, en «Tu enfoque»: allí se calibra -->
+                <div id="ficha-nota-fila" class="ficha-nota-fila">
+                  <p class="ficha-votos" aria-hidden="true">
+                    <span id="ficha-votos" class="solo-dia"></span>
+                    <span id="ficha-leyenda-propia" class="solo-noche"></span>
+                  </p>
                 </div>
               </div>
             </div>
