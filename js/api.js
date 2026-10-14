@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN, TMDB_BASE_URL, RESTCOUNTRIES_KEY } from './config.js';
+import { ACCESS_TOKEN, TMDB_BASE_URL } from './config.js';
 
 const DEFAULT_LANGUAGE = 'es-ES';
 
@@ -93,31 +93,4 @@ export function getGenres() {
       throw error;
     });
   return genresPromise;
-}
-
-const COUNTRIES_URL = 'https://api.restcountries.com/countries/v5/codes.alpha_2';
-// Códigos históricos que TMDB usa y la API no conoce (URSS, Checoslovaquia, Yugoslavia…)
-const HISTORICAL_CODES = new Set(['SU', 'XC', 'YU', 'XG', 'CS', 'DD', 'AN']);
-
-async function fetchOneCountry(code, signal) {
-  const url = `${COUNTRIES_URL}/${code}?response_fields=coordinates`;
-  const response = await fetch(url, {
-    signal,
-    headers: { Authorization: `Bearer ${RESTCOUNTRIES_KEY}` },
-  });
-  if (!response.ok) throw new Error(`REST Countries ${response.status}`);
-  const { data } = await response.json();
-  const [country] = data.objects;
-  if (!country) throw new Error(`Sin datos para ${code}`);
-  return [code, [country.coordinates.lat, country.coordinates.lng]];
-}
-
-// Devuelve { ES: [lat, lng], ... } solo con los países que la API resolvió.
-export async function fetchCountryCoords(codes = [], { signal } = {}) {
-  const pending = codes.filter((code) => !HISTORICAL_CODES.has(code));
-  const results = await Promise.allSettled(pending.map((code) => fetchOneCountry(code, signal)));
-  if (signal?.aborted) throw new DOMException('Ficha cancelada', 'AbortError');
-  return Object.fromEntries(
-    results.filter(({ status }) => status === 'fulfilled').map(({ value }) => value)
-  );
 }

@@ -1,5 +1,5 @@
 import { MovieCatalog } from './catalog.js';
-import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails, fetchCountryCoords } from './api.js';
+import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
 import { debounce, ratingToArc, fotogramas, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds, bordesDeScroll, excludeIds } from './utils.js';
 import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
@@ -653,10 +653,8 @@ async function loadFicha(id) {
     ficha.contenido.hidden = false;
     ficha.titulo.focus({ preventScroll: true });
 
-    const codes = movie.countries.map(({ iso_3166_1 }) => iso_3166_1);
-    const apiCoords = await fetchCountryCoords(codes, { signal: fichaController.signal });
-    const coords = { ...COORDENADAS_PAISES, ...apiCoords };
-    fichaMarcadores = toMarkers(movie.countries, coords);
+    // Coordenadas de la tabla local: el mapa no depende de otra API (ni de otra clave)
+    fichaMarcadores = toMarkers(movie.countries, COORDENADAS_PAISES);
 
     // Sin coordenadas o sin Leaflet no hay nada que mirar (los países siguen en la ficha técnica)
     ficha.ventana.hidden = fichaMarcadores.length === 0 || !mapaDisponible();
