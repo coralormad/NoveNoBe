@@ -390,7 +390,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-velo { opacity: 1; }
 
-/* Haz del proyector: sigue al cursor (--mx --my las escribe tilt.js) */
+/* Haz del proyector: un foco fijo arriba del póster */
 .tarjeta-brillo {
   position: absolute; inset: 0;
   background: radial-gradient(circle at var(--mx, 50%) var(--my, 35%), var(--foco-color), transparent var(--foco-tamano));
@@ -637,8 +637,6 @@ main { padding: 2rem var(--margen-lateral); }
   transition: transform var(--transicion);
 }
 .interruptor[aria-checked="true"] .interruptor-bola { transform: translateX(18px); }
-.interruptor[aria-checked="true"] .cara-triste,
-.interruptor[aria-checked="false"] .cara-feliz { display: none; }
 
 /* 12. PANEL DE BÚSQUEDA FLOTANTE (estilo Luma) ------------ */
 .panel {
@@ -706,7 +704,6 @@ main { padding: 2rem var(--margen-lateral); }
   display: flex;
   align-items: flex-end;
   padding: clamp(1.5rem, 5vw, 3.5rem) 14% 6rem;
-  padding-bottom: 6rem;
 }
 .diapositiva[hidden] { display: none; }
 
@@ -757,8 +754,6 @@ main { padding: 2rem var(--margen-lateral); }
 :root[data-theme="claro"] .hero-logo b { color: var(--lavanda-100); }       /* #9B719B sobre claro ≈ 3.8:1 */
 .hero-logo [aria-hidden] { display: inline-block; transition: clip-path var(--dur-lenta) var(--curva-cine); }
 :root[data-theme="claro"] .hero:is(:hover, :focus-within) .hero-logo [aria-hidden] { clip-path: inset(0); }
-:root[data-theme="claro"] .hero:is(:hover, :focus-within) .hero-logo [aria-hidden] { clip-path: inset(0); }
-.hero:is(:hover, :focus-within, [data-pausado]) .diapositiva-fondo { animation-play-state: paused; }
 
 /* Persianas: 315 ms por lama + 7 × 35 ms de retraso = 560 ms (PERSIANA_MS en hero.js) */
 .hero-persianas {
@@ -878,32 +873,6 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* Deslizar con el dedo sin bloquear el scroll vertical */
 .hero { touch-action: pan-y; }
-
-/* Controles */
-.hero-controles {
-  position: absolute; z-index: 3;
-  right: clamp(1rem, 3vw, 1.75rem); bottom: clamp(1rem, 3vw, 1.75rem);
-  display: flex; align-items: center; gap: 0.5rem;
-  font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
-}
-.hero-controles button {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: grid; place-items: center; font-size: var(--texto-l); color: var(--color-texto);
-  border: 1px solid var(--color-borde-control);
-  background: color-mix(in srgb, var(--color-fondo) 60%, transparent);
-  backdrop-filter: blur(6px);
-  transition: background-color var(--dur-rapida);
-}
-.hero-controles button:hover { background: var(--color-secundario); }
-.hero-controles svg { fill: currentColor; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
-#hero-pausa .icono-play,
-#hero-pausa[aria-pressed="true"] .icono-pausa { display: none; }
-#hero-pausa[aria-pressed="true"] .icono-play { display: block; }
-
-/* Movimiento reducido: sin rotación automática; la barra activa se ve llena */
-@media (prefers-reduced-motion: reduce) {
-  .hero-progreso span.activa { background: var(--color-primario); }
-}
 
 @media (min-width: 850px) {
   .cabecera { grid-template-columns: auto 1fr auto; gap: 2.5rem; padding-block: 1.5rem; }
@@ -1878,7 +1847,7 @@ main { padding: 2rem var(--margen-lateral); }
   padding: 0; font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
   font-size: var(--titulo-s); line-height: var(--interlineado-titulo); text-wrap: balance;
 }
-.qv-pregunta-subtitulo { margin-top: -0.4rem; color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
+.qv-pregunta-subtitulo { margin-top: 0.5rem; /* el <legend> no es celda de la rejilla: el gap no lo separa */ color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
 .qv-opciones { display: grid; gap: 0.75rem; }
 @media (min-width: 600px) { .qv-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
