@@ -7,7 +7,7 @@ import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, set
 import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
-import { enableCardTilt, tiltFromPointer } from './tilt.js';
+import { tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 import { GenreStage, MAX_ESCAPARATE } from './stage.js';
@@ -336,7 +336,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     const data = await searchMovies(query, { signal: controller.signal });
     const movies = data.results.map((item) => new Movie(item));
     renderResults(movies);
-    if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
+    if (save && movies.length > 0) guardarBusqueda(query);
   } catch (error) {
     if (error.name === 'AbortError') return;
     renderMessage(toUserMessage(error));
@@ -344,6 +344,9 @@ async function handleSearch(rawQuery, { save = false } = {}) {
 }
 
 const debouncedSearch = debounce((event) => handleSearch(event.target.value), DEBOUNCE_MS);
+
+/** Guarda una búsqueda en el historial. addQuery (pura) descarta las cortas y las repetidas. */
+const guardarBusqueda = (query) => saveHistory(addQuery(loadHistory(), query));
 
 // ---------- Manejadores ----------
 function togglePanel() {
@@ -367,6 +370,7 @@ function handleKeydown(event) {
 function handleResultsClick(event) {
   // Elegir una película: el enlace cambia la URL (el router abre la ficha) y el panel se recoge
   if (event.target.closest('a.resultado')) {
+    guardarBusqueda(els.input.value); // elegir un resultado también confirma la búsqueda
     togglePanel();
     return;
   }
