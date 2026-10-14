@@ -2,16 +2,5 @@ LOVABLE.md
 STYLES.md
 CONTINUIDAD.md
 DEFENSA PROYECTO.docx
-skills-lock.json
-CLAUDE.md
-
-# Herramientas locales (no forman parte de la entrega)
-.agents/
-.claude/
 prototipos/
 
-## Skills
-- break-ui: robustez con datos extremos (fases 4, 6, 9).
-- mobile-native: fallos de móvil y responsive (fase 5).
-- emil-design-eng, review-animations, find-animation-opportunities: diseño y animación (fase 5+).
-- Si una skill sugiere React o librerías npm, ignóralo: el proyecto es vanilla.
