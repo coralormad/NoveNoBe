@@ -23,7 +23,7 @@ El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitch
 
 | Tema claro: la superficie | Tema oscuro: la revelación |
 |---|---|
-| ![Tarjeta de Qué ver en tema claro, con la revelación velada](img/capturas/tema-claro.png) | ![La misma tarjeta en tema oscuro, con la revelación legible](img/capturas/tema-oscuro.png) |
+| ![Mi lista en tema claro](img/capturas/tema-claro.png) | ![Mi lista en tema oscuro](img/capturas/tema-oscuro.png) |
 
 ---
 
