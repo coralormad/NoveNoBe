@@ -9,8 +9,16 @@ const ZOOM_MAX = 4;
 
 const REGION_NAMES = new Intl.DisplayNames(['es'], { type: 'region' });
 
-/** Nombre del país en español ('FR' → 'Francia'); si el navegador no lo conoce (p. ej. 'SU'), usa el de TMDB. */
+// Códigos ISO retirados que TMDB conserva: Intl los traduce al país sucesor (SU → «Rusia»), y eso es un error histórico
+const PAISES_HISTORICOS = Object.freeze({
+  SU: 'Unión Soviética', XC: 'Checoslovaquia', YU: 'Yugoslavia',
+  CS: 'Serbia y Montenegro', DD: 'Alemania del Este', XG: 'Alemania del Este',
+  AN: 'Antillas Neerlandesas',
+});
+
+/** Nombre del país en español ('FR' → 'Francia'); los históricos, con su nombre de entonces; si no, el de TMDB. */
 export function countryName(code, fallback) {
+  if (Object.hasOwn(PAISES_HISTORICOS, code)) return PAISES_HISTORICOS[code];
   try {
     const name = REGION_NAMES.of(code);
     return name && name !== code ? name : fallback;
