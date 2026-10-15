@@ -2,6 +2,9 @@
    NoveNoBé · style.css
    1. Tokens  2. Reset  3. Base  4. Layout  5. Filas y carrusel
    6. Tarjetas  7. Foco accesible  8. Breakpoints  9. Movimiento reducido
+   10. Cabecera  11. Interruptor de tema  12. Panel de búsqueda  13. Hero
+   14. Luz de rellano  15. Entrada de cine y avisos  16. Ficha  17. Qué ver
+   18. Interacción de botones  19. Cierre (footer)  20. Mapa
    ========================================================= */
 
 /* 1. TOKENS ----------------------------------------------- */
@@ -356,16 +359,15 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta:is(:hover, :focus-within) { z-index: 1; } /* la elegida pasa por delante de sus vecinas */
 
-/* Enlace = superficie que se inclina hacia ti */
+/* Enlace = superficie que se eleva hacia ti (sin inclinación 3D: descartada) */
 .tarjeta-enlace {
   display: block;
   border-radius: var(--radio);
-  transform: perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0) scale(1);
+  transform: translateY(0) scale(1);
   transition: transform var(--dur-media) var(--curva-cine), box-shadow var(--dur-media);
 }
 .tarjeta-enlace:is(:hover, :focus-visible) {
-  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
-             translateY(var(--elevacion)) scale(var(--escala-hover));
+  transform: translateY(var(--elevacion)) scale(var(--escala-hover));
   box-shadow: var(--sombra-tarjeta), 0 0 0 1px rgb(218 203 218 / 0.25);
 }
 
@@ -2133,7 +2135,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 /* =========================================================
-   10. INTERACCIÓN DE BOTONES: una familia, cuatro registros
+   18. INTERACCIÓN DE BOTONES: una familia, cuatro registros
    Base común: la misma duración y curva, ascenso de 1-2px al acercarse y
    un leve «hundimiento» al pulsar. Solo con ratón (hover: hover); en táctil,
    solo la respuesta al pulsar. Con movimiento reducido, sin desplazamientos.
@@ -2195,7 +2197,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 /* =========================================================
-   11. CIERRE (footer): el último plano de la experiencia
+   19. CIERRE (footer): el último plano de la experiencia
    ========================================================= */
 .cierre {
   position: relative; margin-top: 4rem;
@@ -2270,7 +2272,7 @@ main { padding: 2rem var(--margen-lateral); }
   filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.5);
 }
 
-/* 16. MAPA: «AJUSTAR EL FOCO» ---------------------------------------------
+/* 20. MAPA: «AJUSTAR EL FOCO» ---------------------------------------------
    Lo que no miras está desenfocado; al decidir mirar, se revela.
    Solo se desenfoca el fondo (tile-pane): el marcador del país siempre se lee. */
 .ficha-mapa {
