@@ -53,12 +53,6 @@
           <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
         </svg>
       </button>
-      <!-- Oculto hasta que tenga función: un botón que no hace nada no debe ofrecerse -->
-      <button type="button" id="btn-avisos" class="icono-boton" hidden aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-        </svg>
-      </button>
       <button type="button" id="btn-tema" class="interruptor" role="switch" aria-checked="true" aria-label="Cambiar tema">
         <span class="interruptor-capsula" aria-hidden="true">
           <span class="interruptor-bola">
@@ -69,13 +63,8 @@
     </div>
 
     <div id="panel-buscar" class="panel" hidden>
-      <input type="search" id="buscador" placeholder="Busca una película" aria-label="Buscar películas y series" autocomplete="off">
+      <input type="search" id="buscador" placeholder="Busca una película" aria-label="Buscar películas" autocomplete="off">
       <ul id="resultados-busqueda"></ul>
-    </div>
-
-    <div id="panel-avisos" class="panel" hidden>
-      <h2>Novedades</h2>
-      <ul id="lista-avisos"></ul>
     </div>
   </header>
 
@@ -145,19 +134,7 @@
         <span id="hero-reloj" class="hero-reloj" aria-hidden="true"></span>
       </section>
 
-      <!-- Oculta hasta que tenga contenido real -->
-      <section class="fila reveal" hidden>
-        <div class="fila-cabecera">
-          <h2>Continúa tu historia</h2>
-          <div class="fila-flechas">
-            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-continua" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
-            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-continua" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
-          </div>
-        </div>
-        <div id="fila-continua" class="carrusel"></div>
-      </section>
-
-      <section id="descubre" class="fila reveal">
+      <section id="descubre" class="fila">
         <p class="sobretitulo">Un universo por descubrir</p>
         <h2 class="descubre-titulo">Tu próxima gran historia</h2>
         <!-- La tira de géneros se desliza en horizontal; las flechas solo aparecen si queda algo fuera de plano -->
@@ -185,7 +162,7 @@
       </section>
 
       <!-- Lo que más se ve y se comenta esta semana (tendencias de TMDB). Al mirar una, las demás quedan en penumbra -->
-      <section class="fila fila--boca reveal">
+      <section class="fila fila--boca">
         <div class="fila-cabecera">
           <div class="fila-titular">
             <p class="sobretitulo">Lo más visto y comentado esta semana</p>
@@ -214,7 +191,6 @@
         <div id="fila-para-ti" class="carrusel"></div>
       </section>
 
-      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial" hidden></section> <!-- oculta: sin contenido todavía -->
     </div>
 
     <!-- 3. VISTA QUÉ VER -->

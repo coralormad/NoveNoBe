@@ -132,7 +132,7 @@ cp js/config.example.js js/config.js
 ## Trabajo futuro
 
 - Votaciones de la comunidad sobre el test de Bechdel en una base de datos compartida.
-- Avisos de la portada y «Continúa tu historia», ahora ocultos hasta tener contenido real.
+- Panel de avisos de la portada y fila «Continúa tu historia» (retirados de esta entrega hasta tener contenido real).
 
 ---
 

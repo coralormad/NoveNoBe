@@ -715,10 +715,6 @@ function renderFicha(movie) {
   ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
     link.href = movieHref(movie.id, link.dataset.seccion);
   });
-
-  ficha.mapa.setAttribute('aria-label', nombres.length
-    ? `Mapa de los países de producción: ${nombres.join(', ')}`
-    : 'Mapa sin países de producción');
 }
 
 /** Visor de la nota: el anillo muestra la nota real; la cifra y los votos se descubren al mirarla. */

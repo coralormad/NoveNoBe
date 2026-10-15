@@ -5,7 +5,7 @@ import { describeRows } from './utils.js';
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-/** Tokens de color de las porciones (los usa también el halo en main.js). */
+/** Tokens de color de las porciones (de la más clara a la más oscura de la escala lavanda). */
 export const SLICE_TOKENS = ['--lavanda-100', '--lavanda-300', '--lavanda-500', '--lavanda-700', '--lavanda-900'];
 
 /** Colores leídos de las variables CSS: la gráfica usa la misma paleta que la web. */
