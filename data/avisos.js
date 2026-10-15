@@ -14,7 +14,7 @@ export const AVISOS = Object.freeze([
     noche: {
       etiqueta: 'Aviso de noche',
       titulo: 'Ya es de noche en el 9ºB',
-      texto: 'Tras ver una película, cuenta lo que no se ve y lee lo que vieron las demás.',
+      texto: 'Elige una película y escribe lo que solo tú viste.',
       accion: 'Busca una película',
       destino: 'buscar',
     },
