@@ -70,7 +70,7 @@ export class CountryMap {
     markers.forEach(({ name, latlng }) => {
       L.circleMarker(latlng, {
         radius: 7, weight: 2, color: this.#color, fillColor: this.#color, fillOpacity: 0.85,
-      }).bindTooltip(name).addTo(this.#layer);
+      }).bindTooltip(document.createTextNode(name)).addTo(this.#layer); // como texto: Leaflet trata las cadenas como HTML
     });
 
     if (markers.length === 1) {
