@@ -1,22 +1,5 @@
 // Funciones puras: reciben datos, devuelven datos nuevos. Sin DOM, sin fetch, sin mutar.
 
-/** Comprueba si un filtro tiene valor (ignora undefined, null y ''). */
-const hasValue = (value) => value !== undefined && value !== null && value !== '';
-
-/**
- * Filtra películas por género, año y nota mínima.
- * @param {Array<Movie>} movies - Lista de películas.
- * @param {{genreId?: number, year?: number, minRating?: number}} [filters={}] - Filtros opcionales.
- * @returns {Array<Movie>} Array nuevo con las que cumplen todos los filtros.
- */
-export function filterMovies(movies, { genreId, year, minRating } = {}) {
-  return movies.filter((movie) =>
-    (!hasValue(genreId) || movie.genreIds.includes(genreId)) &&
-    (!hasValue(year) || movie.year === String(year)) &&
-    (!hasValue(minRating) || movie.rating >= minRating)
-  );
-}
-
 /**
  * Ordena por popularidad, de mayor a menor, sin tocar el original.
  * @param {Array<Movie>} movies
@@ -146,7 +129,7 @@ export function pickCrew(crew = []) {
 export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
   for (const code of countries) {
     const entry = releaseDates.find((r) => r.iso_3166_1 === code);
-    const certification = entry?.release_dates.find((d) => d.certification)?.certification;
+    const certification = entry?.release_dates?.find((d) => d.certification)?.certification;
     if (certification) return { country: code, certification };
   }
   return null;
