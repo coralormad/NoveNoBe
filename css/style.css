@@ -68,6 +68,7 @@
   --dur-rapida: 180ms;
   --dur-media: 350ms;
   --dur-lenta: 600ms;
+  --dur-hover: 200ms; /* respuesta de las tarjetas al ratón: rápida y sin rebote */
   --curva-persiana: cubic-bezier(0.6, 0, 0.3, 1);
   --sombra-tarjeta: 0 22px 36px -14px rgb(8 4 10 / 0.95);
   --capsula-luz: color-mix(in srgb, var(--lavanda-300) 35%, transparent);
@@ -218,8 +219,8 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* «En boca de todos» · foco y penumbra: al mirar una película, las demás se apagan un poco.
    Solo con ratón (en táctil no hay «mirar» sin pulsar); es lo que la distingue de la selección editorial */
-@media (hover: hover) {
-  .fila--boca .tarjeta { transition: opacity var(--dur-media) var(--curva-cine), filter var(--dur-media) var(--curva-cine); }
+@media (hover: hover) and (pointer: fine) {
+  .fila--boca .tarjeta { transition: opacity var(--dur-hover) var(--curva-cine), filter var(--dur-hover) var(--curva-cine); }
   .fila--boca .carrusel:has(.tarjeta:is(:hover, :focus-within)) .tarjeta:not(:hover, :focus-within) {
     opacity: 0.45; filter: grayscale(0.6) brightness(0.85);
   }
@@ -258,7 +259,7 @@ main { padding: 2rem var(--margen-lateral); }
 .flecha-luz:focus-visible::before { opacity: 1; transform: scale(1); }
 .flecha-luz[data-flecha="derecha"]:focus-visible svg { translate: 3px 0; }
 .flecha-luz[data-flecha="izquierda"]:focus-visible svg { translate: -3px 0; }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .flecha-luz:hover:not(:disabled)::before { opacity: 1; transform: scale(1); }
   .flecha-luz:hover:not(:disabled) svg { filter: drop-shadow(0 0 6px var(--lavanda-300)); }
   .flecha-luz[data-flecha="derecha"]:hover:not(:disabled) svg { translate: 3px 0; }
@@ -338,7 +339,7 @@ main { padding: 2rem var(--margen-lateral); }
 .generos-flecha--anterior { left: 0; }
 .generos-flecha--siguiente { right: 0; }
 /* Táctil: sin flechas (el dedo ya desliza); el fundido sigue avisando de que hay más */
-@media (hover: none) { .generos-flecha { display: none; } }
+@media (hover: none), (pointer: coarse) { .generos-flecha { display: none; } }
 /* Los géneros de Inicio usan la cápsula de Películas (.capsula, sección «Marquesina») */
 .generos .capsula { flex-shrink: 0; white-space: nowrap; color: var(--color-texto-suave); }
 .generos .capsula[aria-pressed="true"] { color: var(--color-sobre-primario); }
@@ -366,9 +367,9 @@ main { padding: 2rem var(--margen-lateral); }
   display: block;
   border-radius: var(--radio);
   transform: translateY(0) scale(1);
-  transition: transform var(--dur-media) var(--curva-cine), box-shadow var(--dur-media);
+  transition: transform var(--dur-hover) var(--curva-cine), box-shadow var(--dur-hover);
 }
-.tarjeta-enlace:is(:hover, :focus-visible) {
+.tarjeta-enlace:focus-visible {
   transform: translateY(var(--elevacion)) scale(var(--escala-hover));
   box-shadow: var(--sombra-tarjeta), 0 0 0 1px rgb(218 203 218 / 0.25);
 }
@@ -390,9 +391,9 @@ main { padding: 2rem var(--margen-lateral); }
     radial-gradient(ellipse at 50% 40%, transparent 55%, var(--vineta) 100%),
     linear-gradient(to top, rgb(8 4 10 / 0.7) 0%, transparent 40%);
   opacity: 0.55;
-  transition: opacity var(--dur-media);
+  transition: opacity var(--dur-hover);
 }
-.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-velo { opacity: 1; }
+.tarjeta-enlace:focus-visible .tarjeta-velo { opacity: 1; }
 
 /* Haz del proyector: un foco fijo arriba del póster */
 .tarjeta-brillo {
@@ -400,9 +401,9 @@ main { padding: 2rem var(--margen-lateral); }
   background: radial-gradient(circle at var(--mx, 50%) var(--my, 35%), var(--foco-color), transparent var(--foco-tamano));
   mix-blend-mode: screen; /* solo aclara: los colores del póster se respetan */
   opacity: 0;
-  transition: opacity var(--dur-media);
+  transition: opacity var(--dur-hover);
 }
-.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-brillo { opacity: 1; }
+.tarjeta-enlace:focus-visible .tarjeta-brillo { opacity: 1; }
 
 /* Táctil: sin cursor que seguir → foco cenital fijo y tenue */
 @media (any-hover: none) {
@@ -417,28 +418,28 @@ main { padding: 2rem var(--margen-lateral); }
   position: absolute; left: 50%; top: 46%;
   width: 56px; height: 56px; margin: -28px;
   opacity: 0; transform: scale(0.7);
-  transition: opacity 250ms, transform 400ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  transition: opacity var(--dur-hover), transform var(--dur-hover) var(--curva-cine);
 }
 .play-fondo { fill: rgb(239 233 239 / 0.12); stroke: rgb(239 233 239 / 0.35); stroke-width: 1.5; }
 .play-anillo {
   fill: none; stroke: var(--lavanda-700); stroke-width: 2;
   stroke-dasharray: 100; stroke-dashoffset: 100;
   transform: rotate(-90deg); transform-origin: center; transform-box: fill-box;
-  transition: stroke-dashoffset 700ms ease-out;
+  transition: stroke-dashoffset var(--dur-hover) ease-out;
 }
-.play-triangulo { fill: var(--lavanda-900); opacity: 0; transform: translateX(-5px); transition: transform 350ms 150ms, opacity 350ms 150ms; }
+.play-triangulo { fill: var(--lavanda-900); opacity: 0; transform: translateX(-5px); transition: transform 150ms 50ms var(--curva-cine), opacity 150ms 50ms; }
 
-.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-play { opacity: 1; transform: scale(1); }
-.tarjeta-enlace:is(:hover, :focus-visible) .play-anillo { stroke-dashoffset: 0; }
-.tarjeta-enlace:is(:hover, :focus-visible) .play-triangulo { opacity: 1; transform: none; }
+.tarjeta-enlace:focus-visible .tarjeta-play { opacity: 1; transform: scale(1); }
+.tarjeta-enlace:focus-visible .play-anillo { stroke-dashoffset: 0; }
+.tarjeta-enlace:focus-visible .play-triangulo { opacity: 1; transform: none; }
 
 .tarjeta-accion {
   position: absolute; inset-inline: 0; top: calc(46% + 38px);
   font-family: var(--fuente-detalle); font-size: var(--texto-meta); letter-spacing: var(--tracking-meta); text-transform: uppercase;
   color: var(--lavanda-900); text-align: center;
-  opacity: 0; transform: translateY(-4px); transition: opacity 300ms 200ms, transform 300ms 200ms;
+  opacity: 0; transform: translateY(-4px); transition: opacity 150ms 50ms, transform 150ms 50ms var(--curva-cine);
 }
-.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-accion { opacity: 1; transform: none; }
+.tarjeta-enlace:focus-visible .tarjeta-accion { opacity: 1; transform: none; }
 
 /* Cápsula: en reposo el año; en hover/foco sube y aparece la nota */
 .tarjeta-capsula {
@@ -450,9 +451,22 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta-capsula span {
   display: grid; place-items: center; flex: 0 0 22px; padding-inline: 0.5rem;
-  transition: transform 300ms var(--curva-cine);
+  transition: transform var(--dur-hover) var(--curva-cine);
 }
-.tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-capsula span { transform: translateY(-100%); }
+.tarjeta-enlace:focus-visible .tarjeta-capsula span { transform: translateY(-100%); }
+
+/* Lo mismo al pasar el ratón; en táctil el hover se quedaría pegado tras el toque */
+@media (hover: hover) and (pointer: fine) {
+  .tarjeta-enlace:hover {
+    transform: translateY(var(--elevacion)) scale(var(--escala-hover));
+    box-shadow: var(--sombra-tarjeta), 0 0 0 1px rgb(218 203 218 / 0.25);
+  }
+  .tarjeta-enlace:hover :is(.tarjeta-velo, .tarjeta-brillo) { opacity: 1; }
+  .tarjeta-enlace:hover .tarjeta-play { opacity: 1; transform: scale(1); }
+  .tarjeta-enlace:hover .play-anillo { stroke-dashoffset: 0; }
+  .tarjeta-enlace:hover :is(.play-triangulo, .tarjeta-accion) { opacity: 1; transform: none; }
+  .tarjeta-enlace:hover .tarjeta-capsula span { transform: translateY(-100%); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tarjeta-capsula span { transition: none; }
@@ -499,7 +513,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .lista-capsula--compacto::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; } /* 44px de toque */
 /* Con ratón, la de una película sin guardar se retira hasta que miras la tarjeta. Táctil: siempre a la vista */
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .tarjeta .lista-capsula--compacto:not([aria-pressed="true"]) { opacity: 0.45; }
   .tarjeta:is(:hover, :focus-within) .lista-capsula--compacto { opacity: 1; }
 }
@@ -514,7 +528,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (prefers-reduced-motion: reduce) {
   .tarjeta-enlace,
-  .tarjeta-enlace:is(:hover, :focus-visible) { transform: none; transition: box-shadow var(--dur-media); }
+  .tarjeta-enlace:is(:hover, :focus-visible) { transform: none; transition: box-shadow var(--dur-hover); }
 }
 /* 7. FOCO ACCESIBLE (💡 mejora) --------------------------- */
 :focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
@@ -533,7 +547,12 @@ main { padding: 2rem var(--margen-lateral); }
 /* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; background-color: var(--color-fondo); } /* sin desplazamientos animados */
-  *, *::before, *::after { transition: none !important; animation: none !important; }
+  /* Granular: se quitan desplazamientos, giros y escalas; los fundidos de opacidad y color
+     se quedan, porque orientan sin mover nada */
+  *, *::before, *::after {
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color, text-decoration-color, box-shadow, filter !important;
+  }
 }
 
 /* 10. CABECERA (flotante, como Lovable) ------------------- */
@@ -760,7 +779,8 @@ main { padding: 2rem var(--margen-lateral); }
 .hero-logo [aria-hidden] { display: inline-block; transition: clip-path var(--dur-lenta) var(--curva-cine); }
 :root[data-theme="claro"] .hero:is(:hover, :focus-within) .hero-logo [aria-hidden] { clip-path: inset(0); }
 
-/* Persianas: 315 ms por lama + 7 × 35 ms de retraso = 560 ms (PERSIANA_MS en hero.js) */
+/* Persianas: 315 ms por lama + 7 × 35 ms de retraso = 560 ms (PERSIANA_MS en hero.js).
+   Si la pide el usuario, 130 ms + 7 × 10 ms = 200 ms (PERSIANA_CORTA_MS): no le hace esperar */
 .hero-persianas {
   position: absolute; inset: 0; z-index: 2;
   display: grid; grid-template-rows: repeat(8, 1fr);
@@ -773,6 +793,7 @@ main { padding: 2rem var(--margen-lateral); }
   transition: transform 315ms var(--curva-persiana);
   transition-delay: calc(var(--i) * 35ms);
 }
+.hero[data-persiana-ritmo="corta"] .hero-persianas span { transition-duration: 130ms; transition-delay: calc(var(--i) * 10ms); }
 .hero[data-persiana="cerrada"] .hero-persianas span { transform: scaleY(1); }
 
 /* Temporizador invisible: al terminar (animationend) avanza la diapositiva */
@@ -784,7 +805,7 @@ main { padding: 2rem var(--margen-lateral); }
 .hero:is(:hover, :focus-within) :is(.hero-reloj, .diapositiva-fondo) { animation-play-state: paused; }
 
 /* En pantallas táctiles no rota sola (no hay ratón para pausar: WCAG 2.2.2) */
-@media (hover: none) { .hero-reloj.activo { animation: none; } }
+@media (hover: none), (pointer: coarse) { .hero-reloj.activo { animation: none; } }
 
 /* Navegación por los bordes (hero y escaparate): aparece según la cercanía del cursor */
 :is(.hero, .escaparate-marco) { --prox-anterior: 0; --prox-siguiente: 0; }
@@ -813,11 +834,11 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .borde-nav--anterior svg { translate: calc((1 - var(--p)) * -18px) 0; }
 .borde-nav--siguiente svg { translate: calc((1 - var(--p)) * 18px) 0; }
-.borde-nav:hover svg { scale: 1.15; stroke-width: 1.8; }
+@media (hover: hover) and (pointer: fine) { .borde-nav:hover svg { scale: 1.15; stroke-width: 1.8; } }
 .borde-nav:active svg { scale: 0.95; }
 .borde-nav:focus-visible { outline: none; --p: 1; }
 .borde-nav:focus-visible svg { outline: 2px solid var(--color-anillo); outline-offset: 8px; border-radius: 4px; }
-@media (hover: none) { :is(.hero, .escaparate-marco) { --prox-anterior: 0.6; --prox-siguiente: 0.6; } }
+@media (hover: none), (pointer: coarse) { :is(.hero, .escaparate-marco) { --prox-anterior: 0.6; --prox-siguiente: 0.6; } }
 
 /* Índice: mirillas de la puerta del 9ºB. Tapa cerrada = no ve; abierta = ve */
 .hero-indice {
@@ -858,7 +879,7 @@ main { padding: 2rem var(--margen-lateral); }
   width: 4px; height: 4px; border-radius: 50%;
   background: var(--color-texto-suave);
 }
-.mirilla:hover .mirilla-tapa { rotate: -25deg; }
+@media (hover: hover) and (pointer: fine) { .mirilla:hover .mirilla-tapa { rotate: -25deg; } }
 .mirilla[aria-current="true"] .mirilla-tapa { rotate: -100deg; }
 .mirilla[aria-current="true"] .mirilla-lente { border-color: color-mix(in srgb, var(--color-primario) 70%, transparent); }
 .mirilla:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
@@ -872,7 +893,7 @@ main { padding: 2rem var(--margen-lateral); }
   opacity: 0; pointer-events: none;
   transition: opacity var(--dur-media);
 }
-@media (hover: hover) and (min-width: 850px) {
+@media (hover: hover) and (pointer: fine) and (min-width: 850px) {
   .hero-indice:is(:hover, :focus-within) .hero-indice-nombre { opacity: 1; }
 }
 
@@ -901,7 +922,7 @@ main { padding: 2rem var(--margen-lateral); }
   transform-box: fill-box; transform-origin: center;
   transition: scale var(--dur-lenta) var(--curva-persiana);
 }
-.diapositiva--concepto:hover .emblema-lamas rect { scale: 1 0.3; }
+@media (hover: hover) and (pointer: fine) { .diapositiva--concepto:hover .emblema-lamas rect { scale: 1 0.3; } }
 
 /* Pie tipográfico: NOVENO B → NO VE NO BÉ (mismas letras, aparecen los huecos) */
 .emblema-pie {
@@ -912,16 +933,17 @@ main { padding: 2rem var(--margen-lateral); }
   letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--color-texto);
 }
-.emblema-pie span { transition: margin-inline-end var(--dur-lenta) var(--curva-cine), color var(--dur-media); }
-.pie-b { margin-inline-start: 0.6em; }
-.pie-tilde {
-  display: inline-block; max-width: 0; opacity: 0; overflow: hidden;
-  transition: max-width var(--dur-lenta) var(--curva-cine), opacity var(--dur-media);
+.emblema-pie span {
+  transition: translate var(--dur-lenta) var(--curva-cine), color var(--dur-media), opacity var(--dur-media);
 }
+.pie-b { margin-inline-start: 0.6em; }
+.pie-tilde { width: 0; opacity: 0; } /* no ocupa sitio: asoma tras la B al abrirse los huecos */
 
-.diapositiva--concepto:is(:hover, :focus-within) .pie-corte { margin-inline-end: 0.9em; }
+/* Cada hueco empuja lo que viene detrás (translate: sin recalcular el layout) */
+.diapositiva--concepto:is(:hover, :focus-within) .pie-no.pie-corte { translate: 0.9em 0; }
+.diapositiva--concepto:is(:hover, :focus-within) :is(.pie-b, .pie-tilde) { translate: 1.8em 0; }
 .diapositiva--concepto:is(:hover, :focus-within) .pie-no { color: var(--color-primario); }
-.diapositiva--concepto:is(:hover, :focus-within) .pie-tilde { max-width: 1em; opacity: 1; }
+.diapositiva--concepto:is(:hover, :focus-within) .pie-tilde { opacity: 1; }
 
 @media (min-width: 850px) {
   .diapositiva--concepto { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); align-items: center; gap: 2rem; }
@@ -1179,7 +1201,9 @@ main { padding: 2rem var(--margen-lateral); }
   background: color-mix(in srgb, var(--color-fondo) 55%, transparent);
   -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); /* legible sobre el fotograma */
 }
-.lista-capsula--ficha:hover { transform: translateY(-1px); box-shadow: var(--capsula-halo); }
+@media (hover: hover) and (pointer: fine) {
+  .lista-capsula--ficha:hover { transform: translateY(-1px); box-shadow: var(--capsula-halo); }
+}
 .lista-capsula--ficha[aria-pressed="true"] { background: var(--color-primario); }
 
 /* La tira de película (solo «Tu enfoque»): tu nota como fotogramas revelados; es el propio control. */
@@ -1225,7 +1249,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: radial-gradient(circle 48px at var(--mx, 50%) 50%, color-mix(in srgb, var(--lavanda-300) 28%, transparent), transparent 75%);
   opacity: 0; transition: opacity var(--dur-media);
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .calibre-tira:hover::after { opacity: 1; }
   .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
 }
@@ -1368,7 +1392,7 @@ main { padding: 2rem var(--margen-lateral); }
 /* Corregir / Borrar aparecen al mirar la observación (en táctil, siempre) */
 .observacion-accion { opacity: 0; transition: opacity var(--dur-media) var(--curva-cine); }
 .observacion:is(:hover, :focus-within) .observacion-accion { opacity: 1; }
-@media (hover: none) { .observacion-accion { opacity: 1; } }
+@media (hover: none), (pointer: coarse) { .observacion-accion { opacity: 1; } }
 
 .archivo-anteriores[hidden] { display: none; }
 .archivo-anteriores summary { cursor: pointer; list-style: none; padding-block: 0.5rem; }
@@ -1520,7 +1544,7 @@ main { padding: 2rem var(--margen-lateral); }
 .patio:focus-visible .persona-personaje { opacity: 1; translate: 0 0; }
 
 /* En pantallas táctiles no hay «mirar sin tocar»: el personaje se lee siempre */
-@media (hover: none) {
+@media (hover: none), (pointer: coarse) {
   .persona-personaje { opacity: 1; translate: 0 0; }
   .patio-pista { display: none; } /* sin ratón no hay «mirar»: la pista sobra */
 }
@@ -1751,7 +1775,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 .capsula:focus-visible { box-shadow: var(--capsula-halo); }
 .capsula:focus-visible::before { opacity: 1; }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .capsula:hover { transform: translateY(-2px); box-shadow: var(--capsula-halo); border-color: var(--color-primario); }
   .capsula:hover::before { opacity: 1; }
 }
@@ -1842,9 +1866,10 @@ main { padding: 2rem var(--margen-lateral); }
 /* Rendija de luz que se abre con las respuestas (la misma luz del menú y las cápsulas) */
 .qv-rendija { height: 2px; background: var(--color-borde); border-radius: 2px; overflow: hidden; }
 .qv-rendija span {
-  display: block; height: 100%; width: calc(var(--enfoque) * 100%);
+  display: block; height: 100%;
   background: linear-gradient(90deg, transparent, var(--color-foco) 30%, var(--color-foco));
-  transition: width var(--dur-lenta) var(--curva-cine);
+  transform: scaleX(var(--enfoque)); transform-origin: left;
+  transition: transform var(--dur-lenta) var(--curva-cine);
 }
 
 .qv-pregunta { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 1.1rem; }
@@ -1872,7 +1897,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: linear-gradient(90deg, var(--color-foco), transparent);
   transform: scaleX(0); transform-origin: left; transition: transform 260ms var(--curva-cine);
 }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .qv-opcion:hover { border-color: var(--color-primario); background: var(--capsula-luz); }
 }
 .qv-opcion:has(.qv-radio:checked) {
@@ -1956,7 +1981,7 @@ main { padding: 2rem var(--margen-lateral); }
 .qv-grupo--mira .qv-cartela { font-size: var(--texto-l); }
 .qv-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity var(--dur-lenta); }
 .qv-cartel.con-poster .qv-poster { opacity: 1; }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .qv-hallazgo:hover .qv-cartel {
     transform: translateY(-4px);
     box-shadow: var(--sombra-tarjeta), 0 0 32px color-mix(in srgb, var(--color-primario) 22%, transparent);
@@ -2003,7 +2028,7 @@ main { padding: 2rem var(--margen-lateral); }
 /* «Lo que no estabas buscando»: mirado de reojo. En claro, el cartel está tras un visillo
    que se descorre al acercarse (solo con ratón; el texto, siempre visible). */
 .qv-grupo--noBuscabas { padding-left: 1.25rem; border-left: 1px solid var(--color-borde); }
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
 :root[data-theme="claro"] .qv-grupo--noBuscabas .qv-cartel::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.55) 0 5px, rgb(255 255 255 / 0.3) 5px 7px);
@@ -2162,7 +2187,7 @@ main { padding: 2rem var(--margen-lateral); }
               text-decoration-color var(--dur-rapida);
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   /* 1. Principales (rellenos): ganan luz y se elevan un poco */
   .diapositiva-boton:hover, .qv-boton:not(.qv-boton--secundario):hover {
     filter: brightness(1.08); transform: translateY(-2px); box-shadow: var(--capsula-halo);
@@ -2339,7 +2364,7 @@ main { padding: 2rem var(--margen-lateral); }
 .ficha-mapa:is(:hover, :focus-visible)::after { opacity: 1; scale: 1; }
 
 /* Táctil: no hay hover, el mapa se muestra ya enfocado */
-@media (hover: none) {
+@media (hover: none), (pointer: coarse) {
   .ficha-mapa .leaflet-tile-pane { filter: none; }
   .ficha-mapa::after { opacity: 1; scale: 1; }
 }
