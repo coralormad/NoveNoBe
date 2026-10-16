@@ -224,6 +224,7 @@ function renderGenreChips(genres, activeId) {
     button.textContent = name;
     button.dataset.genreId = id;
     button.setAttribute('aria-pressed', String(id === activeId));
+    button.tabIndex = id === activeId ? 0 : -1; // la tira es una sola parada de Tab (tabulación itinerante)
     return button;
   });
   els.genres.replaceChildren(...buttons);
@@ -272,9 +273,27 @@ function handleGenreClick(event) {
   if (!button || button.getAttribute('aria-pressed') === 'true') return;
   els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-pressed', 'true');
+  moverParada(button);
   // La elegida entra entera en plano (si estaba cortada por un borde)
   button.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   loadGenreRow(Number(button.dataset.genreId), button.textContent);
+}
+
+/** La cápsula que recibe el Tab: solo una a la vez. */
+function moverParada(chip) {
+  els.genres.querySelectorAll('[data-genre-id]').forEach((otro) => { otro.tabIndex = otro === chip ? 0 : -1; });
+}
+
+/** Dentro de la tira: ← → recorren las cápsulas, Inicio y Fin saltan a los extremos; Enter o espacio eligen. */
+function handleGenreKeydown(event) {
+  const chips = [...els.genres.querySelectorAll('[data-genre-id]')];
+  const actual = chips.indexOf(event.target);
+  const destino = { ArrowLeft: actual - 1, ArrowRight: actual + 1, Home: 0, End: chips.length - 1 }[event.key];
+  if (actual === -1 || destino === undefined) return;
+  event.preventDefault();
+  const chip = chips[Math.min(Math.max(destino, 0), chips.length - 1)];
+  moverParada(chip);
+  chip.focus(); // el navegador la trae al plano si estaba cortada por el borde
 }
 
 async function initGenres() {
@@ -351,9 +370,24 @@ const guardarBusqueda = (query) => saveHistory(addQuery(loadHistory(), query));
 // ---------- Manejadores ----------
 function togglePanel() {
   const isOpen = els.btnBuscar.getAttribute('aria-expanded') === 'true';
+  const focoDentro = els.panel.contains(document.activeElement);
   els.btnBuscar.setAttribute('aria-expanded', String(!isOpen));
   els.panel.hidden = isOpen;
   if (!isOpen) els.input.focus();
+  else if (focoDentro) els.btnBuscar.focus(); // al cerrar, el foco vuelve a la lupa (no cae en la página)
+}
+
+const panelAbierto = () => !els.panel.hidden;
+
+/** Escape cierra el buscador desde cualquier punto de la página. */
+function handleEscape(event) {
+  if (event.key === 'Escape' && panelAbierto()) togglePanel();
+}
+
+/** Un clic fuera del panel (y fuera de la lupa) lo recoge, sin mover el foco a ningún sitio. */
+function handleClickFuera(event) {
+  const abreElPanel = event.target.closest?.('#btn-buscar, [data-accion="buscar"]'); // la lupa y «Empieza a buscar»
+  if (panelAbierto() && !els.panel.contains(event.target) && !abreElPanel) togglePanel();
 }
 
 function handleFocus() {
@@ -1066,6 +1100,9 @@ els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
+els.genres.addEventListener('keydown', handleGenreKeydown);
+document.addEventListener('keydown', handleEscape);
+document.addEventListener('click', handleClickFuera);
 els.genresMarco.addEventListener('click', handleArrowClick); // las flechas de los géneros reutilizan las del carrusel
 vigilarBordes(els.genres, els.genresMarco);
 document.querySelectorAll('.fila-flechas')
