@@ -6,7 +6,7 @@ import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, genreNames } from '.
 import { getMovieDetails, getGenres } from './api.js';
 import {
   cargarLista, quitar, reinsertar, cargarObservadas, alternarObservada,
-  entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista,
+  entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista, EVENTO_LISTA,
 } from './miLista.js';
 import { Movie } from './Movie.js';
 import { movieHref } from './router.js';
@@ -74,6 +74,10 @@ export class QueVer {
     this.#avisoLista = avisoLista;
     avisoLista?.addEventListener('click', (event) => {
       if (event.target.closest('[data-deshacer]')) this.#deshacerQuitar();
+    });
+    // Otra pestaña cambió Mi lista (el aviso llega sin clave): si la vista está a la vista, se repinta
+    document.addEventListener(EVENTO_LISTA, (event) => {
+      if (event.detail?.clave === null && this.#miLista && !this.#miLista.closest('.vista')?.hidden) this.#pintarLista();
     });
 
     this.#pintarPregunta();
@@ -359,16 +363,30 @@ export class QueVer {
 
   /** Clics dentro de Mi lista: marcar como vista o quitar de la lista. */
   #onMiLista(event) {
+    const tarjeta = event.target.closest('.qv-hallazgo');
+    const indice = [...this.#miLista.querySelectorAll('.qv-hallazgo')].indexOf(tarjeta); // su sitio, para no perder el foco
     const quitarBoton = event.target.closest('[data-quitar]');
-    if (quitarBoton) return this.#quitar(quitarBoton.dataset.quitar);
+    if (quitarBoton) return this.#quitar(quitarBoton.dataset.quitar, indice);
     const estado = event.target.closest('[data-observada]');
     if (!estado) return;
     this.#observadas = alternarObservada(estado.dataset.observada);
     if (this.#filtro === 'todas') {
-      this.#pintarEstado(estado, estado.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent);
+      this.#pintarEstado(estado, tarjeta.querySelector('.qv-hallazgo-titulo').textContent);
     } else {
       this.#pintarLista(); // con un filtro activo, la tarjeta cambia de grupo y sale de la vista
+      this.#enfocarEn(indice);
     }
+  }
+
+  /** Tras repintar, el foco no cae en la página: va a la tarjeta que ocupa ese sitio (o a la última),
+   *  y sin tarjetas, al filtro activo o a la salida del estado vacío. */
+  #enfocarEn(indice) {
+    const estados = this.#miLista.querySelectorAll('.ml-estado');
+    const filtro = this.#filtrosLista?.hidden ? null : this.#filtrosLista?.querySelector('[aria-pressed="true"]');
+    const destino = estados[Math.min(Math.max(indice, 0), estados.length - 1)]
+      ?? filtro
+      ?? this.#miLista.querySelector('.ml-vacio-enlace');
+    destino?.focus();
   }
 
   #onFiltro(event) {
@@ -380,12 +398,16 @@ export class QueVer {
   }
 
   /** Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic). */
-  #quitar(clave) {
+  #quitar(clave, indice) {
     const quitada = quitar(clave);
     if (!quitada) return;
     this.#deshacer = quitada;
     this.#pintarLista();
     this.#anunciar(`Has quitado «${quitada.entrada.titulo}» de tu lista.`, { deshacer: true });
+    // El botón pulsado ya no existe: el foco pasa a «Deshacer», la acción que tiene sentido justo ahora
+    const deshacer = this.#avisoLista?.querySelector('[data-deshacer]');
+    if (deshacer) deshacer.focus();
+    else this.#enfocarEn(indice);
   }
 
   /** Devuelve la última película quitada a su sitio (la instantánea guardada en el aviso, no una copia de la lista). */
@@ -396,6 +418,10 @@ export class QueVer {
     this.#deshacer = null;
     this.#pintarLista();
     this.#anunciar(`«${entrada.titulo}» vuelve a tu lista.`);
+    // «Deshacer» desaparece: el foco va a la película recuperada (si el filtro la deja a la vista)
+    const recuperada = this.#miLista.querySelector(`[data-observada="${entrada.clave}"]`);
+    if (recuperada) recuperada.focus();
+    else this.#enfocarEn(indice);
   }
 
   /** Línea de estado: los lectores de pantalla la anuncian (role="status"). */

@@ -1916,14 +1916,18 @@ main { padding: 2rem var(--margen-lateral); }
   .qv-grupo--ventana .qv-grupo-titulo { grid-column: 1 / -1; }
 }
 
+/* Los hallazgos de «Qué ver» se revelan enfocándose (un momento raro: aquí sí cabe la escena).
+   Escalón corto (60 ms) para que ninguno espere: como mucho son 4. */
 .qv-hallazgo {
   display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 1rem 1.25rem; align-items: start;
-  animation: qv-enfocar 800ms var(--curva-cine) both;
-  animation-delay: calc(var(--orden, 0) * 150ms);
+  animation: qv-enfocar 400ms var(--curva-cine) both;
+  animation-delay: calc(var(--orden, 0) * 60ms);
 }
 @keyframes qv-enfocar {
-  from { opacity: 0; filter: blur(12px); transform: translateY(10px); }
+  from { opacity: 0; filter: blur(4px); transform: translateY(8px); }
 }
+/* Mi lista se repinta a menudo (filtrar, quitar, deshacer): sus tarjetas aparecen ya en su sitio */
+.qv-lista .qv-hallazgo { animation: none; }
 /* El hallazgo principal, más grande: la película «en tu punto de mira».
    En móvil, cartel arriba y texto debajo; desde 600 px, lado a lado. */
 .qv-grupo--mira .qv-hallazgo { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
