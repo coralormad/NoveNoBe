@@ -45,7 +45,7 @@
   --radio: 8px;
   --transicion: 220ms ease;
 
-  /* Tema oscuro (por defecto) */
+  /* Tema oscuro: base de los tokens (la web arranca en claro, que los redefine) */
   color-scheme: dark;
   --color-fondo: #0D080F;
   --fondo-pagina: var(--color-fondo);
@@ -892,9 +892,9 @@ main { padding: 2rem var(--margen-lateral); }
 .emblema-nueve { font-family: var(--fuente-marca); font-weight: 800; font-size: 300px; }
 .emblema-relleno { fill: var(--color-primario); }
 
-/* Lamas: claras en oscuro y oscuras en claro (como el diseño original) */
+/* Lamas: claras en oscuro y oscuras en claro, semitransparentes: dejan entrever los carteles del 9 */
 .emblema-lamas rect {
-  fill: var(--color-texto);
+  fill: color-mix(in srgb, var(--color-texto) 55%, transparent);
   transform-box: fill-box; transform-origin: center;
   transition: scale var(--dur-lenta) var(--curva-persiana);
 }
