@@ -272,10 +272,10 @@ main { padding: 2rem var(--margen-lateral); }
   gap: var(--gap);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-borde) transparent;
+  scrollbar-width: none; /* sin barra: se avanza con las flechas, arrastrando o con el teclado */
   padding-block: 1.25rem 1.75rem; /* aire para que la tarjeta suba y proyecte sombra */
 }
+.carrusel::-webkit-scrollbar { display: none; }
 .carrusel:has(> .fila-mensaje) { display: block; }
 
 .fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
