@@ -60,8 +60,6 @@
   --color-sobre-primario: #211526;
   --color-foco: var(--lavanda-300);
   --color-anillo: var(--color-foco); /* contorno de foco: de noche, el lavanda */
-  --color-exito: #85D1A4;
-  --color-overlay: #08040A;
   --sombra: 0 24px 80px rgba(8, 4, 10, 0.5);
   --curva-cine: cubic-bezier(0.2, 0.8, 0.2, 1);
     /* Movimiento: 3 duraciones y 2 curvas para toda la web */
@@ -92,7 +90,6 @@
   --color-sobre-primario: #EFE9EF;
   --color-foco: var(--lavanda-100);
   --color-anillo: var(--color-primario); /* el lavanda se queda en 3,8:1 sobre claro; el primario pasa de 8:1 */
-  --color-exito: #145B39;
   --sombra: 0 24px 80px rgba(42, 31, 48, 0.18);
     --sombra-tarjeta: 0 22px 36px -14px rgb(41 32 45 / 0.4);
   --capsula-luz: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
@@ -466,10 +463,6 @@ main { padding: 2rem var(--margen-lateral); }
   .tarjeta-enlace:hover .play-anillo { stroke-dashoffset: 0; }
   .tarjeta-enlace:hover :is(.play-triangulo, .tarjeta-accion) { opacity: 1; transform: none; }
   .tarjeta-enlace:hover .tarjeta-capsula span { transform: translateY(-100%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tarjeta-capsula span { transition: none; }
 }
 
 /* Título: máximo 2 líneas → todas las tarjetas miden lo mismo */
@@ -884,7 +877,6 @@ main { padding: 2rem var(--margen-lateral); }
 @media (hover: hover) and (pointer: fine) { .mirilla:hover .mirilla-tapa { rotate: -25deg; } }
 .mirilla[aria-current="true"] .mirilla-tapa { rotate: -100deg; }
 .mirilla[aria-current="true"] .mirilla-lente { border-color: color-mix(in srgb, var(--color-primario) 70%, transparent); }
-.mirilla:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 /* Nombre de la diapositiva: solo escritorio, al pasar el ratón o con foco */
 .hero-indice-nombre {
@@ -1071,10 +1063,6 @@ main { padding: 2rem var(--margen-lateral); }
 }
 :root[data-theme="claro"] :is(.entrada-datos dd, .entrada-sello) { color: var(--lavanda-100); }
 
-@media (prefers-reduced-motion: reduce) {
-  .entrada-talon { transition: none; }
-}
-
 /* 16. FICHA -------------------------------------------------------------------- */
 /* De noche el fotograma es penumbra; de día, una imagen lavada por la luz */
 .ficha {
@@ -1137,7 +1125,6 @@ main { padding: 2rem var(--margen-lateral); }
   background: color-mix(in srgb, var(--color-fondo) 72%, transparent);
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); /* legibilidad sobre el cartel */
 }
-.visor:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .visor-optica { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .visor-optica * { fill: none; vector-effect: non-scaling-stroke; }
 .visor-borde { stroke: var(--color-borde-control); stroke-width: 1; opacity: 0.6; }
@@ -1256,8 +1243,6 @@ main { padding: 2rem var(--margen-lateral); }
   .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
 }
 
-@media (prefers-reduced-motion: reduce) { .tira-fotogramas li::before { transition: none; } }
-
 @keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
 @keyframes visor-calibra-noche { from { transform: rotate(45deg);  opacity: 0; } } /* gira al revés: mira otra vez */
 @keyframes arco-dibuja         { from { stroke-dasharray: 0 100; } }
@@ -1369,7 +1354,6 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
 .maquina-borrar { text-decoration: underline; text-underline-offset: 4px; }
 .maquina-borrar:hover { color: var(--color-texto); }
-.maquina-borrar:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .maquina-estado:empty { display: none; }
 
 /* El resultado: tu lectura revelada, con la persiana (la misma que abre el mapa) */
@@ -1402,12 +1386,8 @@ main { padding: 2rem var(--margen-lateral); }
 .archivo-anteriores summary::after { content: '＋'; }
 .archivo-anteriores[open] summary::after { content: '－'; }
 .archivo-anteriores summary:hover { color: var(--color-texto); }
-.archivo-anteriores summary:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .archivo-anteriores[open] > .archivo { animation: persiana-sube var(--dur-lenta) var(--curva-persiana); }
-@media (prefers-reduced-motion: reduce) {
-  .observacion-accion { transition: none; }
-  .archivo-anteriores[open] > .archivo { animation: none; }
-}
+@media (prefers-reduced-motion: reduce) { .observacion-accion { transition: none; } }
 
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {
@@ -1475,10 +1455,7 @@ main { padding: 2rem var(--margen-lateral); }
   from { clip-path: inset(100% 0 0 0); }
   to   { clip-path: inset(0); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ficha-ventana[open] .ficha-mapa { animation: none; }
-  .ficha-nav a { transition: none; }
-}
+@media (prefers-reduced-motion: reduce) { .ficha-nav a { transition: none; } }
 
 /* ---------- Ficha: reparto como fachada de ventanas ---------- */
 /* El edificio de enfrente: cada persona es una ventana en penumbra que se enciende al mirarla.
@@ -1589,8 +1566,6 @@ main { padding: 2rem var(--margen-lateral); }
   transition: background-color var(--transicion);
 }
 .boton-mas[hidden] { display: none; }
-
-@media (prefers-reduced-motion: reduce) { .pestanas button::after { transition: none; } }
 
 /* ---------- El dial y la proyección ---------- */
 /* Rejilla con áreas con nombre: el dial siempre a la izquierda y la proyección a la derecha.
@@ -1924,7 +1899,6 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .qv-boton--secundario { background: none; color: var(--color-texto); border-color: var(--color-borde-control); }
 .qv-boton[hidden] { display: none; }
-.qv-boton:focus-visible, .qv-favorita:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 /* --- Resultados: hallazgos que se enfocan ---------------------------------------- */
 .qv-resultados { grid-area: resultados; display: grid; gap: 1.75rem; justify-items: start; }
@@ -2097,10 +2071,6 @@ main { padding: 2rem var(--margen-lateral); }
 .ml-filtro[aria-pressed="true"] {
   background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario);
 }
-.ml-filtro:focus-visible, .ml-estado:focus-visible, .ml-vacio-enlace:focus-visible,
-.ml-quitar:focus-visible, .ml-deshacer:focus-visible, .cierre a:focus-visible {
-  outline: 2px solid var(--color-anillo); outline-offset: 3px;
-}
 
 /* --- Mi lista: tarjeta ----------------------------------------------------------- */
 .ml-numero {
@@ -2168,8 +2138,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qv-hallazgo { animation: none; }
-  .qv-fachada, .qv-rendija span, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }
+  .qv-fachada, .qv-ventana, .qv-cartel, .qv-poster, .qv-pista-texto { transition: none; }
   .ml-filtro, .ml-estado, .ml-estado::before, .ml-quitar { transition: none; }
 }
 
