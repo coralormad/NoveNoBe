@@ -106,6 +106,8 @@ let tendencias = Promise.resolve([]); // «En boca de todos»: la fila de géner
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
+  // La etiqueta accesible es fija (el estado lo da aria-checked); el tooltip dice qué hará el clic
+  els.btnTema.title = theme === 'oscuro' ? 'Encender la luz' : 'Apagar la luz';
   etiquetarVisor(); // la mirilla cambia de función: de día enfoca la nota pública, de noche lleva a la tuya
 }
 

@@ -59,6 +59,7 @@
   --color-primario: #DACBDA;
   --color-sobre-primario: #211526;
   --color-foco: var(--lavanda-300);
+  --color-anillo: var(--color-foco); /* contorno de foco: de noche, el lavanda */
   --color-exito: #85D1A4;
   --color-overlay: #08040A;
   --sombra: 0 24px 80px rgba(8, 4, 10, 0.5);
@@ -89,6 +90,7 @@
   --color-primario: #644373;
   --color-sobre-primario: #EFE9EF;
   --color-foco: var(--lavanda-100);
+  --color-anillo: var(--color-primario); /* el lavanda se queda en 3,8:1 sobre claro; el primario pasa de 8:1 */
   --color-exito: #145B39;
   --sombra: 0 24px 80px rgba(42, 31, 48, 0.18);
     --sombra-tarjeta: 0 22px 36px -14px rgb(41 32 45 / 0.4);
@@ -515,7 +517,7 @@ main { padding: 2rem var(--margen-lateral); }
   .tarjeta-enlace:is(:hover, :focus-visible) { transform: none; transition: box-shadow var(--dur-media); }
 }
 /* 7. FOCO ACCESIBLE (💡 mejora) --------------------------- */
-:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 /* 8. BREAKPOINTS (mobile first) --------------------------- */
 @media (min-width: 600px) {
@@ -639,6 +641,7 @@ main { padding: 2rem var(--margen-lateral); }
   transition: transform var(--transicion);
 }
 .interruptor[aria-checked="true"] .interruptor-bola { transform: translateX(18px); }
+.interruptor-bola svg { width: 12px; height: 12px; fill: none; stroke: var(--color-sobre-primario); stroke-width: 2.2; stroke-linecap: round; }
 
 /* 12. PANEL DE BÚSQUEDA FLOTANTE (estilo Luma) ------------ */
 .panel {
@@ -813,7 +816,7 @@ main { padding: 2rem var(--margen-lateral); }
 .borde-nav:hover svg { scale: 1.15; stroke-width: 1.8; }
 .borde-nav:active svg { scale: 0.95; }
 .borde-nav:focus-visible { outline: none; --p: 1; }
-.borde-nav:focus-visible svg { outline: 2px solid var(--color-foco); outline-offset: 8px; border-radius: 4px; }
+.borde-nav:focus-visible svg { outline: 2px solid var(--color-anillo); outline-offset: 8px; border-radius: 4px; }
 @media (hover: none) { :is(.hero, .escaparate-marco) { --prox-anterior: 0.6; --prox-siguiente: 0.6; } }
 
 /* Índice: mirillas de la puerta del 9ºB. Tapa cerrada = no ve; abierta = ve */
@@ -858,7 +861,7 @@ main { padding: 2rem var(--margen-lateral); }
 .mirilla:hover .mirilla-tapa { rotate: -25deg; }
 .mirilla[aria-current="true"] .mirilla-tapa { rotate: -100deg; }
 .mirilla[aria-current="true"] .mirilla-lente { border-color: color-mix(in srgb, var(--color-primario) 70%, transparent); }
-.mirilla:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.mirilla:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 /* Nombre de la diapositiva: solo escritorio, al pasar el ratón o con foco */
 .hero-indice-nombre {
@@ -1110,7 +1113,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: color-mix(in srgb, var(--color-fondo) 72%, transparent);
   -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); /* legibilidad sobre el cartel */
 }
-.visor:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.visor:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .visor-optica { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .visor-optica * { fill: none; vector-effect: non-scaling-stroke; }
 .visor-borde { stroke: var(--color-borde-control); stroke-width: 1; opacity: 0.6; }
@@ -1214,7 +1217,7 @@ main { padding: 2rem var(--margen-lateral); }
 .calibre-tira .maquina-regla::-webkit-slider-thumb { width: 2px; height: 32px; margin-top: 0; }
 .calibre-tira .maquina-regla::-moz-range-thumb { width: 2px; height: 32px; }
 .calibre-tira .maquina-regla:focus-visible { outline: none; }
-.calibre-tira:has(.maquina-regla:focus-visible) .tira-fotogramas { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.calibre-tira:has(.maquina-regla:focus-visible) .tira-fotogramas { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 /* Al pasar por la tira, una luz suave sigue al cursor (--mx desde main.js, como cápsulas y botones).
    No intercepta nada: el rango de encima sigue recibiendo clics, arrastres y teclado */
 .calibre-tira::after {
@@ -1323,7 +1326,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .maquina-regla[data-vacia]::-webkit-slider-thumb { background: var(--color-borde-control); }
 .maquina-regla[data-vacia]::-moz-range-thumb { background: var(--color-borde-control); }
-.maquina-regla:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.maquina-regla:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 4px; }
 .maquina-cifra {
   min-width: 4.5ch; text-align: center;
   font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--lavanda-300);
@@ -1340,7 +1343,7 @@ main { padding: 2rem var(--margen-lateral); }
 .maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
 .maquina-borrar { text-decoration: underline; text-underline-offset: 4px; }
 .maquina-borrar:hover { color: var(--color-texto); }
-.maquina-borrar:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.maquina-borrar:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .maquina-estado:empty { display: none; }
 
 /* El resultado: tu lectura revelada, con la persiana (la misma que abre el mapa) */
@@ -1373,7 +1376,7 @@ main { padding: 2rem var(--margen-lateral); }
 .archivo-anteriores summary::after { content: '＋'; }
 .archivo-anteriores[open] summary::after { content: '－'; }
 .archivo-anteriores summary:hover { color: var(--color-texto); }
-.archivo-anteriores summary:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.archivo-anteriores summary:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 .archivo-anteriores[open] > .archivo { animation: persiana-sube var(--dur-lenta) var(--curva-persiana); }
 @media (prefers-reduced-motion: reduce) {
   .observacion-accion { transition: none; }
@@ -1475,7 +1478,7 @@ main { padding: 2rem var(--margen-lateral); }
 @media (min-width: 1024px) { .patio { --ventanas-fila: 8; } } /* una sola planta */
 .patio[hidden] { display: none; }
 .fila-flechas[hidden], .carrusel[hidden] { display: none; } /* lo usan los demás carruseles */
-.patio:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.patio:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 4px; }
 
 .persona { display: grid; gap: 0.25rem; align-content: start; }
 .persona-foto {
@@ -1877,9 +1880,10 @@ main { padding: 2rem var(--margen-lateral); }
   background: color-mix(in srgb, var(--color-primario) 12%, transparent);
 }
 .qv-opcion:has(.qv-radio:checked)::after { transform: scaleX(1); }
-.qv-opcion:has(.qv-radio:focus-visible) { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.qv-opcion:has(.qv-radio:focus-visible) { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 .qv-aviso { min-height: 1.4em; font-size: var(--texto-s); color: var(--color-foco); }
+:root[data-theme="claro"] .qv-aviso { color: var(--color-primario); } /* texto: necesita 4,5:1 */
 .qv-acciones { display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
 .qv-boton {
   min-height: 44px; padding: 0.6rem 1.6rem; border-radius: 999px;
@@ -1889,7 +1893,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .qv-boton--secundario { background: none; color: var(--color-texto); border-color: var(--color-borde-control); }
 .qv-boton[hidden] { display: none; }
-.qv-boton:focus-visible, .qv-favorita:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.qv-boton:focus-visible, .qv-favorita:focus-visible { outline: 2px solid var(--color-anillo); outline-offset: 3px; }
 
 /* --- Resultados: hallazgos que se enfocan ---------------------------------------- */
 .qv-resultados { grid-area: resultados; display: grid; gap: 1.75rem; justify-items: start; }
@@ -2064,7 +2068,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .ml-filtro:focus-visible, .ml-estado:focus-visible, .ml-vacio-enlace:focus-visible,
 .ml-quitar:focus-visible, .ml-deshacer:focus-visible, .cierre a:focus-visible {
-  outline: 2px solid var(--color-foco); outline-offset: 3px;
+  outline: 2px solid var(--color-anillo); outline-offset: 3px;
 }
 
 /* --- Mi lista: tarjeta ----------------------------------------------------------- */
