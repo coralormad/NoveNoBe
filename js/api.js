@@ -41,14 +41,16 @@ export function searchMovies(query, { page = 1, signal } = {}) {
   return request('/search/movie', { query, page, include_adult: false }, signal);
 }
 
-// Una sola petición trae detalles + reparto + recomendadas + clasificación + plataformas + vídeos + palabras clave
-const DETAIL_EXTRAS = 'credits,recommendations,release_dates,watch/providers,videos,keywords';
+// Una sola petición trae detalles + reparto + clasificación por edades (lo que pinta la ficha)
+const DETAIL_EXTRAS = 'credits,release_dates';
 
 export function getMovieDetails(id, { signal } = {}) {
-  return request(`/movie/${id}`, {
-    append_to_response: DETAIL_EXTRAS,
-    include_video_language: 'es,en',
-  }, signal);
+  return request(`/movie/${id}`, { append_to_response: DETAIL_EXTRAS }, signal);
+}
+
+// Solo los detalles básicos (sin reparto ni extras): basta para el póster
+export function getMovieBasics(id, { signal } = {}) {
+  return request(`/movie/${id}`, {}, signal);
 }
 
 // Listas "fijas" de TMDB que sirven con la misma función

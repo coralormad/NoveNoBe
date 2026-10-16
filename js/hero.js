@@ -1,5 +1,6 @@
 // Hero: presentación, novedades y avisos con transición de persiana.
-const PERSIANA_MS = 560; // = 315 ms por lama + 7 × 35 ms de retraso (CSS)
+const PERSIANA_MS = 560;       // la del reloj: 315 ms por lama + 7 × 35 ms de retraso (CSS)
+const PERSIANA_CORTA_MS = 200; // la que pide el usuario: 130 ms por lama + 7 × 10 ms (CSS)
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -8,7 +9,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
 export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
 
-/** Crea una mirilla del índice. La usan el hero y el escaparate. */
+/** Crea una mirilla del índice del hero. */
 export function createMirilla({ indice, etiqueta, imagen }) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -171,8 +172,9 @@ export async function setAmbient(movies, container = document.querySelector('#co
 export class HeroCarousel {
   #els;
   #slides = [];
-  #index = 0;
-  #busy = false;
+  #index = 0;   // la diapositiva que se ve
+  #destino = 0; // adonde va la persiana: se adelanta a #index si el usuario encadena pasos
+  #turno = 0;   // cada orden nueva deja sin efecto a la anterior
   #onAction;
   #pointerX = 0;
   #frame = 0;
@@ -187,9 +189,9 @@ export class HeroCarousel {
       clock: root.querySelector('#hero-reloj'),
     };
 
-    root.querySelector('#hero-anterior').addEventListener('click', () => this.go(this.#index - 1));
-    root.querySelector('#hero-siguiente').addEventListener('click', () => this.go(this.#index + 1));
-    this.#els.clock.addEventListener('animationend', () => this.go(this.#index + 1));
+    root.querySelector('#hero-anterior').addEventListener('click', () => this.go(this.#destino - 1));
+    root.querySelector('#hero-siguiente').addEventListener('click', () => this.go(this.#destino + 1));
+    this.#els.clock.addEventListener('animationend', () => this.go(this.#index + 1, { auto: true }));
 
     this.#els.nav.addEventListener('click', (event) => {
       const button = event.target.closest('[data-indice]');
@@ -217,23 +219,27 @@ export class HeroCarousel {
     this.#sync();
   }
 
-  /** Cambia de diapositiva: cierra la persiana, intercambia y la abre. */
-  async go(target) {
+  /** Cambia de diapositiva: cierra la persiana, intercambia y la abre.
+   *  El reloj usa la persiana lenta y no interrumpe; el usuario, la corta, y puede interrumpirla. */
+  async go(target, { auto = false } = {}) {
     const total = this.#slides.length;
     const next = (target + total) % total;
-    if (this.#busy || total < 2 || next === this.#index) return;
-    this.#busy = true;
+    if (total < 2 || next === this.#destino) return;
+    if (auto && this.#destino !== this.#index) return;
+    this.#destino = next;
+    this.#marcar(next); // la mirilla responde al instante; la diapositiva, al cerrar la persiana
+    const turno = ++this.#turno;
 
-    const ms = prefersReducedMotion() ? 0 : PERSIANA_MS;
-    this.#els.root.dataset.persiana = 'cerrada';
+    const { root } = this.#els;
+    const ms = prefersReducedMotion() ? 0 : auto ? PERSIANA_MS : PERSIANA_CORTA_MS;
+    root.dataset.persianaRitmo = auto ? 'lenta' : 'corta';
+    root.dataset.persiana = 'cerrada';
     await wait(ms);
+    if (turno !== this.#turno) return; // la orden más reciente se encarga
 
-    this.#index = next;
+    this.#index = this.#destino;
     this.#render();
-
-    delete this.#els.root.dataset.persiana;
-    await wait(ms);
-    this.#busy = false;
+    delete root.dataset.persiana;
   }
 
   // Calcula la cercanía del cursor a cada borde, como mucho una vez por fotograma
@@ -257,7 +263,7 @@ export class HeroCarousel {
     const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
     if (!step) return;
     event.preventDefault();
-    this.go(this.#index + step);
+    this.go(this.#destino + step);
   }
 
   #startSwipe(event) {
@@ -269,7 +275,7 @@ export class HeroCarousel {
     if (!this.#swipe) return;
     const direction = swipeDirection(event.clientX - this.#swipe.x, event.clientY - this.#swipe.y);
     this.#swipe = null;
-    if (direction) this.go(this.#index + direction);
+    if (direction) this.go(this.#destino + direction);
   }
 
   #showName(target) {
@@ -304,16 +310,20 @@ export class HeroCarousel {
       slide.hidden = i !== this.#index;
       slide.setAttribute('aria-label', `${i + 1} de ${total}`);
     });
-    [...this.#els.nav.children].forEach((item, i) => {
-        this.#els.nav.style.setProperty('--progreso', (this.#index + 1) / total);
-        if (i === this.#index) item.setAttribute('aria-current', 'true');
-      else item.removeAttribute('aria-current');
-    });
+    this.#marcar(this.#index);
 
     // Reinicia el temporizador invisible (animación CSS de 7 s)
     const { clock } = this.#els;
     clock.classList.remove('activo');
     void clock.offsetWidth;
     clock.classList.add('activo');
+  }
+
+  /** Abre la mirilla de la diapositiva `indice` y cierra las demás. */
+  #marcar(indice) {
+    [...this.#els.nav.children].forEach((item, i) => {
+      if (i === indice) item.setAttribute('aria-current', 'true');
+      else item.removeAttribute('aria-current');
+    });
   }
 }

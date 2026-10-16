@@ -60,10 +60,10 @@ export function clearHistory() {
 // ---------- Tema ----------
 const THEME_KEY = 'novenobe:theme';
 const THEMES = ['oscuro', 'claro'];
-export const DEFAULT_THEME = 'oscuro';
+export const DEFAULT_THEME = 'claro'; // se empieza con la luz encendida: la superficie; al apagarla, la revelación
 
 /**
- * Lee el tema guardado. Si no existe o no es válido, devuelve 'oscuro'. Nunca lanza.
+ * Lee el tema guardado. Si no existe o no es válido, devuelve 'claro'. Nunca lanza.
  * @returns {'oscuro'|'claro'}
  */
 export function loadTheme() {

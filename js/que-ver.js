@@ -3,10 +3,10 @@
 // al final, las recomendaciones se revelan enfocándose. La lógica vive en recomendador.js (pura).
 import { DIMENSIONES, recomendar, explicar } from './recomendador.js';
 import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, genreNames } from './utils.js';
-import { getMovieDetails, getGenres } from './api.js';
+import { getMovieBasics, getGenres } from './api.js';
 import {
   cargarLista, quitar, reinsertar, cargarObservadas, alternarObservada,
-  entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista,
+  entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista, EVENTO_LISTA,
 } from './miLista.js';
 import { Movie } from './Movie.js';
 import { movieHref } from './router.js';
@@ -26,7 +26,7 @@ export class QueVer {
   #els;
   #paso = 0;
   #respuestas = {};
-  #posters = new Map(); // tmdbId → URL del póster (caché: cada póster se pide una sola vez)
+  #posters = new Map(); // tmdbId → promesa de la URL del póster (caché: cada póster se pide una sola vez)
   #miLista = null;      // contenedor de «Mi lista» (opcional)
   #filtrosLista = null; // botones Todas / Por descubrir / Ya observadas
   #observadas = cargarObservadas(); // claves de las ya vistas
@@ -74,6 +74,10 @@ export class QueVer {
     this.#avisoLista = avisoLista;
     avisoLista?.addEventListener('click', (event) => {
       if (event.target.closest('[data-deshacer]')) this.#deshacerQuitar();
+    });
+    // Otra pestaña cambió Mi lista (el aviso llega sin clave): si la vista está a la vista, se repinta
+    document.addEventListener(EVENTO_LISTA, (event) => {
+      if (event.detail?.clave === null && this.#miLista && !this.#miLista.closest('.vista')?.hidden) this.#pintarLista();
     });
 
     this.#pintarPregunta();
@@ -332,12 +336,17 @@ export class QueVer {
     if (!pelicula.tmdbId) return;
     try {
       // Guardada desde TMDB: ya trae la ruta del póster (la clase Movie construye la URL, como en todas partes)
-      if (pelicula.posterPath) this.#posters.set(pelicula.tmdbId, new Movie({ poster_path: pelicula.posterPath }).posterUrl);
+      if (pelicula.posterPath) this.#posters.set(pelicula.tmdbId, Promise.resolve(new Movie({ poster_path: pelicula.posterPath }).posterUrl));
       if (!this.#posters.has(pelicula.tmdbId)) {
-        const movie = new Movie(await getMovieDetails(pelicula.tmdbId));
-        this.#posters.set(pelicula.tmdbId, movie.posterPath ? movie.posterUrl : null);
+        // Se guarda la promesa, no el resultado: dos tarjetas de la misma película comparten una sola petición
+        const peticion = getMovieBasics(pelicula.tmdbId).then((data) => {
+          const movie = new Movie(data);
+          return movie.posterPath ? movie.posterUrl : null;
+        });
+        peticion.catch(() => this.#posters.delete(pelicula.tmdbId)); // si falla, la próxima vez se reintenta
+        this.#posters.set(pelicula.tmdbId, peticion);
       }
-      const url = this.#posters.get(pelicula.tmdbId);
+      const url = await this.#posters.get(pelicula.tmdbId);
       // Sin comprobar isConnected: con el póster en caché esto ocurre antes de que la tarjeta entre en la página
       // (y entonces nunca se pintaba). Añadirlo a una tarjeta ya retirada no tiene efecto.
       if (!url) return;
@@ -359,16 +368,30 @@ export class QueVer {
 
   /** Clics dentro de Mi lista: marcar como vista o quitar de la lista. */
   #onMiLista(event) {
+    const tarjeta = event.target.closest('.qv-hallazgo');
+    const indice = [...this.#miLista.querySelectorAll('.qv-hallazgo')].indexOf(tarjeta); // su sitio, para no perder el foco
     const quitarBoton = event.target.closest('[data-quitar]');
-    if (quitarBoton) return this.#quitar(quitarBoton.dataset.quitar);
+    if (quitarBoton) return this.#quitar(quitarBoton.dataset.quitar, indice);
     const estado = event.target.closest('[data-observada]');
     if (!estado) return;
     this.#observadas = alternarObservada(estado.dataset.observada);
     if (this.#filtro === 'todas') {
-      this.#pintarEstado(estado, estado.closest('.qv-hallazgo').querySelector('.qv-hallazgo-titulo').textContent);
+      this.#pintarEstado(estado, tarjeta.querySelector('.qv-hallazgo-titulo').textContent);
     } else {
       this.#pintarLista(); // con un filtro activo, la tarjeta cambia de grupo y sale de la vista
+      this.#enfocarEn(indice);
     }
+  }
+
+  /** Tras repintar, el foco no cae en la página: va a la tarjeta que ocupa ese sitio (o a la última),
+   *  y sin tarjetas, al filtro activo o a la salida del estado vacío. */
+  #enfocarEn(indice) {
+    const estados = this.#miLista.querySelectorAll('.ml-estado');
+    const filtro = this.#filtrosLista?.hidden ? null : this.#filtrosLista?.querySelector('[aria-pressed="true"]');
+    const destino = estados[Math.min(Math.max(indice, 0), estados.length - 1)]
+      ?? filtro
+      ?? this.#miLista.querySelector('.ml-vacio-enlace');
+    destino?.focus();
   }
 
   #onFiltro(event) {
@@ -380,12 +403,16 @@ export class QueVer {
   }
 
   /** Quitada desde Mi lista: la tarjeta desaparece, pero se puede deshacer (nada se pierde por un clic). */
-  #quitar(clave) {
+  #quitar(clave, indice) {
     const quitada = quitar(clave);
     if (!quitada) return;
     this.#deshacer = quitada;
     this.#pintarLista();
     this.#anunciar(`Has quitado «${quitada.entrada.titulo}» de tu lista.`, { deshacer: true });
+    // El botón pulsado ya no existe: el foco pasa a «Deshacer», la acción que tiene sentido justo ahora
+    const deshacer = this.#avisoLista?.querySelector('[data-deshacer]');
+    if (deshacer) deshacer.focus();
+    else this.#enfocarEn(indice);
   }
 
   /** Devuelve la última película quitada a su sitio (la instantánea guardada en el aviso, no una copia de la lista). */
@@ -396,6 +423,10 @@ export class QueVer {
     this.#deshacer = null;
     this.#pintarLista();
     this.#anunciar(`«${entrada.titulo}» vuelve a tu lista.`);
+    // «Deshacer» desaparece: el foco va a la película recuperada (si el filtro la deja a la vista)
+    const recuperada = this.#miLista.querySelector(`[data-observada="${entrada.clave}"]`);
+    if (recuperada) recuperada.focus();
+    else this.#enfocarEn(indice);
   }
 
   /** Línea de estado: los lectores de pantalla la anuncian (role="status"). */

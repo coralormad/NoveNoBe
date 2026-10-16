@@ -97,6 +97,7 @@ let fichaController = null;
 let countryMap = null; // se crea la primera vez que se abre la ventana del mapa
 let fichaMarcadores = []; // países de la película abierta, listos para el mapa
 let scrollInicio = 0; // para volver al mismo punto del inicio
+let origen = { vista: 'inicio', scroll: 0 }; // de dónde se abrió la ficha: «Volver» lleva ahí
 
 let controller = null; // petición en curso (variable de módulo, no global)
 let genreController = null; // petición de género en curso
@@ -106,6 +107,8 @@ let tendencias = Promise.resolve([]); // «En boca de todos»: la fila de géner
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
+  // La etiqueta accesible es fija (el estado lo da aria-checked); el tooltip dice qué hará el clic
+  els.btnTema.title = theme === 'oscuro' ? 'Encender la luz' : 'Apagar la luz';
   etiquetarVisor(); // la mirilla cambia de función: de día enfoca la nota pública, de noche lleva a la tuya
 }
 
@@ -224,6 +227,7 @@ function renderGenreChips(genres, activeId) {
     button.textContent = name;
     button.dataset.genreId = id;
     button.setAttribute('aria-pressed', String(id === activeId));
+    button.tabIndex = id === activeId ? 0 : -1; // la tira es una sola parada de Tab (tabulación itinerante)
     return button;
   });
   els.genres.replaceChildren(...buttons);
@@ -272,9 +276,27 @@ function handleGenreClick(event) {
   if (!button || button.getAttribute('aria-pressed') === 'true') return;
   els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-pressed', 'true');
+  moverParada(button);
   // La elegida entra entera en plano (si estaba cortada por un borde)
   button.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   loadGenreRow(Number(button.dataset.genreId), button.textContent);
+}
+
+/** La cápsula que recibe el Tab: solo una a la vez. */
+function moverParada(chip) {
+  els.genres.querySelectorAll('[data-genre-id]').forEach((otro) => { otro.tabIndex = otro === chip ? 0 : -1; });
+}
+
+/** Dentro de la tira: ← → recorren las cápsulas, Inicio y Fin saltan a los extremos; Enter o espacio eligen. */
+function handleGenreKeydown(event) {
+  const chips = [...els.genres.querySelectorAll('[data-genre-id]')];
+  const actual = chips.indexOf(event.target);
+  const destino = { ArrowLeft: actual - 1, ArrowRight: actual + 1, Home: 0, End: chips.length - 1 }[event.key];
+  if (actual === -1 || destino === undefined) return;
+  event.preventDefault();
+  const chip = chips[Math.min(Math.max(destino, 0), chips.length - 1)];
+  moverParada(chip);
+  chip.focus(); // el navegador la trae al plano si estaba cortada por el borde
 }
 
 async function initGenres() {
@@ -351,9 +373,24 @@ const guardarBusqueda = (query) => saveHistory(addQuery(loadHistory(), query));
 // ---------- Manejadores ----------
 function togglePanel() {
   const isOpen = els.btnBuscar.getAttribute('aria-expanded') === 'true';
+  const focoDentro = els.panel.contains(document.activeElement);
   els.btnBuscar.setAttribute('aria-expanded', String(!isOpen));
   els.panel.hidden = isOpen;
   if (!isOpen) els.input.focus();
+  else if (focoDentro) els.btnBuscar.focus(); // al cerrar, el foco vuelve a la lupa (no cae en la página)
+}
+
+const panelAbierto = () => !els.panel.hidden;
+
+/** Escape cierra el buscador desde cualquier punto de la página. */
+function handleEscape(event) {
+  if (event.key === 'Escape' && panelAbierto()) togglePanel();
+}
+
+/** Un clic fuera del panel (y fuera de la lupa) lo recoge, sin mover el foco a ningún sitio. */
+function handleClickFuera(event) {
+  const abreElPanel = event.target.closest?.('#btn-buscar, [data-accion="buscar"]'); // la lupa y «Empieza a buscar»
+  if (panelAbierto() && !els.panel.contains(event.target) && !abreElPanel) togglePanel();
 }
 
 function handleFocus() {
@@ -425,8 +462,25 @@ function markMenu(vista) {
 /** Cambiar de vista es un corte de plano: el salto es instantáneo (el scroll suave queda para las secciones). */
 const saltarA = (top) => window.scrollTo({ top, behavior: 'instant' });
 
+const TITULO_BASE = document.title.trim();
+
+// «Volver» de la ficha: a la vista desde la que se abrió
+const fichaVolver = document.querySelector('.ficha-volver');
+const VOLVER_A = Object.freeze({
+  inicio: { href: '#/', texto: 'Volver al inicio' },
+  'que-ver': { href: '#/que-ver', texto: 'Volver a Qué ver' },
+  peliculas: { href: '#/peliculas', texto: 'Volver a Películas' },
+  'mi-lista': { href: '#/mi-lista', texto: 'Volver a Mi lista' },
+});
+
 async function handleRoute(route) {
-  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
+  const anterior = vistaActual;
+  if (anterior === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
+  if (route.vista === 'ficha' && anterior !== 'ficha') {
+    origen = { vista: anterior, scroll: window.scrollY };
+    fichaVolver.href = VOLVER_A[anterior].href;
+    fichaVolver.textContent = VOLVER_A[anterior].texto;
+  }
   if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
   vistaActual = route.vista;
   markMenu(route.vista);
@@ -445,10 +499,12 @@ async function handleRoute(route) {
 
   fichaController?.abort();
   fichaActual = null;
+  document.title = TITULO_BASE; // la ficha lo cambia por el de la película: al salir, se devuelve
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
-  saltarA(route.vista === 'inicio' ? scrollInicio : 0);
+  const vuelveDeLaFicha = anterior === 'ficha' && route.vista === origen.vista;
+  saltarA(route.vista === 'inicio' ? scrollInicio : vuelveDeLaFicha ? origen.scroll : 0);
 }
 
 // ---------- Películas ----------
@@ -1066,6 +1122,9 @@ els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
+els.genres.addEventListener('keydown', handleGenreKeydown);
+document.addEventListener('keydown', handleEscape);
+document.addEventListener('click', handleClickFuera);
 els.genresMarco.addEventListener('click', handleArrowClick); // las flechas de los géneros reutilizan las del carrusel
 vigilarBordes(els.genres, els.genresMarco);
 document.querySelectorAll('.fila-flechas')
