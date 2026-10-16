@@ -461,6 +461,8 @@ function markMenu(vista) {
 /** Cambiar de vista es un corte de plano: el salto es instantáneo (el scroll suave queda para las secciones). */
 const saltarA = (top) => window.scrollTo({ top, behavior: 'instant' });
 
+const TITULO_BASE = document.title.trim();
+
 async function handleRoute(route) {
   if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
   if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
@@ -481,6 +483,7 @@ async function handleRoute(route) {
 
   fichaController?.abort();
   fichaActual = null;
+  document.title = TITULO_BASE; // la ficha lo cambia por el de la película: al salir, se devuelve
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado

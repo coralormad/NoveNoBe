@@ -3,7 +3,7 @@
 // al final, las recomendaciones se revelan enfocándose. La lógica vive en recomendador.js (pura).
 import { DIMENSIONES, recomendar, explicar } from './recomendador.js';
 import { FILTROS_LISTA, filterByWatched, numeroDeColeccion, genreNames } from './utils.js';
-import { getMovieDetails, getGenres } from './api.js';
+import { getMovieBasics, getGenres } from './api.js';
 import {
   cargarLista, quitar, reinsertar, cargarObservadas, alternarObservada,
   entradaDesdeLocal, localDe, favoritasLocales, crearBotonLista, EVENTO_LISTA,
@@ -26,7 +26,7 @@ export class QueVer {
   #els;
   #paso = 0;
   #respuestas = {};
-  #posters = new Map(); // tmdbId → URL del póster (caché: cada póster se pide una sola vez)
+  #posters = new Map(); // tmdbId → promesa de la URL del póster (caché: cada póster se pide una sola vez)
   #miLista = null;      // contenedor de «Mi lista» (opcional)
   #filtrosLista = null; // botones Todas / Por descubrir / Ya observadas
   #observadas = cargarObservadas(); // claves de las ya vistas
@@ -336,12 +336,17 @@ export class QueVer {
     if (!pelicula.tmdbId) return;
     try {
       // Guardada desde TMDB: ya trae la ruta del póster (la clase Movie construye la URL, como en todas partes)
-      if (pelicula.posterPath) this.#posters.set(pelicula.tmdbId, new Movie({ poster_path: pelicula.posterPath }).posterUrl);
+      if (pelicula.posterPath) this.#posters.set(pelicula.tmdbId, Promise.resolve(new Movie({ poster_path: pelicula.posterPath }).posterUrl));
       if (!this.#posters.has(pelicula.tmdbId)) {
-        const movie = new Movie(await getMovieDetails(pelicula.tmdbId));
-        this.#posters.set(pelicula.tmdbId, movie.posterPath ? movie.posterUrl : null);
+        // Se guarda la promesa, no el resultado: dos tarjetas de la misma película comparten una sola petición
+        const peticion = getMovieBasics(pelicula.tmdbId).then((data) => {
+          const movie = new Movie(data);
+          return movie.posterPath ? movie.posterUrl : null;
+        });
+        peticion.catch(() => this.#posters.delete(pelicula.tmdbId)); // si falla, la próxima vez se reintenta
+        this.#posters.set(pelicula.tmdbId, peticion);
       }
-      const url = this.#posters.get(pelicula.tmdbId);
+      const url = await this.#posters.get(pelicula.tmdbId);
       // Sin comprobar isConnected: con el póster en caché esto ocurre antes de que la tarjeta entre en la página
       // (y entonces nunca se pintaba). Añadirlo a una tarjeta ya retirada no tiene efecto.
       if (!url) return;
