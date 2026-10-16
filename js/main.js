@@ -97,6 +97,7 @@ let fichaController = null;
 let countryMap = null; // se crea la primera vez que se abre la ventana del mapa
 let fichaMarcadores = []; // países de la película abierta, listos para el mapa
 let scrollInicio = 0; // para volver al mismo punto del inicio
+let origen = { vista: 'inicio', scroll: 0 }; // de dónde se abrió la ficha: «Volver» lleva ahí
 
 let controller = null; // petición en curso (variable de módulo, no global)
 let genreController = null; // petición de género en curso
@@ -463,8 +464,23 @@ const saltarA = (top) => window.scrollTo({ top, behavior: 'instant' });
 
 const TITULO_BASE = document.title.trim();
 
+// «Volver» de la ficha: a la vista desde la que se abrió
+const fichaVolver = document.querySelector('.ficha-volver');
+const VOLVER_A = Object.freeze({
+  inicio: { href: '#/', texto: 'Volver al inicio' },
+  'que-ver': { href: '#/que-ver', texto: 'Volver a Qué ver' },
+  peliculas: { href: '#/peliculas', texto: 'Volver a Películas' },
+  'mi-lista': { href: '#/mi-lista', texto: 'Volver a Mi lista' },
+});
+
 async function handleRoute(route) {
-  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
+  const anterior = vistaActual;
+  if (anterior === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
+  if (route.vista === 'ficha' && anterior !== 'ficha') {
+    origen = { vista: anterior, scroll: window.scrollY };
+    fichaVolver.href = VOLVER_A[anterior].href;
+    fichaVolver.textContent = VOLVER_A[anterior].texto;
+  }
   if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
   vistaActual = route.vista;
   markMenu(route.vista);
@@ -487,7 +503,8 @@ async function handleRoute(route) {
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
-  saltarA(route.vista === 'inicio' ? scrollInicio : 0);
+  const vuelveDeLaFicha = anterior === 'ficha' && route.vista === origen.vista;
+  saltarA(route.vista === 'inicio' ? scrollInicio : vuelveDeLaFicha ? origen.scroll : 0);
 }
 
 // ---------- Películas ----------

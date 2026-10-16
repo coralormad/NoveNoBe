@@ -9,7 +9,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
 export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
 
-/** Crea una mirilla del índice. La usan el hero y el escaparate. */
+/** Crea una mirilla del índice del hero. */
 export function createMirilla({ indice, etiqueta, imagen }) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -227,6 +227,7 @@ export class HeroCarousel {
     if (total < 2 || next === this.#destino) return;
     if (auto && this.#destino !== this.#index) return;
     this.#destino = next;
+    this.#marcar(next); // la mirilla responde al instante; la diapositiva, al cerrar la persiana
     const turno = ++this.#turno;
 
     const { root } = this.#els;
@@ -309,16 +310,20 @@ export class HeroCarousel {
       slide.hidden = i !== this.#index;
       slide.setAttribute('aria-label', `${i + 1} de ${total}`);
     });
-    [...this.#els.nav.children].forEach((item, i) => {
-        this.#els.nav.style.setProperty('--progreso', (this.#index + 1) / total);
-        if (i === this.#index) item.setAttribute('aria-current', 'true');
-      else item.removeAttribute('aria-current');
-    });
+    this.#marcar(this.#index);
 
     // Reinicia el temporizador invisible (animación CSS de 7 s)
     const { clock } = this.#els;
     clock.classList.remove('activo');
     void clock.offsetWidth;
     clock.classList.add('activo');
+  }
+
+  /** Abre la mirilla de la diapositiva `indice` y cierra las demás. */
+  #marcar(indice) {
+    [...this.#els.nav.children].forEach((item, i) => {
+      if (i === indice) item.setAttribute('aria-current', 'true');
+      else item.removeAttribute('aria-current');
+    });
   }
 }
