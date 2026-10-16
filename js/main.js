@@ -1,17 +1,20 @@
 import { MovieCatalog } from './catalog.js';
 import { searchMovies, getTrending, getGenres, discoverMovies, getMovieList, getMovieDetails } from './api.js';
 import { Movie } from './Movie.js';
-import { debounce, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds } from './utils.js';
-import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme } from './storage.js';
+import { debounce, ratingToArc, fotogramas, toUserMessage, filterActive, pickCast, pickCrew, pickCertification, countByGenre, groupTail, headline, sharesGenre, filterByGenre, sizeBucket, sliceIndexOf, genreHeadline, topOfGenre, genreNames, toGenreIds, bordesDeScroll, excludeIds } from './utils.js';
+import { addQuery, clearHistory, loadHistory, saveHistory, loadTheme, saveTheme, MIRADAS_KEY, loadMiradas, saveMiradas, setMirada, addObservacion, editObservacion, removeObservacion } from './storage.js';
 import { HeroCarousel, pickHeroMovies, buildSlides, createSlide, fillEmblem, setAmbient } from './hero.js';
-import { CountryMap, toMarkers, countryName } from './map.js';
+import { CountryMap, toMarkers, countryName, mapLabel, mapaDisponible } from './map.js';
 import { COORDENADAS_PAISES } from '../data/paises.js';
 import { startRouter, movieHref } from './router.js';
-import { enableCardTilt, tiltFromPointer } from './tilt.js';
+import { tiltFromPointer } from './tilt.js';
 import { AVISOS } from '../data/avisos.js';
 import { CatalogCharts } from './charts.js';
 import { GenreStage, MAX_ESCAPARATE } from './stage.js';
 import { QueVer } from './que-ver.js';
+import { activarMiLista, crearBotonLista, asignarBotonLista, entradaDesdeMovie } from './miLista.js';
+import { ParaTi } from './paraTi.js';
+import { initScrollTheme } from './scrollTheme.js';
 
 
 const MIN_QUERY = 2;
@@ -27,7 +30,9 @@ const els = {
   trending: document.querySelector('#fila-tendencias'),
   btnTema: document.querySelector('#btn-tema'), // NUEVO 5d
   genres: document.querySelector('#generos'),
+  genresMarco: document.querySelector('#generos-marco'),
   genreRow: document.querySelector('#fila-genero'),
+  genreCriterio: document.querySelector('#genero-criterio'),
 };
 
 // Ficha: referencias y estado propio de la ficha (ámbito de módulo, no globales)
@@ -41,6 +46,12 @@ const ficha = {
   original: document.querySelector('#ficha-original'),
   meta: document.querySelector('#ficha-meta'),
   nota: document.querySelector('#ficha-nota'),
+  notaCifra: document.querySelector('#ficha-nota-cifra'),
+  votos: document.querySelector('#ficha-votos'),
+  notaPropia: document.querySelector('#ficha-nota-propia'),
+  leyendaPropia: document.querySelector('#ficha-leyenda-propia'),
+  notaFila: document.querySelector('#ficha-nota-fila'),
+  tiraPropia: document.querySelector('#tira-propia'),
   generos: document.querySelector('#ficha-generos'),
   eslogan: document.querySelector('#ficha-eslogan'),
   sinopsis: document.querySelector('#ficha-sinopsis'),
@@ -52,6 +63,35 @@ const ficha = {
   repartoVacio: document.querySelector('#ficha-reparto-vacio'),
 };
 
+// Tu mirada: formulario de la nota propia y el cuaderno (solo visible de noche)
+const mirada = {
+  form: document.querySelector('#mirada'),
+  rango: document.querySelector('#mirada-nota'),
+  cifra: document.querySelector('#mirada-cifra'),
+  texto: document.querySelector('#mirada-texto'),
+  etiqueta: document.querySelector('#mirada-pregunta'),
+  volver: document.querySelector('#mirada-volver'),
+  ultima: document.querySelector('#mirada-ultima'),
+  anteriores: document.querySelector('#mirada-anteriores'),
+  archivo: document.querySelector('#mirada-archivo'),
+  borrar: document.querySelector('#mirada-borrar'),
+  estado: document.querySelector('#mirada-estado'),
+  entrada: document.querySelector('#mirada-entrada'),
+  fecha: document.querySelector('#mirada-fecha'),
+  piloto: document.querySelector('#mirada-piloto'),
+  reescribir: document.querySelector('#mirada-reescribir'),
+  enfoque: document.querySelector('#mirada-enfoque'),
+};
+const PILOTO = Object.freeze({ vacia: 'Sin calibrar', calibrando: 'Calibrando', revelada: 'Lectura revelada' });
+let miradaId = null;      // id de TMDB de la película abierta
+let miradaTocada = false; // ¿ha movido el enfoque? Sin moverlo, no hay nota propia
+let observacionEnEdicion = null; // id de la observación que se corrige (null = se escribe una nueva)
+const PREGUNTA = Object.freeze({ nueva: 'Lo que viste y nadie cuenta', corregir: 'Corrige tu observación' });
+const FECHA_MIRADA = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' });
+
+let etiquetaTmdb = ''; // lo que la mirilla dice de día (nota pública de TMDB)
+let fichaLista = null;  // la cápsula de Mi lista de la ficha: se crea una vez y cambia de película
+
 let fichaActual = null; // id de la película pintada: si solo cambia la sección, no se vuelve a pedir
 let fichaController = null;
 let countryMap = null; // se crea la primera vez que se abre la ventana del mapa
@@ -60,12 +100,16 @@ let scrollInicio = 0; // para volver al mismo punto del inicio
 
 let controller = null; // petición en curso (variable de módulo, no global)
 let genreController = null; // petición de género en curso
+let tendencias = Promise.resolve([]); // «En boca de todos»: la fila de género no repite sus películas
 
 // ---------- Tema (NUEVO 5d) ----------
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   els.btnTema.setAttribute('aria-checked', String(theme === 'oscuro'));
+  etiquetarVisor(); // la mirilla cambia de función: de día enfoca la nota pública, de noche lleva a la tuya
 }
+
+const esNoche = () => document.documentElement.dataset.theme === 'oscuro';
 
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro';
@@ -84,10 +128,16 @@ function renderMessage(text) {
 function renderResults(movies) {
   if (movies.length === 0) return renderMessage('Sin resultados.');
 
+  // Cada resultado es un enlace a la ficha: se abre con clic, toque o teclado (Tab + Enter)
   const items = movies.map((movie) => {
     const li = document.createElement('li');
-    li.textContent = `${movie.title} (${movie.year}) · ★ ${movie.ratingText}`;
-    li.dataset.id = movie.id;
+    const link = document.createElement('a');
+    link.className = 'resultado';
+    link.href = movieHref(movie.id);
+    link.textContent = [movie.title, movie.year && `(${movie.year})`, `· ★ ${movie.ratingText}`]
+      .filter(Boolean)
+      .join(' ');
+    li.append(link);
     return li;
   });
   els.results.replaceChildren(...items);
@@ -132,6 +182,8 @@ function createCard(movie) {
   card.querySelector('.capsula-anio').textContent = movie.year;
   card.querySelector('.capsula-nota').textContent = `★ ${movie.ratingText}`;
   card.querySelector('.tarjeta-titulo').textContent = movie.title;
+  // Mi lista desde cualquier cartel: la misma cápsula y la misma lógica en toda la página
+  card.querySelector('.tarjeta-pie').append(crearBotonLista(entradaDesdeMovie(movie)));
 
   return card;
 }
@@ -175,13 +227,44 @@ function renderGenreChips(genres, activeId) {
     return button;
   });
   els.genres.replaceChildren(...buttons);
+  marcarBordes(els.genres, els.genresMarco);
 }
 
-function loadGenreRow(genreId) {
+/** Marca si queda algo fuera de plano a cada lado: el CSS funde ese borde y la flecha aparece.
+ *  La decisión la toma una función pura (bordesDeScroll); aquí solo se escribe en el DOM. */
+function marcarBordes(tira, marco) {
+  const { antes, despues } = bordesDeScroll(tira.scrollLeft, tira.clientWidth, tira.scrollWidth);
+  marco.toggleAttribute('data-antes', antes);
+  marco.toggleAttribute('data-despues', despues);
+  marco.querySelector('[data-flecha="izquierda"]').hidden = !antes;
+  marco.querySelector('[data-flecha="derecha"]').hidden = !despues;
+}
+
+/** Vigila el scroll y el tamaño de una tira (un frame como mucho por evento: no satura). */
+function vigilarBordes(tira, marco) {
+  let frame = 0; // vive en el cierre: no es una variable global
+  const actualizar = () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => marcarBordes(tira, marco));
+  };
+  tira.addEventListener('scroll', actualizar, { passive: true });
+  new ResizeObserver(actualizar).observe(tira);
+}
+
+/** «Lo que no te puedes perder»: no es otra lista de populares. Son las mejor valoradas del género,
+ *  con al menos 500 votos (consenso, no una rareza con tres votos), y sin las que ya están en tendencias. */
+function loadGenreRow(genreId, nombre) {
   genreController?.abort();
   genreController = new AbortController();
   const { signal } = genreController;
-  return loadRow(els.genreRow, () => discoverMovies({ genreId, signal }));
+  if (nombre) els.genreCriterio.textContent = `Las mejor valoradas de ${nombre}`;
+  return loadRow(els.genreRow, async () => {
+    const [data, enBoca] = await Promise.all([
+      discoverMovies({ genreId, signal, sortBy: 'vote_average.desc', minVotes: 500 }),
+      tendencias,
+    ]);
+    return { ...data, results: excludeIds(data.results, enBoca) };
+  });
 }
 
 function handleGenreClick(event) {
@@ -189,15 +272,17 @@ function handleGenreClick(event) {
   if (!button || button.getAttribute('aria-pressed') === 'true') return;
   els.genres.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false');
   button.setAttribute('aria-pressed', 'true');
-  loadGenreRow(Number(button.dataset.genreId));
+  // La elegida entra entera en plano (si estaba cortada por un borde)
+  button.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  loadGenreRow(Number(button.dataset.genreId), button.textContent);
 }
 
 async function initGenres() {
   try {
     const genres = await getGenres();
-    const firstId = genres[0]?.id;
-    renderGenreChips(genres, firstId);
-    return firstId ? loadGenreRow(firstId) : [];
+    const [first] = genres;
+    renderGenreChips(genres, first?.id);
+    return first ? loadGenreRow(first.id, first.name) : [];
   } catch (error) {
     if (error.name === 'AbortError') return [];
     renderRowMessage(els.genreRow, toUserMessage(error));
@@ -251,7 +336,7 @@ async function handleSearch(rawQuery, { save = false } = {}) {
     const data = await searchMovies(query, { signal: controller.signal });
     const movies = data.results.map((item) => new Movie(item));
     renderResults(movies);
-    if (save && movies.length > 0) saveHistory(addQuery(loadHistory(), query));
+    if (save && movies.length > 0) guardarBusqueda(query);
   } catch (error) {
     if (error.name === 'AbortError') return;
     renderMessage(toUserMessage(error));
@@ -259,6 +344,9 @@ async function handleSearch(rawQuery, { save = false } = {}) {
 }
 
 const debouncedSearch = debounce((event) => handleSearch(event.target.value), DEBOUNCE_MS);
+
+/** Guarda una búsqueda en el historial. addQuery (pura) descarta las cortas y las repetidas. */
+const guardarBusqueda = (query) => saveHistory(addQuery(loadHistory(), query));
 
 // ---------- Manejadores ----------
 function togglePanel() {
@@ -280,6 +368,13 @@ function handleKeydown(event) {
 }
 
 function handleResultsClick(event) {
+  // Elegir una película: el enlace cambia la URL (el router abre la ficha) y el panel se recoge
+  if (event.target.closest('a.resultado')) {
+    guardarBusqueda(els.input.value); // elegir un resultado también confirma la búsqueda
+    togglePanel();
+    return;
+  }
+
   const button = event.target.closest('button');
   if (!button) return;
 
@@ -327,7 +422,11 @@ function markMenu(vista) {
   });
 }
 
+/** Cambiar de vista es un corte de plano: el salto es instantáneo (el scroll suave queda para las secciones). */
+const saltarA = (top) => window.scrollTo({ top, behavior: 'instant' });
+
 async function handleRoute(route) {
+  if (vistaActual === 'inicio' && route.vista !== 'inicio') scrollInicio = window.scrollY; // al volver, el mismo punto
   if (route.vista === 'peliculas' && catalog.movies.length === 0) loadPeliculas(() => catalog.load('popular'));
   vistaActual = route.vista;
   markMenu(route.vista);
@@ -336,7 +435,7 @@ async function handleRoute(route) {
     showView('ficha');
     if (route.id !== fichaActual) {   // otra película → pedirla
       fichaActual = route.id;
-      window.scrollTo(0, 0);
+      saltarA(0);
       const ok = await loadFicha(route.id);
       if (!ok) return;                // error o cancelada: no hay sección a la que ir
     }
@@ -349,8 +448,7 @@ async function handleRoute(route) {
   showView(VISTA_HTML[route.vista] ?? route.vista);
   if (TITULO_CATALOGO[route.vista]) catalogoTitulo.textContent = TITULO_CATALOGO[route.vista];
   if (route.vista === 'mi-lista') queVer.pintarMiLista();  // siempre con lo último guardado
-  if (route.vista === 'que-ver') queVer.refrescarFavoritas(); // por si se quitó alguna desde Mi lista
-  window.scrollTo(0, route.vista === 'inicio' ? scrollInicio : 0);
+  saltarA(route.vista === 'inicio' ? scrollInicio : 0);
 }
 
 // ---------- Películas ----------
@@ -535,7 +633,7 @@ function handlePestanaClick(event) {
 function goToSection(seccion) {
   const destino = seccion && document.getElementById(`seccion-${seccion}`);
   if (!destino) {
-    window.scrollTo(0, 0);
+    saltarA(0);
     ficha.titulo.focus({ preventScroll: true });
     return;
   }
@@ -559,8 +657,11 @@ async function loadFicha(id) {
     ficha.contenido.hidden = false;
     ficha.titulo.focus({ preventScroll: true });
 
+    // Coordenadas de la tabla local: el mapa no depende de otra API (ni de otra clave)
     fichaMarcadores = toMarkers(movie.countries, COORDENADAS_PAISES);
-    ficha.ventana.hidden = fichaMarcadores.length === 0; // sin coordenadas, no hay nada que mirar
+
+    // Sin coordenadas o sin Leaflet no hay nada que mirar (los países siguen en la ficha técnica)
+    ficha.ventana.hidden = fichaMarcadores.length === 0 || !mapaDisponible();
     showMap();
     return true;
   } catch (error) {
@@ -575,11 +676,11 @@ async function loadFicha(id) {
 
 /** El mapa vive plegado: solo se pinta con la ventana abierta (Leaflet necesita medir el contenedor). */
 function showMap() {
-  if (!ficha.ventana.open) return;
+  ficha.mapa.setAttribute('aria-label', mapLabel(fichaMarcadores));
+  if (!ficha.ventana.open || !mapaDisponible()) return;
   countryMap ??= new CountryMap(ficha.mapa);
   countryMap.show(fichaMarcadores);
 }
-
 function renderFicha(movie) {
   ficha.fondo.src = movie.backdropUrl ?? movie.posterUrl;
   ficha.poster.src = movie.posterUrl;
@@ -591,7 +692,10 @@ function renderFicha(movie) {
   ficha.meta.textContent = [movie.year, certificationText(pickCertification(movie.releaseDates)), movie.runtimeText]
     .filter(Boolean)
     .join(' · ');
-  ficha.nota.textContent = `★ ${movie.ratingText} · TMDB · ${movie.votesText}`;
+  renderNota(movie);
+  renderBotonLista(movie);
+  mirada.estado.textContent = '';
+  renderMirada(movie.id);
 
   ficha.generos.replaceChildren(...movie.genreNames.map((name) => {
     const li = document.createElement('li');
@@ -611,10 +715,281 @@ function renderFicha(movie) {
   ficha.nav.querySelectorAll('[data-seccion]').forEach((link) => {
     link.href = movieHref(movie.id, link.dataset.seccion);
   });
+}
 
-  ficha.mapa.setAttribute('aria-label', nombres.length
-    ? `Mapa de los países de producción: ${nombres.join(', ')}`
-    : 'Mapa sin países de producción');
+/** Visor de la nota: el anillo muestra la nota real; la cifra y los votos se descubren al mirarla. */
+function renderNota(movie) {
+  const sinVotos = movie.voteCount === 0; // sin votos no hay nota pública que enfocar (tu mirada sí existe)
+  ficha.nota.toggleAttribute('data-sin-tmdb', sinVotos);
+  ficha.votos.hidden = sinVotos;
+  ficha.nota.setAttribute('aria-pressed', 'false'); // cada película empieza a medio leer
+  ficha.nota.style.setProperty('--arco-tmdb', ratingToArc(movie.rating));
+  etiquetaTmdb = sinVotos ? 'Sin nota de TMDB' : `Nota de TMDB: ${movie.ratingText} sobre 10, ${movie.votesText}`;
+  ficha.notaCifra.textContent = sinVotos ? '' : movie.ratingText;
+  ficha.votos.textContent = `TMDB · ${movie.ratingText} · ${movie.votesText} · la versión oficial`;
+}
+
+/** La cápsula de Mi lista ocupa el sitio de la antigua tira oficial: la nota se mira; la película se guarda.
+ *  Es la misma cápsula de las tarjetas (miLista.js): guardar aquí la marca en toda la página. */
+function renderBotonLista(movie) {
+  const entrada = entradaDesdeMovie(movie);
+  if (fichaLista) {
+    asignarBotonLista(fichaLista, entrada);
+    return;
+  }
+  fichaLista = crearBotonLista(entrada, 'ficha');
+  ficha.notaFila.prepend(fichaLista);
+}
+
+/** La tira de película: diez fotogramas; --revelado (0-1) dice cuánto se ve de cada uno. El CSS lo pinta. */
+function pintarTira(tira, nota) {
+  const lista = tira.querySelector('.tira-fotogramas');
+  if (lista.children.length === 0) { // se crean una vez; después solo cambian sus variables
+    lista.append(...fotogramas(0).map((_, i) => {
+      const li = document.createElement('li');
+      li.style.setProperty('--i', i); // cada fotograma se revela un instante después del anterior
+      return li;
+    }));
+  }
+  fotogramas(nota ?? 0).forEach((revelado, i) => lista.children[i].style.setProperty('--revelado', revelado));
+  tira.toggleAttribute('data-vacia', nota === null);
+}
+
+/** Qué anuncia la mirilla a un lector de pantalla: depende del tema y de si ya hay nota propia. */
+function etiquetarVisor() {
+  if (!esNoche()) {
+    ficha.nota.setAttribute('aria-label', etiquetaTmdb);
+    return;
+  }
+  const propia = ficha.notaPropia.textContent;
+  ficha.nota.setAttribute('aria-label', propia
+    ? `Tu mirada: ${propia} sobre 10. Ir a tu lectura`
+    : 'Aún no has calibrado tu mirada. Ir a tu lectura');
+}
+
+/** Pinta la mirada guardada de esa película (o el formulario vacío). La nota de TMDB no se toca. */
+function renderMirada(id) {
+  miradaId = id;
+  renderLectura();
+}
+
+/** La lectura (nota propia + archivo de observaciones). */
+function renderLectura() {
+  const guardada = loadMiradas()[miradaId] ?? null;
+  const nota = guardada?.nota ?? null;
+  const observaciones = guardada?.observaciones ?? [];
+  const hayLectura = nota !== null || observaciones.length > 0;
+
+  miradaTocada = nota !== null;
+  mirada.rango.value = nota ?? 5;
+  escribirObservacion(null); // la placa queda vacía: cada observación es una pista nueva
+  pintarCifraPropia(nota);
+  mirada.borrar.hidden = !hayLectura;
+  mirada.volver.hidden = !hayLectura; // hay una lectura guardada a la que volver
+  setPiloto(hayLectura ? 'revelada' : 'vacia');
+
+  // Revelada: la máquina muestra el resultado (fecha, enfoque y archivo) en lugar de los controles
+  mirada.form.toggleAttribute('data-revelada', hayLectura);
+  mirada.entrada.hidden = !hayLectura;
+  mirada.enfoque.textContent = nota === null ? '' : `Tu enfoque ${nota.toFixed(1)}`;
+  pintarArchivo(observaciones);
+  const fecha = hayLectura && guardada.fecha ? new Date(guardada.fecha) : null;
+  mirada.fecha.dateTime = fecha ? guardada.fecha : '';
+  mirada.fecha.textContent = fecha && !Number.isNaN(fecha.getTime())
+    ? `Observada el ${FECHA_MIRADA.format(fecha)}`
+    : '';
+  pintarAroPropio(nota);
+}
+
+/** La placa: vacía para una observación nueva, o con el texto de la que se corrige. */
+function escribirObservacion(observacion) {
+  observacionEnEdicion = observacion?.id ?? null;
+  mirada.texto.value = observacion?.texto ?? '';
+  mirada.etiqueta.textContent = observacion ? PREGUNTA.corregir : PREGUNTA.nueva;
+}
+
+/** Una observación del archivo: el texto, su fecha y, al mirarla, Corregir / Borrar. */
+function createObservacion({ id, texto, fecha }) {
+  const li = document.createElement('li');
+  li.className = 'observacion';
+  li.dataset.id = id;
+
+  const p = document.createElement('p');
+  p.className = 'observacion-texto';
+  p.textContent = texto;
+
+  const meta = document.createElement('p');
+  meta.className = 'observacion-meta';
+  const cuando = fecha && !Number.isNaN(new Date(fecha).getTime()) ? FECHA_MIRADA.format(new Date(fecha)) : '';
+  if (cuando) {
+    const time = document.createElement('time');
+    time.dateTime = fecha;
+    time.textContent = cuando;
+    meta.append(time);
+  }
+  const de = cuando ? ` del ${cuando}` : '';
+  meta.append(
+    createAccionObservacion('corregir', 'Corregir', `Corregir la observación${de}`),
+    createAccionObservacion('borrar', 'Borrar', `Borrar la observación${de}`),
+  );
+  li.append(p, meta);
+  return li;
+}
+
+function createAccionObservacion(accion, texto, etiqueta) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'maquina-borrar observacion-accion';
+  boton.dataset.accion = accion;
+  boton.textContent = texto;
+  boton.setAttribute('aria-label', etiqueta);
+  return boton;
+}
+
+/** La última observación a la vista; las anteriores, de la más reciente a la más antigua. */
+function pintarArchivo(observaciones) {
+  const anteriores = [...observaciones.slice(0, -1)].reverse(); // copia: no muta lo guardado
+  mirada.ultima.replaceChildren(...observaciones.slice(-1).map(createObservacion));
+  mirada.archivo.replaceChildren(...anteriores.map(createObservacion));
+  mirada.anteriores.hidden = anteriores.length === 0;
+  if (anteriores.length === 0) mirada.anteriores.open = false;
+}
+
+/** El aro interior de la mirilla: tu nota (solo de noche). Sin nota, el aro queda vacío. */
+function pintarAroPropio(nota) {
+  ficha.nota.toggleAttribute('data-propia', nota !== null);
+  ficha.nota.style.setProperty('--arco-propia', ratingToArc(nota ?? 0));
+  ficha.notaPropia.textContent = nota === null ? '' : nota.toFixed(1);
+  pintarTira(ficha.tiraPropia, nota); // tu tira responde en directo al calibrar
+  ficha.leyendaPropia.textContent = nota === null
+    ? 'Tu enfoque · sin calibrar · baja a «Lo que no se ve»'
+    : `Tu enfoque · ${nota.toFixed(1)} · nuestra mirada`;
+  etiquetarVisor();
+}
+
+/** El piloto de la máquina: un solo indicador con tres estados. */
+function setPiloto(estado) {
+  mirada.piloto.dataset.estado = estado;
+  mirada.piloto.textContent = PILOTO[estado];
+}
+
+/** La cifra del enfoque: «¿Y tú?» hasta que mueves el rango; después, tu nota nítida. */
+function pintarCifraPropia(nota) {
+  mirada.cifra.textContent = nota === null ? '¿Y tú?' : nota.toFixed(1);
+  mirada.cifra.toggleAttribute('data-vacia', nota === null);
+  mirada.rango.toggleAttribute('data-vacia', nota === null);
+  mirada.rango.setAttribute('aria-valuetext', nota === null ? 'Sin nota' : `${nota.toFixed(1)} sobre 10`);
+}
+
+/** Al calibrar, la mirilla de arriba responde en directo: la máquina y la lente son el mismo mecanismo. */
+function handleMiradaInput() {
+  miradaTocada = true;
+  const nota = Number(mirada.rango.value);
+  pintarCifraPropia(nota);
+  pintarAroPropio(nota); // vista previa: no se guarda hasta revelar
+  setPiloto('calibrando');
+}
+
+function handleMiradaSubmit(event) {
+  event.preventDefault(); // sin recargar la página
+  if (miradaId === null) return;
+  const previa = loadMiradas()[miradaId] ?? null;
+  const lista = previa?.observaciones ?? [];
+  const texto = mirada.texto.value;
+  const fecha = new Date().toISOString();
+  const corrigiendo = observacionEnEdicion !== null;
+
+  // Funciones puras: corregir la que se edita o añadir una nueva (sin texto, el archivo no cambia)
+  let observaciones = lista;
+  if (corrigiendo) observaciones = editObservacion(lista, observacionEnEdicion, texto);
+  else if (texto.trim()) observaciones = addObservacion(lista, { texto, fecha });
+
+  // `bechdel`: el test se pospone a otra fase, pero lo que ya estuviera guardado no se pierde
+  const nueva = { nota: miradaTocada ? mirada.rango.value : null, bechdel: previa?.bechdel ?? null, fecha, observaciones };
+  const habiaLectura = previa && (previa.nota !== null || lista.length > 0);
+  if (!habiaLectura && nueva.nota === null && observaciones.length === 0) {
+    mirada.estado.textContent = 'Escribe lo que viste o calibra tu enfoque antes de revelar.';
+    return;
+  }
+  const ok = saveMiradas(setMirada(loadMiradas(), miradaId, nueva));
+  const retirada = corrigiendo && observaciones.length < lista.length;
+  const mensaje = !corrigiendo
+    ? 'Tu lectura queda guardada en este navegador.'
+    : retirada ? 'Observación retirada del archivo.' : 'Observación corregida.';
+  mirada.estado.textContent = ok ? mensaje : 'No se ha podido guardar: el navegador bloquea el almacenamiento.';
+  if (ok) {
+    mirada.entrada.hidden = true;  // se oculta y vuelve a aparecer: la persiana se repite
+    void mirada.entrada.offsetWidth; // fuerza al navegador a aplicar el cambio antes de mostrarla
+    renderLectura();
+    mirada.reescribir.focus(); // «Revelar» desaparece: el foco pasa a «Mirar otra vez»
+  }
+}
+
+/** Mirar otra vez: la máquina se reabre con la placa vacía para una observación nueva. */
+function handleMiradaReescribir() {
+  escribirObservacion(null);
+  mirada.form.removeAttribute('data-revelada');
+  mirada.estado.textContent = '';
+  setPiloto('calibrando');
+  mirada.texto.focus(); // el botón desaparece: el foco va a la placa
+}
+
+/** Volver: se descarta lo que no se ha revelado (vista previa de la nota, texto). */
+function handleMiradaVolver() {
+  mirada.estado.textContent = '';
+  renderLectura();
+  mirada.reescribir.focus();
+}
+
+/** Corregir o borrar una observación del archivo (un solo manejador para todas: delegación). */
+function handleArchivoClick(event) {
+  const boton = event.target.closest('[data-accion]');
+  const id = boton?.closest('.observacion')?.dataset.id;
+  if (!id || miradaId === null) return;
+  const guardada = loadMiradas()[miradaId];
+  const observacion = guardada?.observaciones.find((obs) => obs.id === id);
+  if (!observacion) return;
+
+  if (boton.dataset.accion === 'corregir') {
+    escribirObservacion(observacion);
+    mirada.form.removeAttribute('data-revelada');
+    mirada.estado.textContent = '';
+    setPiloto('calibrando');
+    mirada.texto.focus();
+    return;
+  }
+
+  const restantes = removeObservacion(guardada.observaciones, id);
+  const ok = saveMiradas(setMirada(loadMiradas(), miradaId, { ...guardada, observaciones: restantes }));
+  mirada.estado.textContent = ok ? 'Observación retirada del archivo.' : 'No se ha podido borrar.';
+  if (!ok) return;
+  renderLectura();
+  // El botón pulsado ya no existe: el foco va a la acción que sigue a la vista
+  (mirada.form.hasAttribute('data-revelada') ? mirada.reescribir : mirada.texto).focus();
+}
+
+function handleMiradaBorrar() {
+  if (miradaId === null) return;
+  // Se borra la lectura (nota y archivo); un test de Bechdel guardado antes se conserva (fase posterior)
+  const miradas = loadMiradas();
+  const bechdel = miradas[miradaId]?.bechdel ?? null;
+  const ok = saveMiradas(setMirada(miradas, miradaId, { bechdel }));
+  mirada.estado.textContent = ok ? 'Lectura borrada.' : 'No se ha podido borrar.';
+  if (ok) {
+    renderLectura();
+    mirada.texto.focus(); // el botón Borrar desaparece: el foco no se pierde
+  }
+}
+
+/** De día, tocar o pulsar el visor deja la nota pública enfocada (en móvil no hay hover).
+ *  De noche no hay nada que destapar: la mirilla lleva a tu lectura. */
+function toggleNota() {
+  if (esNoche()) {
+    goToSection('mirada');
+    return;
+  }
+  const enfocada = ficha.nota.getAttribute('aria-pressed') === 'true';
+  ficha.nota.setAttribute('aria-pressed', String(!enfocada));
 }
 
 const PROFILE_BASE = 'https://image.tmdb.org/t/p/w185';
@@ -691,10 +1066,24 @@ els.input.addEventListener('focus', handleFocus);
 els.results.addEventListener('click', handleResultsClick);
 els.btnTema.addEventListener('click', toggleTheme); // NUEVO 5d
 els.genres.addEventListener('click', handleGenreClick);
+els.genresMarco.addEventListener('click', handleArrowClick); // las flechas de los géneros reutilizan las del carrusel
+vigilarBordes(els.genres, els.genresMarco);
 document.querySelectorAll('.fila-flechas')
   .forEach((flechas) => flechas.addEventListener('click', handleArrowClick));
 pelis.pestanas.addEventListener('click', handlePestanaClick);
 ficha.ventana.addEventListener('toggle', showMap);
+ficha.nota.addEventListener('click', toggleNota);
+mirada.rango.addEventListener('input', handleMiradaInput);
+mirada.rango.addEventListener('pointerdown', handleMiradaInput); // tocar la tira ya calibra, aunque caigas en el valor actual
+mirada.form.addEventListener('submit', handleMiradaSubmit);
+mirada.borrar.addEventListener('click', handleMiradaBorrar);
+mirada.reescribir.addEventListener('click', handleMiradaReescribir);
+mirada.volver.addEventListener('click', handleMiradaVolver);
+mirada.entrada.addEventListener('click', handleArchivoClick);
+// Otra pestaña guardó o borró una mirada: si es la película abierta, se repinta
+window.addEventListener('storage', (event) => {
+  if (event.key === MIRADAS_KEY && miradaId !== null) renderMirada(miradaId);
+});
 pelis.mas.addEventListener('click', () => {
   const accion = radiografia.genero
     ? () => fillGenre(pelis.rejilla.children.length + MIN_VISIBLES) // con filtro: 12 más de ese género
@@ -713,25 +1102,31 @@ radiografia.capsulas.addEventListener('focusout', (event) => {
 });
 
 /** La luz de cada cápsula sigue al ratón. Reutiliza la función pura de la inclinación. */
-function enableCapsuleLight(container) {
+function enablePointerLight(container, selector) {
   let frame = 0; // vive en el cierre: no es una variable global
   container.addEventListener('pointermove', (event) => {
     if (event.pointerType !== 'mouse') return;
-    const boton = event.target.closest('.capsula');
-    if (!boton) return;
+    const target = event.target.closest(selector);
+    if (!target) return;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => {
-      const { mx, my } = tiltFromPointer(event.clientX, event.clientY, boton.getBoundingClientRect());
-      boton.style.setProperty('--mx', `${mx.toFixed(1)}%`);
-      boton.style.setProperty('--my', `${my.toFixed(1)}%`);
+      const { mx, my } = tiltFromPointer(event.clientX, event.clientY, target.getBoundingClientRect());
+      target.style.setProperty('--mx', `${mx.toFixed(1)}%`);
+      target.style.setProperty('--my', `${my.toFixed(1)}%`);
     });
   });
 }
-enableCapsuleLight(radiografia.capsulas);
-enableCapsuleLight(els.genres); // los géneros de Inicio comparten la luz que sigue al cursor
+enablePointerLight(radiografia.capsulas, '.capsula'); // Películas: la Marquesina
+// Botones rellenos y de contorno: la misma luz, con un solo listener para toda la página (delegación)
+enablePointerLight(document, '.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado');
+enablePointerLight(els.genres, '.capsula');           // Inicio: los géneros comparten la misma luz
+enablePointerLight(ficha.ventana, '.ficha-mapa');
+enablePointerLight(mirada.form, '.calibre-tira');      // «Tu enfoque»: la luz recorre la tira de tu nota
 
 // ---------- Arranque ----------
 applyTheme(loadTheme()); // NUEVO 5d: sincroniza el interruptor con el tema guardado
+activarMiLista(); // un solo listener para todas las cápsulas de Mi lista (tarjetas, ficha, «Qué ver»)
+initScrollTheme(document.querySelector('#fondo-escena')); // el fondo se mueve más despacio que el contenido
 const hero = new HeroCarousel(document.querySelector('#hero'), { onAction: handleHeroAction });
 // Una sola instancia: sus listeners se crean una vez. También pinta «Mi lista» con las favoritas.
 const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
@@ -740,10 +1135,21 @@ const queVer = new QueVer(document.querySelector('#vista-que-ver'), {
   avisoLista: document.querySelector('#mi-lista-aviso'),
 });
 
+tendencias = loadRow(els.trending, () => getTrending()); // antes que los géneros: su fila la necesita
+
+// «Para ti» usa la misma tarjeta que el resto de filas (se le pasa la función: no duplica código)
+const paraTi = new ParaTi({
+  seccion: document.querySelector('#para-ti'),
+  fila: document.querySelector('#fila-para-ti'),
+  fuentes: document.querySelector('#para-ti-fuentes'),
+  flechas: document.querySelector('#para-ti-flechas'),
+}, { crearTarjeta: createCard });
+
 Promise.allSettled([
   startRouter(handleRoute),
   loadHero(hero),
-  loadRow(els.trending, () => getTrending()).then(fillEmblem),
+  tendencias.then(fillEmblem),
   initGenres(),
+  paraTi.actualizar(),
 ]);
 

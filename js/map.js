@@ -1,12 +1,7 @@
-// Mapa de la ficha: «¿Desde dónde se mira?» (países de producción).
-// Leaflet llega por CDN (index.html) como variable global L.
-
-const TILES = {
-  claro: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-  oscuro: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-};
+// Teselas de OpenStreetMap: gratis y sin clave. El tema oscuro se aplica con CSS.
+const TILES_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const MUNDO = { centro: [20, 0], zoom: 1 };
 const ZOOM_MAX = 4;
 
@@ -14,8 +9,16 @@ const ZOOM_MAX = 4;
 
 const REGION_NAMES = new Intl.DisplayNames(['es'], { type: 'region' });
 
-/** Nombre del país en español ('FR' → 'Francia'); si el navegador no lo conoce (p. ej. 'SU'), usa el de TMDB. */
+// Códigos ISO retirados que TMDB conserva: Intl los traduce al país sucesor (SU → «Rusia»), y eso es un error histórico
+const PAISES_HISTORICOS = Object.freeze({
+  SU: 'Unión Soviética', XC: 'Checoslovaquia', YU: 'Yugoslavia',
+  CS: 'Serbia y Montenegro', DD: 'Alemania del Este', XG: 'Alemania del Este',
+  AN: 'Antillas Neerlandesas',
+});
+
+/** Nombre del país en español ('FR' → 'Francia'); los históricos, con su nombre de entonces; si no, el de TMDB. */
 export function countryName(code, fallback) {
+  if (Object.hasOwn(PAISES_HISTORICOS, code)) return PAISES_HISTORICOS[code];
   try {
     const name = REGION_NAMES.of(code);
     return name && name !== code ? name : fallback;
@@ -30,6 +33,13 @@ export function toMarkers(countries = [], coords = {}) {
     .filter(({ iso_3166_1: code }) => Object.hasOwn(coords, code))
     .map(({ iso_3166_1: code, name }) => ({ code, name: countryName(code, name), latlng: coords[code] }));
 }
+/** ¿Cargó Leaflet desde el CDN? Si no, la ficha sigue funcionando sin mapa. */
+export const mapaDisponible = () => typeof L !== 'undefined';
+
+// Texto accesible del mapa: «Mapa de producción: Estados Unidos y Francia»
+const listFormat = new Intl.ListFormat('es', { type: 'conjunction' });
+export const mapLabel = (markers = []) =>
+  `Mapa de producción: ${listFormat.format(markers.map(({ name }) => name))}`;
 
 // ---------- Clase ----------
 
@@ -60,7 +70,7 @@ export class CountryMap {
     markers.forEach(({ name, latlng }) => {
       L.circleMarker(latlng, {
         radius: 7, weight: 2, color: this.#color, fillColor: this.#color, fillOpacity: 0.85,
-      }).bindTooltip(name).addTo(this.#layer);
+      }).bindTooltip(document.createTextNode(name)).addTo(this.#layer); // como texto: Leaflet trata las cadenas como HTML
     });
 
     if (markers.length === 1) {
@@ -82,9 +92,8 @@ export class CountryMap {
     const theme = document.documentElement.dataset.theme === 'claro' ? 'claro' : 'oscuro';
     if (theme === this.#theme) return;
 
-    this.#tiles?.remove();
-    this.#tiles = L.tileLayer(TILES[theme], {
-      attribution: ATTRIBUTION, subdomains: 'abcd', maxZoom: 19,
+    this.#tiles ??= L.tileLayer(TILES_URL, {
+      attribution: ATTRIBUTION, maxZoom: 19, className: 'mapa-teselas',
     }).addTo(this.#map);
 
     const token = theme === 'claro' ? '--lavanda-100' : '--lavanda-300';

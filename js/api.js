@@ -63,18 +63,24 @@ export async function getMovieList(type, { page = 1, signal } = {}) {
   return request(`/movie/${type}`, { page, region: 'ES' }, signal);
 }
 
-export function discoverMovies({ genreId, page = 1, signal } = {}) {
+// Por defecto, lo más popular; «Lo que no te puedes perder» la pide por nota y con muchos votos
+export function discoverMovies({ genreId, page = 1, signal, sortBy = 'popularity.desc', minVotes = 100 } = {}) {
   return request('/discover/movie', {
     page,
-    sort_by: 'popularity.desc',
+    sort_by: sortBy,
     include_adult: false,
-    'vote_count.gte': 100,
+    'vote_count.gte': minVotes,
     ...(genreId && { with_genres: genreId }),
   }, signal);
 }
 
 export function getRecommendations(id, { signal } = {}) {
   return request(`/movie/${id}/recommendations`, {}, signal);
+}
+
+// Parecidas por géneros y palabras clave: el plan B cuando TMDB no tiene recomendaciones de una película
+export function getSimilar(id, { signal } = {}) {
+  return request(`/movie/${id}/similar`, {}, signal);
 }
 
 let genresPromise = null; // memoria: los géneros no cambian durante la visita

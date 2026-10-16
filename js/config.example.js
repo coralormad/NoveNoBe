@@ -2,3 +2,4 @@
 export const ACCESS_TOKEN = '3afd3119f6a994c509baa39b8c576708';
 export const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 export const TMDB_IMG_URL = 'https://image.tmdb.org/t/p/w500';  
+export const RESTCOUNTRIES_KEY = 'TU_CLAVE_DE_RESTCOUNTRIES';

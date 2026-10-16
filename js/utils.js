@@ -1,22 +1,5 @@
 // Funciones puras: reciben datos, devuelven datos nuevos. Sin DOM, sin fetch, sin mutar.
 
-/** Comprueba si un filtro tiene valor (ignora undefined, null y ''). */
-const hasValue = (value) => value !== undefined && value !== null && value !== '';
-
-/**
- * Filtra películas por género, año y nota mínima.
- * @param {Array<Movie>} movies - Lista de películas.
- * @param {{genreId?: number, year?: number, minRating?: number}} [filters={}] - Filtros opcionales.
- * @returns {Array<Movie>} Array nuevo con las que cumplen todos los filtros.
- */
-export function filterMovies(movies, { genreId, year, minRating } = {}) {
-  return movies.filter((movie) =>
-    (!hasValue(genreId) || movie.genreIds.includes(genreId)) &&
-    (!hasValue(year) || movie.year === String(year)) &&
-    (!hasValue(minRating) || movie.rating >= minRating)
-  );
-}
-
 /**
  * Ordena por popularidad, de mayor a menor, sin tocar el original.
  * @param {Array<Movie>} movies
@@ -146,7 +129,7 @@ export function pickCrew(crew = []) {
 export function pickCertification(releaseDates = [], countries = ['ES', 'US']) {
   for (const code of countries) {
     const entry = releaseDates.find((r) => r.iso_3166_1 === code);
-    const certification = entry?.release_dates.find((d) => d.certification)?.certification;
+    const certification = entry?.release_dates?.find((d) => d.certification)?.certification;
     if (certification) return { country: code, certification };
   }
   return null;
@@ -228,14 +211,15 @@ export const FILTROS_LISTA = Object.freeze(['todas', 'pendientes', 'observadas']
 
 /**
  * Pura: filtra las películas guardadas por su estado.
- * @param {Array<{id:number}>} lista - Películas guardadas.
- * @param {number[]} observadas - Ids de las ya vistas.
+ * @param {object[]} lista - Películas guardadas.
+ * @param {Array<number|string>} observadas - Identificadores de las ya vistas.
  * @param {'todas'|'pendientes'|'observadas'} [filtro='todas']
+ * @param {string} [campo='id'] - Qué propiedad identifica a cada película (Mi lista usa «clave»).
  * @returns {Array} Array nuevo (no muta la lista).
  */
-export function filterByWatched(lista, observadas, filtro = 'todas') {
-  if (filtro === 'observadas') return lista.filter(({ id }) => observadas.includes(id));
-  if (filtro === 'pendientes') return lista.filter(({ id }) => !observadas.includes(id));
+export function filterByWatched(lista, observadas, filtro = 'todas', campo = 'id') {
+  if (filtro === 'observadas') return lista.filter((item) => observadas.includes(item[campo]));
+  if (filtro === 'pendientes') return lista.filter((item) => !observadas.includes(item[campo]));
   return [...lista];
 }
 
@@ -243,13 +227,29 @@ export function filterByWatched(lista, observadas, filtro = 'todas') {
 export const numeroDeColeccion = (indice) => String(indice + 1).padStart(2, '0');
 
 /**
- * Pura: inserta un id en una posición (para «Deshacer»). Si ya está, devuelve una copia sin cambios;
- * si la posición no es válida, lo añade al final.
- * @param {number[]} ids @param {number} id @param {number} indice
- * @returns {number[]} Array nuevo.
+ * Pura: quita de unos resultados de TMDB las películas que ya se muestran en otra fila.
+ * @param {Array<{id:number}>} results @param {Array<{id:number}>} yaVistas
+ * @returns {Array} array nuevo (no muta)
  */
-export function insertAt(ids, id, indice) {
-  if (ids.includes(id)) return [...ids];
-  const posicion = Number.isInteger(indice) && indice >= 0 ? Math.min(indice, ids.length) : ids.length;
-  return [...ids.slice(0, posicion), id, ...ids.slice(posicion)];
+export function excludeIds(results, yaVistas) {
+  const ids = new Set(yaVistas.map(({ id }) => id));
+  return results.filter(({ id }) => !ids.has(id));
 }
+
+/**
+ * Pura: ¿queda contenido fuera de plano a cada lado de una tira con scroll horizontal?
+ * El margen de 2px evita parpadeos por redondeos de subpíxel.
+ * @returns {{ antes: boolean, despues: boolean }}
+ */
+export const bordesDeScroll = (scrollLeft, clientWidth, scrollWidth, margen = 2) => ({
+  antes: scrollLeft > margen,
+  despues: scrollLeft + clientWidth < scrollWidth - margen,
+});
+
+/** Pura: nota (0-10) → porción del aro de la mirilla (0-100, el pathLength del SVG). Acotada. */
+export const ratingToArc = (rating) => Math.min(Math.max(Number(rating) || 0, 0), 10) * 10;
+
+/** Pura: nota 0-10 → cuánto se revela cada fotograma de la tira (1 = revelado, 0 = sin revelar).
+ *  Un fotograma por punto; el último, en proporción (6,7 → seis enteros y el séptimo al 70 %). */
+export const fotogramas = (nota, total = 10) =>
+  Array.from({ length: total }, (_, i) => Math.round(Math.min(Math.max((Number(nota) || 0) - i, 0), 1) * 100) / 100);

@@ -25,6 +25,14 @@
           integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 </head>
 <body>
+  <!-- El fondo como una escena vista a través de una ventana: luz, sombra de persiana y viñeta.
+       Dos capas a distinta velocidad al hacer scroll (scrollTheme.js). Decorativo: se oculta a los lectores -->
+  <div id="fondo-escena" class="fondo-escena" aria-hidden="true">
+    <span class="fondo-luz fondo-luz--alba"></span>
+    <span class="fondo-luz fondo-luz--sala"></span>
+    <span class="fondo-luz fondo-luz--proyector"></span>
+    <span class="fondo-persiana"></span>
+  </div>
 
   <!-- 1. CABECERA -->
   <header class="cabecera">
@@ -45,12 +53,6 @@
           <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
         </svg>
       </button>
-      <!-- Oculto hasta que tenga función: un botón que no hace nada no debe ofrecerse -->
-      <button type="button" id="btn-avisos" class="icono-boton" hidden aria-expanded="false" aria-controls="panel-avisos" aria-label="Avisos">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-        </svg>
-      </button>
       <button type="button" id="btn-tema" class="interruptor" role="switch" aria-checked="true" aria-label="Cambiar tema">
         <span class="interruptor-capsula" aria-hidden="true">
           <span class="interruptor-bola">
@@ -61,13 +63,8 @@
     </div>
 
     <div id="panel-buscar" class="panel" hidden>
-      <input type="search" id="buscador" placeholder="Busca una película o serie" aria-label="Buscar películas y series" autocomplete="off">
+      <input type="search" id="buscador" placeholder="Busca una película" aria-label="Buscar películas" autocomplete="off">
       <ul id="resultados-busqueda"></ul>
-    </div>
-
-    <div id="panel-avisos" class="panel" hidden>
-      <h2>Novedades</h2>
-      <ul id="lista-avisos"></ul>
     </div>
   </header>
 
@@ -137,44 +134,63 @@
         <span id="hero-reloj" class="hero-reloj" aria-hidden="true"></span>
       </section>
 
-      <!-- Oculta hasta que tenga contenido real -->
-      <section class="fila reveal" hidden>
-        <div class="fila-cabecera">
-          <h2>Continúa tu historia</h2>
-          <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-continua" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-continua" aria-label="Desplazar a la derecha">›</button>
-          </div>
-        </div>
-        <div id="fila-continua" class="carrusel"></div>
-      </section>
-
-      <section id="descubre" class="fila reveal">
+      <section id="descubre" class="fila">
         <p class="sobretitulo">Un universo por descubrir</p>
-        <h2>Tu próxima gran historia</h2>
-        <div id="generos" class="generos" role="group" aria-label="Géneros"></div>
+        <h2 class="descubre-titulo">Tu próxima gran historia</h2>
+        <!-- La tira de géneros se desliza en horizontal; las flechas solo aparecen si queda algo fuera de plano -->
+        <div id="generos-marco" class="generos-marco">
+          <div id="generos" class="generos" role="group" aria-label="Géneros"></div>
+          <button type="button" class="flecha-luz generos-flecha generos-flecha--anterior" data-flecha="izquierda" data-objetivo="generos" tabindex="-1" aria-label="Ver géneros anteriores" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button type="button" class="flecha-luz generos-flecha generos-flecha--siguiente" data-flecha="derecha" data-objetivo="generos" tabindex="-1" aria-label="Ver más géneros" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <!-- Selección editorial: las mejor valoradas del género (con muchos votos), sin repetir las de «En boca de todos» -->
         <div class="fila-cabecera">
-          <h3>Lo que no te puedes perder</h3>
+          <div class="fila-titular">
+            <p id="genero-criterio" class="sobretitulo">Las mejor valoradas del género</p>
+            <h3 class="fila-titulo">Lo que no te puedes perder</h3>
+          </div>
           <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-genero" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-genero" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-genero" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-genero" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-genero" class="carrusel"></div>
       </section>
 
-      <section class="fila reveal">
+      <!-- Lo que más se ve y se comenta esta semana (tendencias de TMDB). Al mirar una, las demás quedan en penumbra -->
+      <section class="fila fila--boca">
         <div class="fila-cabecera">
-          <h2>En boca de todos</h2>
+          <div class="fila-titular">
+            <p class="sobretitulo">Lo más visto y comentado esta semana</p>
+            <h2 class="fila-titulo">En boca de todos</h2>
+          </div>
           <div class="fila-flechas">
-            <button type="button" data-flecha="izquierda" data-objetivo="fila-tendencias" aria-label="Desplazar a la izquierda">‹</button>
-            <button type="button" data-flecha="derecha" data-objetivo="fila-tendencias" aria-label="Desplazar a la derecha">›</button>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-tendencias" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-tendencias" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
           </div>
         </div>
         <div id="fila-tendencias" class="carrusel"></div>
       </section>
 
-      <section id="spotlight" class="spotlight reveal" aria-label="Destacado especial" hidden></section> <!-- oculta: sin contenido todavía -->
+      <!-- Para ti: lo que TMDB relaciona con tus últimas guardadas (js/paraTi.js). Sin lista, cómo empezar -->
+      <section id="para-ti" class="fila para-ti" aria-labelledby="para-ti-titulo">
+        <div class="fila-cabecera">
+          <div class="fila-titular">
+            <p id="para-ti-fuentes" class="sobretitulo"></p>
+            <h2 id="para-ti-titulo" class="fila-titulo">Para ti</h2>
+          </div>
+          <div id="para-ti-flechas" class="fila-flechas" hidden>
+            <button type="button" class="flecha-luz" data-flecha="izquierda" data-objetivo="fila-para-ti" aria-label="Desplazar a la izquierda"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button type="button" class="flecha-luz" data-flecha="derecha" data-objetivo="fila-para-ti" aria-label="Desplazar a la derecha"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+        <div id="fila-para-ti" class="carrusel"></div>
+      </section>
+
     </div>
 
     <!-- 3. VISTA QUÉ VER -->
@@ -296,7 +312,25 @@
           <header class="ficha-cabecera">
             <img id="ficha-fondo" class="ficha-fondo" alt="" decoding="async">
             <div class="ficha-cabecera-cuerpo">
-              <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
+              <div class="ficha-poster-marco">
+                <img id="ficha-poster" class="ficha-poster" alt="" width="342" height="513" decoding="async">
+                <!-- La mirilla: una lente fina en la esquina del cartel. Aro exterior = TMDB (la mayoría);
+                     aro interior = tu mirada (solo de noche). La cifra se enfoca al mirarla. -->
+                <button id="ficha-nota" class="visor" type="button" aria-pressed="false">
+                  <svg class="visor-optica" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                    <circle class="visor-borde" cx="50" cy="50" r="46"/>
+                    <!-- Marcas de enfoque: calibran al aparecer -->
+                    <path class="visor-marcas" d="M50 0v9"/>
+                    <path class="visor-marcas" d="M91 50h9"/>
+                    <path class="visor-marcas" d="M50 91v9"/>
+                    <path class="visor-marcas" d="M0 50h9"/>
+                    <circle class="visor-arco visor-arco--tmdb" cx="50" cy="50" r="46" pathLength="100" transform="rotate(-90 50 50)"/>
+                    <circle class="visor-arco visor-arco--propia" cx="50" cy="50" r="38" pathLength="100" transform="rotate(-90 50 50)"/>
+                  </svg>
+                  <span id="ficha-nota-cifra" class="visor-cifra" aria-hidden="true"></span>
+                  <span id="ficha-nota-propia" class="visor-propia solo-noche" aria-hidden="true"></span>
+                </button>
+              </div>
               <div class="ficha-info">
                 <p id="ficha-meta" class="ficha-meta"></p>
                 <h2 id="ficha-titulo" class="ficha-titulo" tabindex="-1"></h2>
@@ -304,7 +338,15 @@
                 <p id="ficha-eslogan" class="ficha-eslogan" hidden></p>
                 <p id="ficha-sinopsis" class="ficha-sinopsis"></p>
                 <ul id="ficha-generos" class="ficha-generos" aria-label="Géneros"></ul>
-                <p id="ficha-nota" class="ficha-nota"></p>
+                <!-- La nota y lo que haces con ella: la cápsula de Mi lista (main.js la crea con miLista.js)
+                     y, a su lado, la leyenda de la mirilla: de día, la versión oficial (se descubre al mirar);
+                     de noche, la tuya (a la vista). Tu tira vive abajo, en «Tu enfoque»: allí se calibra -->
+                <div id="ficha-nota-fila" class="ficha-nota-fila">
+                  <p class="ficha-votos" aria-hidden="true">
+                    <span id="ficha-votos" class="solo-dia"></span>
+                    <span id="ficha-leyenda-propia" class="solo-noche"></span>
+                  </p>
+                </div>
               </div>
             </div>
           </header>
@@ -317,7 +359,9 @@
           </nav>
 
           <div class="ficha-cuerpo">
-            <!-- B. Ficha técnica y origen: los países, en texto; el mapa, plegado tras la ventana -->
+            <!-- B. Lo que se sabe y lo que se ve: la ficha técnica (datos) y, al otro lado de la mirilla,
+                 tu lectura (de día, la rendija; de noche, la máquina) -->
+            <div class="ficha-par">
             <section id="seccion-tecnica" class="ficha-seccion" aria-labelledby="ficha-tecnica-titulo" tabindex="-1">
               <h3 id="ficha-tecnica-titulo" class="sobretitulo">Ficha técnica</h3>
               <dl id="ficha-equipo" class="ficha-equipo"></dl>
@@ -327,9 +371,54 @@
               </details>
             </section>
 
+            <section id="seccion-mirada" class="ficha-seccion" aria-labelledby="mirada-titulo" tabindex="-1">
+              <h3 id="mirada-titulo" class="sobretitulo">Lo que no se ve</h3>
+              <!-- De día: solo se insinúa que hay otra lectura -->
+              <p class="ficha-rendija solo-dia">Una cifra no cuenta toda la historia. <span>Apaga la luz y mira otra vez.</span></p>
+
+              <!-- De noche: la máquina de mirar. Escribes, calibras tu enfoque y revelas tu lectura (localStorage) -->
+              <form id="mirada" class="maquina solo-noche" novalidate>
+                <p id="mirada-piloto" class="maquina-piloto" data-estado="vacia" aria-hidden="true">Sin calibrar</p>
+                <div class="maquina-placa">
+                  <label for="mirada-texto" id="mirada-pregunta" class="maquina-pregunta">Lo que viste y nadie cuenta</label>
+                  <textarea id="mirada-texto" class="maquina-texto" rows="4" maxlength="600"
+                    placeholder="Escribe lo que la nota no dice"></textarea>
+                </div>
+                <div class="maquina-calibre">
+                  <label for="mirada-nota" class="maquina-etiqueta">Tu enfoque</label>
+                  <!-- Tu tira es el propio control: el rango (invisible salvo el cabezal) va encima de los fotogramas -->
+                  <div class="calibre-tira">
+                    <div id="tira-propia" class="tira tira--propia" aria-hidden="true"><ol class="tira-fotogramas"></ol></div>
+                    <input id="mirada-nota" class="maquina-regla" type="range" min="0" max="10" step="0.5" value="5">
+                  </div>
+                  <output id="mirada-cifra" class="maquina-cifra" for="mirada-nota"></output>
+                </div>
+                <div class="maquina-acciones">
+                  <button type="submit" class="qv-boton maquina-revelar">Revelar mi lectura</button>
+                  <button type="button" id="mirada-reescribir" class="maquina-borrar maquina-reescribir">Mirar otra vez</button>
+                  <button type="button" id="mirada-volver" class="maquina-borrar maquina-volver" hidden>Volver</button>
+                  <button type="button" id="mirada-borrar" class="maquina-borrar" hidden>Borrar lectura</button>
+                </div>
+                <p id="mirada-estado" class="maquina-estado" role="status"></p>
+                <!-- El archivo de observaciones: la última a la vista; las anteriores, tras la persiana -->
+                <div id="mirada-entrada" class="maquina-revelado" hidden>
+                  <p class="maquina-revelado-meta"><time id="mirada-fecha"></time><span id="mirada-enfoque"></span></p>
+                  <ol id="mirada-ultima" class="archivo archivo-ultima" aria-label="Última observación"></ol>
+                  <details id="mirada-anteriores" class="archivo-anteriores" hidden>
+                    <summary>Observaciones anteriores</summary>
+                    <ol id="mirada-archivo" class="archivo" aria-label="Observaciones anteriores"></ol>
+                  </details>
+                </div>
+              </form>
+            </section>
+            </div> <!-- /ficha-par -->
+
             <!-- C. Reparto: el patio de enfrente; cada persona, una ventana que se enciende al mirarla -->
             <section id="seccion-reparto" class="ficha-seccion" aria-labelledby="ficha-reparto-titulo" tabindex="-1">
-              <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+              <div class="seccion-cabeza">
+                <h3 id="ficha-reparto-titulo" class="sobretitulo">Reparto</h3>
+                <p class="patio-pista" aria-hidden="true">Mira una ventana</p>
+              </div>
               <ul id="ficha-reparto" class="patio" tabindex="0" aria-labelledby="ficha-reparto-titulo"></ul>
               <p id="ficha-reparto-vacio" class="fila-mensaje" hidden>Reparto no disponible.</p>
             </section>
@@ -352,20 +441,14 @@
       </figcaption>
     </figure>
 
+    <!-- La firma: el emblema 9B de la pestaña (img/favicon-c.svg) abajo a la izquierda, donde la cabecera
+         abre con el nombre. La página empieza y termina en la misma esquina de lectura -->
     <div class="cierre-fila">
       <div class="cierre-marca">
+        <span class="cierre-emblema" aria-hidden="true"></span>
         <p class="cierre-logo">NoveNoBé</p>
         <p class="cierre-lema">Una historia para cada versión de ti</p>
       </div>
-
-      <nav class="cierre-nav" aria-label="Secundaria">
-        <ul>
-          <li><a href="#/">Inicio</a></li>
-          <li><a href="#/que-ver">Qué ver</a></li>
-          <li><a href="#/peliculas">Películas</a></li>
-          <li><a href="#/mi-lista">Mi lista</a></li>
-        </ul>
-      </nav>
 
       <div class="cierre-creditos">
         <p>Datos e imágenes de <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>.
@@ -396,7 +479,10 @@
           </span>
         </span>
       </a>
-      <h3 class="tarjeta-titulo"></h3>
+      <!-- Pie: el título y, a su lado, la cápsula de Mi lista (fuera del enlace: un botón no va dentro de un enlace) -->
+      <div class="tarjeta-pie">
+        <h3 class="tarjeta-titulo"></h3>
+      </div>
     </article>
   </template>
 

@@ -4,10 +4,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const pad = (n) => String(n).padStart(2, '0');
 
-/** Diferencia en pixels entre dos puntos. */
-export const distance = (x1, y1, x2, y2) => Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 /** Cercanía a un borde: 1 pegado a él, 0 a partir de `zone` (fracción del ancho). */
 export const proximity = (distance, zone = 0.3) => Math.max(0, 1 - distance / zone);
 

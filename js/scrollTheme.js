@@ -5,7 +5,14 @@ export function getScrollProgress(scrollY, scrollHeight, viewportHeight) {
   return Math.min(Math.max(scrollY / maxScroll, 0), 1);
 }
 
-export function initScrollTheme() {
+/**
+ * Escribe --scroll (0-1) en `target` mientras se desplaza la página. Se escribe solo en la capa del fondo,
+ * no en <html>: así cada frame recalcula los estilos de una capa, no los de toda la página.
+ * Con movimiento reducido no se activa (el CSS deja el fondo quieto).
+ * @param {HTMLElement} [target=document.documentElement]
+ */
+export function initScrollTheme(target = document.documentElement) {
+  if (!target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const root = document.documentElement;
   let ticking = false;
 
@@ -15,7 +22,7 @@ export function initScrollTheme() {
       root.scrollHeight,
       window.innerHeight
     );
-    root.style.setProperty('--scroll', progress.toFixed(3));
+    target.style.setProperty('--scroll', progress.toFixed(3));
     ticking = false;
   }
 
@@ -27,5 +34,6 @@ export function initScrollTheme() {
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true }); // cambia la altura útil: se recalcula
   update();
 }

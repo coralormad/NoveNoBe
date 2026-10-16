@@ -23,7 +23,7 @@ El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitch
 
 | Tema claro: la superficie | Tema oscuro: la revelación |
 |---|---|
-| ![Tarjeta de Qué ver en tema claro, con la revelación velada](img/capturas/tema-claro.png) | ![La misma tarjeta en tema oscuro, con la revelación legible](img/capturas/tema-oscuro.png) |
+| ![Mi lista en tema claro](img/capturas/tema-claro.png) | ![Mi lista en tema oscuro](img/capturas/tema-oscuro.png) |
 
 ---
 
@@ -45,7 +45,8 @@ El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitch
   - se navega arrastrando (ratón y táctil), pulsando una vecina, con ← → o con las flechas;
   - una luz ambiental sigue al cursor.
 - **Qué ver · Observatorio cinematográfico:** cuatro preguntas (atmósfera, mirada, ritmo y propuesta) y un recomendador determinista que explica cada sugerencia con coincidencias reales.
-- **Mi lista:** las favoritas guardadas en `localStorage` (`novenobe_favoritos`), que además afinan las recomendaciones.
+- **Mi lista:** las películas guardadas desde cualquier cartel o ficha, en `localStorage` (`novenobe_lista`), que además afinan las recomendaciones.
+- **Para ti:** recomendaciones de TMDB a partir de tus últimas guardadas, ordenadas por cuántas de ellas coinciden (con caché y sin repetir lo que ya tienes).
 - **Ficha de película** con secciones enlazables (`#/pelicula/:id/:seccion`), reparto, equipo y certificación por edades.
 
 ---
@@ -54,7 +55,7 @@ El concepto gira en torno a *ver / no ver*, con *La ventana indiscreta* de Hitch
 
 - HTML5 semántico, CSS3 (custom properties, `color-mix`, `:has()`, transformaciones 3D) y **JavaScript vanilla con módulos ES6**. Sin frameworks.
 - [TheMovieDB API](https://developer.themoviedb.org/) · [Leaflet 1.9](https://leafletjs.com/) · [Chart.js 4](https://www.chartjs.org/)
-- Tipografías: Playfair Display, Manrope y Courier Prime (Google Fonts).
+- Tipografías: Schibsted Grotesk, Playfair Display, Manrope y Courier Prime (Google Fonts).
 
 ---
 
@@ -75,11 +76,13 @@ js/
   hero.js            clase HeroCarousel (portada)
   que-ver.js         clase QueVer (cuestionario, resultados y Mi lista)
   recomendador.js    motor de recomendaciones (solo funciones puras)
-  storage.js         localStorage: historial, tema y favoritas
+  miLista.js         Mi lista: guardar desde cualquier parte de la SPA
+  paraTi.js          clase ParaTi (recomendaciones a partir de Mi lista)
+  storage.js         localStorage: historial, tema, Mi lista y tu mirada
   utils.js           funciones puras de filtrado y transformación
   router.js          rutas por hash (#/peliculas, #/pelicula/278…)
-  tilt.js            inclinación de las tarjetas según el cursor
-  scrollTheme.js     progreso de scroll
+  tilt.js            posición del puntero → luz (función pura)
+  scrollTheme.js     el fondo acompaña al scroll
 data/
   paises.js          centroides de países por código ISO
   movies.js          catálogo local de «Qué ver»
@@ -104,13 +107,13 @@ cp js/config.example.js js/config.js
 
 ## Decisiones técnicas
 
-- **Programación orientada a objetos:** `Movie` modela los datos y los presenta con *getters*. `MovieCatalog`, `CountryMap`, `CatalogCharts`, `GenreStage`, `HeroCarousel` y `QueVer` encapsulan su estado con campos privados (`#`).
+- **Programación orientada a objetos:** `Movie` modela los datos y los presenta con *getters*. `MovieCatalog`, `CountryMap`, `CatalogCharts`, `GenreStage`, `HeroCarousel`, `QueVer` y `ParaTi` encapsulan su estado con campos privados (`#`).
 - **Asincronía:** todas las peticiones pasan por un único `request()` en `api.js`. Tiene `try/catch`, un error propio `ApiError` con el código HTTP y mensajes legibles para la usuaria (`toUserMessage`). Las peticiones obsoletas se cancelan con `AbortController`.
 - **Funciones puras:**
   - **Filtrado y transformación:** `filterByGenre`, `countByGenre`, `groupTail`, `topOfGenre`, `sharesGenre`.
   - **Recomendador:** `puntuar`, `recomendar`, `explicar`.
   - **Carrusel:** `dragShift`, `snapIndex`, `pasoEntre`, `indiceCentral`.
-  - **Favoritas:** `toggleFavorite`, `sanitizeFavorites`.
+  - **Mi lista:** `alternarEntrada`, `insertarEntrada`, `sanitizeLista`, `combinarRecomendaciones`.
   - **Rutas:** `parseRoute`.
 
   Ninguna modifica sus entradas.
@@ -129,7 +132,7 @@ cp js/config.example.js js/config.js
 ## Trabajo futuro
 
 - Votaciones de la comunidad sobre el test de Bechdel en una base de datos compartida.
-- Avisos de la portada y «Continúa tu historia», ahora ocultos hasta tener contenido real.
+- Panel de avisos de la portada y fila «Continúa tu historia» (retirados de esta entrega hasta tener contenido real).
 
 ---
 

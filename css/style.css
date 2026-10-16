@@ -2,6 +2,9 @@
    NoveNoBé · style.css
    1. Tokens  2. Reset  3. Base  4. Layout  5. Filas y carrusel
    6. Tarjetas  7. Foco accesible  8. Breakpoints  9. Movimiento reducido
+   10. Cabecera  11. Interruptor de tema  12. Panel de búsqueda  13. Hero
+   14. Luz de rellano  15. Entrada de cine y avisos  16. Ficha  17. Qué ver
+   18. Interacción de botones  19. Cierre (footer)  20. Mapa
    ========================================================= */
 
 /* 1. TOKENS ----------------------------------------------- */
@@ -102,12 +105,11 @@ button { cursor: pointer; background: none; border: none; }
 ul { list-style: none; }
 
 /* 3. BASE ------------------------------------------------- */
-html { scroll-behavior: smooth; }
+/* El color de la página vive en <html>: así la escena de fondo (z-index: -1) queda entre él y el contenido */
+html { scroll-behavior: smooth; background: var(--fondo-pagina); background-attachment: fixed; }
 
 body {
   min-height: 100svh;
-  background: var(--fondo-pagina);
-  background-attachment: fixed;
   color: var(--color-texto);
   font-family: var(--fuente-texto);
   font-size: var(--texto-m);
@@ -118,6 +120,82 @@ body {
 h1, h2, h3 { font-family: var(--fuente-titulos); font-weight: 700; line-height: var(--interlineado-titulo); }
 ::selection { background: var(--lavanda-100); color: var(--lavanda-900); }
 
+/* 3b. ESCENA DE FONDO --------------------------------------
+   Una atmósfera que cambia mientras miras, como la luz de la habitación de enfrente a lo largo del día.
+   Tres luces, una para cada tramo de la página; el scroll las funde (scrollTheme.js escribe --scroll,
+   de 0 a 1, solo en esta capa). Paleta corta: violeta (la casa), azul de medianoche y una luz cálida de proyector.
+   · alba (arriba): luz lavanda que entra por la ventana. Sobre ella, la sombra de la persiana.
+   · sala (en medio): azul de medianoche a un lado, violeta al otro: la escena se oscurece y gana profundidad.
+   · proyector (al final): un halo cálido abajo, como el haz que llega a la pantalla. Cierra hacia el footer.
+   · persiana: se «sube» al bajar (se desvanece): se revela la sala.
+   · ::after: viñeta fija, el borde de un visor.
+   Profundidad: las luces se desplazan menos que la persiana, y todo mucho menos que el contenido.
+   Todo es opacidad y translate: el navegador lo mueve en la GPU, sin repintar. */
+:root {
+  --alba-1: rgb(155 113 155 / 0.28);   --alba-2: rgb(120 58 120 / 0.18);
+  --sala-1: rgb(48 66 140 / 0.26);     --sala-2: rgb(110 58 132 / 0.2);
+  --proyector-1: rgb(226 146 112 / 0.16); --proyector-2: rgb(155 113 155 / 0.16);
+  --escena-lama: rgb(218 203 218 / 0.06);
+  --escena-vineta: rgb(4 2 6 / 0.7);
+}
+:root[data-theme="claro"] {
+  --alba-1: rgb(255 255 255 / 0.9);    --alba-2: color-mix(in srgb, var(--lavanda-500) 42%, transparent);
+  --sala-1: rgb(168 188 232 / 0.38);   --sala-2: color-mix(in srgb, var(--lavanda-300) 30%, transparent);
+  --proyector-1: rgb(250 196 164 / 0.5); --proyector-2: rgb(255 255 255 / 0.6);
+  --escena-lama: rgb(100 67 115 / 0.065);
+  --escena-vineta: rgb(98 81 106 / 0.14);
+}
+.fondo-escena { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.fondo-luz, .fondo-persiana { position: absolute; inset: -15% 0 -40%; will-change: translate, transform, opacity; }
+.fondo-luz {
+  translate: 0 calc(var(--scroll, 0) * -12%);
+  animation: fondo-deriva 60s ease-in-out infinite alternate;
+}
+.fondo-luz--alba {
+  background:
+    radial-gradient(ellipse 55% 40% at 80% 14%, var(--alba-1), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 10% 50%, var(--alba-2), transparent 70%);
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 1.8), 1);       /* manda arriba y se apaga al bajar */
+}
+.fondo-luz--sala {
+  background:
+    radial-gradient(ellipse 50% 45% at 14% 34%, var(--sala-1), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 88% 62%, var(--sala-2), transparent 70%);
+  opacity: clamp(0, min(calc(var(--scroll, 0) * 2.2), calc((1 - var(--scroll, 0)) * 2.2)), 1); /* manda en medio */
+  animation-delay: -20s; /* no deriva al compás de las otras */
+}
+.fondo-luz--proyector {
+  background:
+    radial-gradient(ellipse 60% 38% at 50% 78%, var(--proyector-1), transparent 72%),
+    radial-gradient(ellipse 40% 30% at 18% 30%, var(--proyector-2), transparent 70%);
+  opacity: clamp(0, calc(var(--scroll, 0) * 1.8 - 0.8), 1);      /* se enciende en el último tramo */
+  animation-delay: -40s;
+}
+.fondo-persiana {
+  background: repeating-linear-gradient(168deg, var(--escena-lama) 0 16px, transparent 16px 44px);
+  -webkit-mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
+          mask-image: radial-gradient(ellipse 48% 30% at 76% 16%, #000 10%, transparent 80%);
+  translate: 0 calc(var(--scroll, 0) * -22%); /* más cerca: se mueve más que la luz */
+  opacity: clamp(0, calc(1 - var(--scroll, 0) * 1.4), 1); /* al bajar, la persiana se sube */
+  animation: fondo-persiana 75s ease-in-out infinite alternate;
+}
+.fondo-escena::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 110% 85% at 50% 40%, transparent 55%, var(--escena-vineta) 100%);
+}
+@keyframes fondo-deriva   { to { transform: translate3d(-2%, 1.5%, 0) scale(1.06); } }
+@keyframes fondo-persiana { to { transform: translate3d(1.5%, 0, 0) rotate(-1deg); } }
+/* Móvil: menos capas y sin deriva (ahorra batería); las luces siguen fundiéndose con el scroll */
+@media (max-width: 599px) {
+  .fondo-persiana { display: none; }
+  .fondo-luz { animation: none; will-change: translate, opacity; }
+}
+/* Movimiento reducido: nada se mueve ni cambia al hacer scroll; queda una atmósfera fija (alba + sala) */
+@media (prefers-reduced-motion: reduce) {
+  .fondo-luz, .fondo-persiana { translate: none; animation: none; will-change: auto; }
+  .fondo-luz--sala { opacity: 0.5; }
+}
+
 /* 4. LAYOUT ----------------------------------------------- */
 main { padding: 2rem var(--margen-lateral); }
 .vista { display: flex; flex-direction: column; gap: 3rem; }
@@ -125,8 +203,25 @@ main { padding: 2rem var(--margen-lateral); }
 /* 5. FILAS Y CARRUSEL ------------------------------------- */
 .fila { display: grid; gap: 1rem; }
 
-.fila-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.fila-cabecera h2 { font-size: var(--titulo-s); }
+/* Cabecera de fila: el titular (sobretítulo + título) a la izquierda y las flechas, al pie, a la derecha */
+.fila-cabecera { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+/* Un solo estilo para los títulos de fila: «Lo que no te puedes perder» (h3), «En boca de todos» y «Para ti» (h2)
+   se ven iguales aunque su nivel en el documento sea distinto. La jerarquía la marca el título del bloque */
+.fila-cabecera :is(h2, h3), .fila-titulo {
+  font-family: var(--fuente-titulos); font-size: var(--titulo-s); font-weight: 700;
+  line-height: var(--interlineado-titulo); text-wrap: balance;
+}
+.descubre-titulo { font-size: var(--titulo-m); text-wrap: balance; }
+.generos-marco + .fila-cabecera { margin-top: 1.25rem; } /* la tira de géneros es un control: respira antes de la fila */
+
+/* «En boca de todos» · foco y penumbra: al mirar una película, las demás se apagan un poco.
+   Solo con ratón (en táctil no hay «mirar» sin pulsar); es lo que la distingue de la selección editorial */
+@media (hover: hover) {
+  .fila--boca .tarjeta { transition: opacity var(--dur-media) var(--curva-cine), filter var(--dur-media) var(--curva-cine); }
+  .fila--boca .carrusel:has(.tarjeta:is(:hover, :focus-within)) .tarjeta:not(:hover, :focus-within) {
+    opacity: 0.45; filter: grayscale(0.6) brightness(0.85);
+  }
+}
 
 .sobretitulo {
   font-family: var(--fuente-detalle);
@@ -137,13 +232,35 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 .fila-flechas { display: flex; gap: 0.5rem; flex-shrink: 0; }
-.fila-flechas button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--color-borde-control);
-  font-size: var(--texto-l);
-  transition: background-color var(--transicion);
+
+/* Flecha luminosa: sin círculo. En reposo, solo el trazo; al mirarla (cursor o teclado) aparece un halo
+   detrás y la flecha avanza 3 px hacia donde va. 44 px de área táctil aunque el trazo sea pequeño.
+   La usan las filas de películas y la tira de géneros (data-flecha da la dirección) */
+.flecha-luz {
+  position: relative; isolation: isolate;
+  width: 44px; height: 44px; border: 0; border-radius: 50%; background: none;
+  display: grid; place-items: center; color: var(--color-texto);
+}
+.flecha-luz svg {
+  width: 22px; height: 22px; overflow: visible;
+  fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+  transition: translate var(--dur-media) var(--curva-cine), filter var(--dur-media);
+}
+.flecha-luz::before { /* el halo: un foco suave detrás del trazo */
+  content: ''; position: absolute; inset: -4px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lavanda-300) 45%, transparent), transparent 68%);
+  opacity: 0; transform: scale(0.6);
+  transition: opacity var(--dur-media) var(--curva-cine), transform var(--dur-media) var(--curva-cine);
+}
+.flecha-luz:active:not(:disabled) { transform: scale(0.92); } /* al pulsar se hunde un instante (también en táctil) */
+.flecha-luz:focus-visible::before { opacity: 1; transform: scale(1); }
+.flecha-luz[data-flecha="derecha"]:focus-visible svg { translate: 3px 0; }
+.flecha-luz[data-flecha="izquierda"]:focus-visible svg { translate: -3px 0; }
+@media (hover: hover) {
+  .flecha-luz:hover:not(:disabled)::before { opacity: 1; transform: scale(1); }
+  .flecha-luz:hover:not(:disabled) svg { filter: drop-shadow(0 0 6px var(--lavanda-300)); }
+  .flecha-luz[data-flecha="derecha"]:hover:not(:disabled) svg { translate: 3px 0; }
+  .flecha-luz[data-flecha="izquierda"]:hover:not(:disabled) svg { translate: -3px 0; }
 }
 
 .carrusel {
@@ -163,10 +280,63 @@ main { padding: 2rem var(--margen-lateral); }
 
 .fila-mensaje { font-family: var(--fuente-detalle); color: var(--color-texto-suave); padding-block: 2rem; }
 
-.generos {
-  display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
-  padding: 4px 2px 12px; /* aire para el halo, el leve ascenso y la línea de la cápsula */
+/* Titular de fila con sobretítulo (el porqué de lo que se ve, en pequeño, encima del título) */
+.fila-titular { display: grid; gap: 0.35rem; min-width: 0; }
+
+/* «Para ti» sin nada guardado: tres ventanas apagadas y cómo encenderlas. Sin fingir recomendaciones */
+.carrusel:has(> .para-ti-vacio) { display: block; }
+.para-ti-vacio {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 1.25rem 2rem;
+  padding: 1.5rem clamp(1rem, 3vw, 2rem);
+  border: 1px dashed var(--color-borde-control); border-radius: var(--radio);
 }
+.para-ti-ventanas { display: flex; gap: 0.5rem; }
+.para-ti-ventanas span {
+  width: clamp(38px, 6vw, 56px); aspect-ratio: 2 / 3; border-radius: 4px;
+  border: 1px solid var(--color-borde-control);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lavanda-100) 10%, transparent), transparent);
+}
+.para-ti-ventanas span:nth-child(2) { /* la del medio, a punto de encenderse */
+  background: linear-gradient(180deg, color-mix(in srgb, var(--lavanda-300) 35%, transparent), transparent 85%);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--lavanda-300) 60%, transparent);
+}
+.para-ti-texto { display: grid; gap: 0.35rem; max-width: 52ch; }
+.para-ti-titulo { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); line-height: 1.3; }
+.para-ti-pasos { color: var(--color-texto-suave); }
+.para-ti-mas {
+  display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; border-radius: 50%;
+  border: 1px solid var(--color-borde-control); font-family: var(--fuente-detalle); line-height: 1; color: var(--color-texto);
+}
+@media (max-width: 599px) { .para-ti-vacio { grid-template-columns: 1fr; } }
+
+/* Tira de géneros: una sola fila que se desliza. El borde con más géneros se funde (como el
+   borde de un visor) y, con ratón, aparece una flecha discreta. En táctil, el gesto de siempre. */
+.generos-marco {
+  --fundido: 56px;
+  position: relative; min-width: 0; /* sin esto, la fila de la rejilla crecería con las cápsulas */
+}
+.generos {
+  display: flex; flex-wrap: nowrap; gap: 0.5rem;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  scroll-snap-type: x proximity; scroll-padding-inline: var(--fundido);
+  padding: 4px 2px 12px; /* aire para el halo, el leve ascenso y la línea de la cápsula */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fundido-antes, 0px), #000 calc(100% - var(--fundido-despues, 0px)), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 var(--fundido-antes, 0px), #000 calc(100% - var(--fundido-despues, 0px)), transparent);
+}
+.generos::-webkit-scrollbar { display: none; }
+.generos .capsula { scroll-snap-align: start; }
+.generos-marco[data-antes] { --fundido-antes: var(--fundido); }
+.generos-marco[data-despues] { --fundido-despues: var(--fundido); }
+
+.generos-flecha {
+  position: absolute; top: 4px; z-index: 1;
+  /* Sobre las cápsulas: un fundido del color de la página en vez de un círculo, para que el trazo se lea */
+  background: radial-gradient(circle, var(--color-fondo) 42%, transparent 72%);
+}
+.generos-flecha--anterior { left: 0; }
+.generos-flecha--siguiente { right: 0; }
+/* Táctil: sin flechas (el dedo ya desliza); el fundido sigue avisando de que hay más */
+@media (hover: none) { .generos-flecha { display: none; } }
 /* Los géneros de Inicio usan la cápsula de Películas (.capsula, sección «Marquesina») */
 .generos .capsula { flex-shrink: 0; white-space: nowrap; color: var(--color-texto-suave); }
 .generos .capsula[aria-pressed="true"] { color: var(--color-sobre-primario); }
@@ -189,16 +359,15 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta:is(:hover, :focus-within) { z-index: 1; } /* la elegida pasa por delante de sus vecinas */
 
-/* Enlace = superficie que se inclina hacia ti */
+/* Enlace = superficie que se eleva hacia ti (sin inclinación 3D: descartada) */
 .tarjeta-enlace {
   display: block;
   border-radius: var(--radio);
-  transform: perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0) scale(1);
+  transform: translateY(0) scale(1);
   transition: transform var(--dur-media) var(--curva-cine), box-shadow var(--dur-media);
 }
 .tarjeta-enlace:is(:hover, :focus-visible) {
-  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
-             translateY(var(--elevacion)) scale(var(--escala-hover));
+  transform: translateY(var(--elevacion)) scale(var(--escala-hover));
   box-shadow: var(--sombra-tarjeta), 0 0 0 1px rgb(218 203 218 / 0.25);
 }
 
@@ -223,7 +392,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 .tarjeta-enlace:is(:hover, :focus-visible) .tarjeta-velo { opacity: 1; }
 
-/* Haz del proyector: sigue al cursor (--mx --my las escribe tilt.js) */
+/* Haz del proyector: un foco fijo arriba del póster */
 .tarjeta-brillo {
   position: absolute; inset: 0;
   background: radial-gradient(circle at var(--mx, 50%) var(--my, 35%), var(--foco-color), transparent var(--foco-tamano));
@@ -292,6 +461,54 @@ main { padding: 2rem var(--margen-lateral); }
   font-size: var(--texto-s); line-height: 1.25; min-height: 2.5em;
   display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+/* Pie: el título manda; la cápsula de Mi lista, pequeña, a su lado (fuera del póster: no compite con él) */
+.tarjeta-pie { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 0.4rem; }
+
+/* 6b. MI LISTA · la cápsula de guardar (la misma en tarjetas, «Qué ver» y la ficha) ----------
+   Un «+» que, al guardar, se dibuja como un visto. Guardada = rellena: se reconoce de un vistazo. */
+.lista-capsula {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  border: 1px solid var(--color-borde-control); border-radius: 999px;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; white-space: nowrap;
+  color: var(--color-texto);
+  transition: background-color var(--dur-rapida), border-color var(--dur-rapida), color var(--dur-rapida),
+              opacity var(--dur-media), transform var(--dur-rapida) var(--curva-cine);
+}
+.lista-capsula:hover { border-color: var(--color-primario); }
+.lista-capsula[aria-pressed="true"] {
+  background: var(--color-primario); border-color: var(--color-primario); color: var(--color-sobre-primario);
+}
+.lista-icono { width: 16px; height: 16px; flex-shrink: 0; overflow: visible; }
+.lista-icono path {
+  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  transform-box: fill-box; transform-origin: center;
+  transition: transform var(--dur-media) var(--curva-cine), opacity var(--dur-rapida), stroke-dashoffset var(--dur-media) var(--curva-cine);
+}
+.lista-visto { stroke-dasharray: 20; stroke-dashoffset: 20; opacity: 0; }
+.lista-capsula[aria-pressed="true"] .lista-mas { transform: rotate(45deg) scale(0); opacity: 0; }
+.lista-capsula[aria-pressed="true"] .lista-visto { stroke-dashoffset: 0; opacity: 1; }
+
+/* Compacta (tarjetas): solo el icono; el texto queda para el lector de pantalla y el title */
+.lista-capsula--compacto { width: 32px; height: 32px; }
+.lista-capsula--compacto .lista-texto {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+.lista-capsula--compacto::before { content: ''; position: absolute; inset: -6px; border-radius: 50%; } /* 44px de toque */
+/* Con ratón, la de una película sin guardar se retira hasta que miras la tarjeta. Táctil: siempre a la vista */
+@media (hover: hover) {
+  .tarjeta .lista-capsula--compacto:not([aria-pressed="true"]) { opacity: 0.45; }
+  .tarjeta:is(:hover, :focus-within) .lista-capsula--compacto { opacity: 1; }
+}
+
+/* Feedback inmediato y discreto: un latido de luz al pulsar, sin ventanas emergentes */
+.lista-pulso { animation: lista-pulso 480ms var(--curva-cine); }
+@keyframes lista-pulso {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--lavanda-300) 60%, transparent); }
+  40%  { transform: scale(1.12); }
+  100% { transform: scale(1); box-shadow: 0 0 0 10px transparent; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tarjeta-enlace,
@@ -313,7 +530,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* 9. MOVIMIENTO REDUCIDO ---------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: smooth; background-color: var(--color-fondo); }
+  html { scroll-behavior: auto; background-color: var(--color-fondo); } /* sin desplazamientos animados */
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
@@ -422,8 +639,6 @@ main { padding: 2rem var(--margen-lateral); }
   transition: transform var(--transicion);
 }
 .interruptor[aria-checked="true"] .interruptor-bola { transform: translateX(18px); }
-.interruptor[aria-checked="true"] .cara-triste,
-.interruptor[aria-checked="false"] .cara-feliz { display: none; }
 
 /* 12. PANEL DE BÚSQUEDA FLOTANTE (estilo Luma) ------------ */
 .panel {
@@ -452,7 +667,11 @@ main { padding: 2rem var(--margen-lateral); }
 #buscador::placeholder { color: var(--color-texto-suave); }
 
 #resultados-busqueda { display: grid; gap: 0.25rem; margin-top: 0.5rem; max-height: 60svh; overflow-y: auto; }
-#resultados-busqueda li[data-id] { padding: 0.5rem; font-size: var(--texto-s); }
+.resultado {
+  display: flex; align-items: center; min-height: 44px; padding: 0.5rem;
+  border-radius: 4px; font-size: var(--texto-s); color: inherit; text-decoration: none;
+}
+.resultado:hover, .resultado:focus-visible { background: var(--color-secundario); }
 
 .historial-item { width: 100%; min-height: 44px; padding: 0 0.5rem; border-radius: 4px; text-align: left; }
 .historial-item:hover { background: var(--color-secundario); }
@@ -487,7 +706,6 @@ main { padding: 2rem var(--margen-lateral); }
   display: flex;
   align-items: flex-end;
   padding: clamp(1.5rem, 5vw, 3.5rem) 14% 6rem;
-  padding-bottom: 6rem;
 }
 .diapositiva[hidden] { display: none; }
 
@@ -538,8 +756,6 @@ main { padding: 2rem var(--margen-lateral); }
 :root[data-theme="claro"] .hero-logo b { color: var(--lavanda-100); }       /* #9B719B sobre claro ≈ 3.8:1 */
 .hero-logo [aria-hidden] { display: inline-block; transition: clip-path var(--dur-lenta) var(--curva-cine); }
 :root[data-theme="claro"] .hero:is(:hover, :focus-within) .hero-logo [aria-hidden] { clip-path: inset(0); }
-:root[data-theme="claro"] .hero:is(:hover, :focus-within) .hero-logo [aria-hidden] { clip-path: inset(0); }
-.hero:is(:hover, :focus-within, [data-pausado]) .diapositiva-fondo { animation-play-state: paused; }
 
 /* Persianas: 315 ms por lama + 7 × 35 ms de retraso = 560 ms (PERSIANA_MS en hero.js) */
 .hero-persianas {
@@ -659,32 +875,6 @@ main { padding: 2rem var(--margen-lateral); }
 
 /* Deslizar con el dedo sin bloquear el scroll vertical */
 .hero { touch-action: pan-y; }
-
-/* Controles */
-.hero-controles {
-  position: absolute; z-index: 3;
-  right: clamp(1rem, 3vw, 1.75rem); bottom: clamp(1rem, 3vw, 1.75rem);
-  display: flex; align-items: center; gap: 0.5rem;
-  font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
-}
-.hero-controles button {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: grid; place-items: center; font-size: var(--texto-l); color: var(--color-texto);
-  border: 1px solid var(--color-borde-control);
-  background: color-mix(in srgb, var(--color-fondo) 60%, transparent);
-  backdrop-filter: blur(6px);
-  transition: background-color var(--dur-rapida);
-}
-.hero-controles button:hover { background: var(--color-secundario); }
-.hero-controles svg { fill: currentColor; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
-#hero-pausa .icono-play,
-#hero-pausa[aria-pressed="true"] .icono-pausa { display: none; }
-#hero-pausa[aria-pressed="true"] .icono-play { display: block; }
-
-/* Movimiento reducido: sin rotación automática; la barra activa se ve llena */
-@media (prefers-reduced-motion: reduce) {
-  .hero-progreso span.activa { background: var(--color-primario); }
-}
 
 @media (min-width: 850px) {
   .cabecera { grid-template-columns: auto 1fr auto; gap: 2.5rem; padding-block: 1.5rem; }
@@ -872,7 +1062,7 @@ main { padding: 2rem var(--margen-lateral); }
 
 .ficha-volver,
 .ficha-meta,
-.ficha-nota,
+.ficha-votos,
 .ficha-nav a,
 .ficha-equipo dt,
 .ficha-ventana-pista {
@@ -906,6 +1096,290 @@ main { padding: 2rem var(--margen-lateral); }
   width: 100%; height: auto; aspect-ratio: 2 / 3; object-fit: cover;
   border-radius: var(--radio); box-shadow: var(--sombra-tarjeta);
 }
+
+/* La mirilla: una lente fina en la esquina del cartel, no una insignia.
+   Aro exterior = TMDB (la versión oficial). Aro interior = tu mirada: de día, punteado y vacío
+   (falta una mirada); de noche, tu nota. Cifra = «media lectura», como el logo: solo la mitad
+   de arriba y desenfocada; al mirarla (hover, foco o toque) se enfoca entera. */
+.ficha-poster-marco { position: relative; }
+.visor {
+  --visor-tam: 64px;
+  position: absolute; right: 0.6rem; bottom: 0.6rem;
+  width: var(--visor-tam); height: var(--visor-tam); border-radius: 50%;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--color-fondo) 72%, transparent);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); /* legibilidad sobre el cartel */
+}
+.visor:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.visor-optica { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.visor-optica * { fill: none; vector-effect: non-scaling-stroke; }
+.visor-borde { stroke: var(--color-borde-control); stroke-width: 1; opacity: 0.6; }
+.visor-marcas {   /* marcas de enfoque: calibran al aparecer */
+  stroke: var(--color-texto-suave); stroke-width: 1;
+  transform-box: view-box; transform-origin: 50% 50%;
+  animation: visor-calibra var(--dur-lenta) var(--dur-lenta) var(--curva-persiana) both; /* tras la persiana */
+}
+.visor-arco { stroke-linecap: round; transition: stroke-dasharray var(--dur-media) var(--curva-cine); }
+.visor-arco--tmdb {
+  stroke: var(--color-primario); stroke-width: 2;
+  stroke-dasharray: var(--arco-tmdb, 0) 100;
+  animation: arco-dibuja 1s var(--dur-lenta) var(--curva-cine) both;
+}
+.visor-arco--propia { stroke: var(--color-borde-control); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
+
+/* De noche: la mayoría queda tenue y tu mirada toma el aro interior.
+   Otros nombres de animación: al cambiar de tema, la mirilla vuelve a calibrar (sin JS). */
+:root[data-theme="oscuro"] .visor-arco--tmdb { opacity: 0.5; animation-name: arco-dibuja-noche; }
+:root[data-theme="oscuro"] .visor-marcas { animation-name: visor-calibra-noche; }
+:root[data-theme="oscuro"] .visor-arco--propia {
+  stroke: var(--lavanda-300); stroke-width: 3; opacity: 1;
+  stroke-dasharray: var(--arco-propia, 0) 100;
+  animation: arco-dibuja-noche 1s var(--dur-lenta) var(--curva-cine) both;
+}
+
+.visor-cifra, .visor-propia {
+  position: relative;
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.15rem; line-height: 1;
+}
+.visor-cifra {
+  color: var(--color-texto);
+  clip-path: inset(0 0 50% 0); filter: blur(1.5px);
+  transition: clip-path var(--dur-media) var(--curva-persiana), filter var(--dur-media);
+}
+.visor:is(:hover, :focus-visible, [aria-pressed="true"]) .visor-cifra { clip-path: inset(0); filter: none; }
+.visor-propia { position: absolute; color: var(--lavanda-300); }
+
+/* De día no hay nota pública que enfocar si TMDB no tiene votos: la mirilla no aparece */
+:root[data-theme="claro"] .visor[data-sin-tmdb] { display: none; }
+
+/* De noche lo oculto se hace visible: la cifra pública se retira (no hay media lectura ni desenfoque)
+   y el centro es tuyo, nítido. Sin nota, la mirilla pregunta. Al mirarla, la lente se acerca. */
+:root[data-theme="oscuro"] .visor-cifra { display: none; }
+:root[data-theme="oscuro"] .visor:not([data-propia]) .visor-propia::before {
+  content: '¿Y tú?'; font-family: var(--fuente-titulos); font-style: italic; font-weight: 400; font-size: 0.8rem;
+}
+:root[data-theme="oscuro"] .visor { transition: scale var(--dur-media) var(--curva-cine); }
+:root[data-theme="oscuro"] .visor:is(:hover, :focus-visible) { scale: 1.14; }
+:root[data-theme="oscuro"] .visor:is(:hover, :focus-visible) .visor-arco--propia { stroke-width: 4; }
+
+/* La leyenda: de día se descubre al mirar la nota pública; de noche la tuya está a la vista */
+.ficha-votos { transition: opacity var(--dur-media); }
+:root[data-theme="claro"] .ficha-votos { opacity: 0; } /* reserva su sitio: no hay saltos */
+:root[data-theme="claro"] .ficha-cabecera:has(.visor:is(:hover, :focus-visible, [aria-pressed="true"])) .ficha-votos { opacity: 1; }
+:root[data-theme="oscuro"] .ficha-votos { color: var(--lavanda-300); }
+
+/* La fila de la nota: la cápsula de Mi lista (acción, siempre a la vista) y la leyenda de la mirilla,
+   que de día se descubre al mirarla. La cápsula es la de las tarjetas, en su versión con texto. */
+.ficha-nota-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.1rem; }
+.lista-capsula--ficha {
+  min-height: 44px; padding: 0.5rem 1.15rem 0.5rem 0.95rem;
+  background: color-mix(in srgb, var(--color-fondo) 55%, transparent);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); /* legible sobre el fotograma */
+}
+.lista-capsula--ficha:hover { transform: translateY(-1px); box-shadow: var(--capsula-halo); }
+.lista-capsula--ficha[aria-pressed="true"] { background: var(--color-primario); }
+
+/* La tira de película (solo «Tu enfoque»): tu nota como fotogramas revelados; es el propio control. */
+.tira { display: grid; gap: 0.3rem; }
+.tira[hidden] { display: none; }
+.tira-fotogramas {
+  --perforacion: color-mix(in srgb, var(--color-texto-suave) 55%, transparent);
+  list-style: none; margin: 0; padding: 8px 4px;
+  display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px;
+  border: 1px solid var(--color-borde); border-radius: 3px;
+  background: /* las perforaciones del celuloide, arriba y abajo */
+    repeating-linear-gradient(90deg, var(--perforacion) 0 4px, transparent 4px 9px) left 4px top 2px / calc(100% - 8px) 3px no-repeat,
+    repeating-linear-gradient(90deg, var(--perforacion) 0 4px, transparent 4px 9px) left 4px bottom 2px / calc(100% - 8px) 3px no-repeat,
+    var(--color-atenuado);
+}
+.tira-fotogramas li { position: relative; height: 14px; overflow: hidden; border: 1px solid var(--color-borde); }
+.tira-fotogramas li::before { /* lo revelado del fotograma */
+  content: ''; position: absolute; inset: 0; background: var(--tira-color);
+  transform-origin: left; transform: scaleX(var(--revelado, 0));
+  transition: transform var(--dur-media) var(--curva-cine) calc(var(--i, 0) * 45ms);
+}
+.tira--propia { --tira-color: var(--lavanda-300); }
+
+/* Tu enfoque: la tira es el control. El rango va encima, sin pista; solo se ve su cabezal,
+   alineado con los fotogramas (5px = relleno + borde de la tira). Teclado y lector: el rango de siempre. */
+.calibre-tira { position: relative; height: 32px; }
+.calibre-tira .tira-fotogramas { height: 32px; }
+.calibre-tira .tira-fotogramas li::before { transition: transform 120ms linear; } /* al arrastrar, sin escalonado */
+.calibre-tira .maquina-regla {
+  position: absolute; inset: 0 5px; width: calc(100% - 10px); height: 100%; margin: 0;
+  cursor: default; /* el cursor del sistema: la doble flecha (ew-resize) sobraba dentro de la tira */
+}
+.calibre-tira .maquina-regla::-webkit-slider-runnable-track { height: 32px; background: none; }
+.calibre-tira .maquina-regla::-moz-range-track { height: 32px; background: none; }
+.calibre-tira .maquina-regla::-webkit-slider-thumb { width: 2px; height: 32px; margin-top: 0; }
+.calibre-tira .maquina-regla::-moz-range-thumb { width: 2px; height: 32px; }
+.calibre-tira .maquina-regla:focus-visible { outline: none; }
+.calibre-tira:has(.maquina-regla:focus-visible) .tira-fotogramas { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+/* Al pasar por la tira, una luz suave sigue al cursor (--mx desde main.js, como cápsulas y botones).
+   No intercepta nada: el rango de encima sigue recibiendo clics, arrastres y teclado */
+.calibre-tira::after {
+  content: ''; position: absolute; inset: 0; border-radius: 3px; pointer-events: none;
+  background: radial-gradient(circle 48px at var(--mx, 50%) 50%, color-mix(in srgb, var(--lavanda-300) 28%, transparent), transparent 75%);
+  opacity: 0; transition: opacity var(--dur-media);
+}
+@media (hover: hover) {
+  .calibre-tira:hover::after { opacity: 1; }
+  .calibre-tira:hover .tira-fotogramas { border-color: var(--lavanda-300); }
+}
+
+@media (prefers-reduced-motion: reduce) { .tira-fotogramas li::before { transition: none; } }
+
+@keyframes visor-calibra       { from { transform: rotate(-45deg); opacity: 0; } }
+@keyframes visor-calibra-noche { from { transform: rotate(45deg);  opacity: 0; } } /* gira al revés: mira otra vez */
+@keyframes arco-dibuja         { from { stroke-dasharray: 0 100; } }
+@keyframes arco-dibuja-noche   { from { stroke-dasharray: 0 100; } }
+
+/* B. Lo que se sabe | lo que se ve: ficha técnica y tu lectura, separadas por una línea de enfoque.
+   En la línea, una mirilla pequeña hace de nexo: de los datos objetivos a la interpretación propia.
+   En móvil, una debajo de otra (sin columnas que compriman los campos). */
+.ficha-par { display: grid; gap: 3.5rem; align-items: start; }
+@media (min-width: 1024px) {
+  .ficha-par { grid-template-columns: minmax(0, 700px) minmax(280px, 400px); gap: clamp(2rem, 4vw, 3.5rem); }
+  #seccion-mirada {
+    position: relative; align-self: stretch;
+    padding-left: clamp(1.5rem, 3vw, 2.5rem); border-left: 1px solid var(--color-borde);
+  }
+  #seccion-mirada::before { /* la mirilla-nexo: de día vacía, de noche enfocada */
+    content: ''; position: absolute; left: -8px; top: 0.15rem;
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 1px solid var(--color-borde-control); background: var(--color-fondo);
+  }
+  :root[data-theme="oscuro"] #seccion-mirada::before {
+    border-color: var(--lavanda-300);
+    background: radial-gradient(circle, var(--lavanda-300) 0 2px, var(--color-fondo) 2.5px);
+  }
+}
+
+/* De día: la rendija. Una frase en voz baja, sin nada de la otra lectura */
+.ficha-rendija { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); color: var(--color-texto-suave); }
+.ficha-rendija span { color: var(--color-primario); }
+
+/* De noche: la máquina de mirar. Pocos controles: escribir, calibrar, revelar */
+.maquina { display: grid; gap: 1.25rem; }
+.maquina-piloto, .maquina-etiqueta, .maquina-estado, .maquina-borrar, .maquina-revelado-meta {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+/* Piloto: un único indicador de estado (sin calibrar → calibrando → revelada) */
+.maquina-piloto { display: flex; align-items: center; gap: 0.6rem; }
+.maquina-piloto::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid var(--color-borde-control);
+  transition: background-color var(--dur-media), border-color var(--dur-media);
+}
+.maquina-piloto[data-estado="calibrando"]::before { background: var(--lavanda-300); border-color: var(--lavanda-300); }
+.maquina-piloto[data-estado="revelada"]::before { background: var(--color-primario); border-color: var(--color-primario); }
+
+/* Registrar la longitud de las marcas permite animarla (una variable CSS normal no se interpola) */
+@property --marca-l { syntax: '<length>'; inherits: false; initial-value: 14px; }
+/* La placa: el núcleo. Cuatro marcas de enfoque (la misma familia que la mirilla) que se cierran al escribir */
+.maquina-placa {
+  --marca: var(--color-borde-control); --marca-l: 14px;
+  display: grid; gap: 0.75rem; padding: 1.25rem;
+  background:
+    linear-gradient(var(--marca), var(--marca)) top left / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) top left / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) top right / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) top right / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) bottom left / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) bottom left / 1px var(--marca-l),
+    linear-gradient(var(--marca), var(--marca)) bottom right / var(--marca-l) 1px,
+    linear-gradient(var(--marca), var(--marca)) bottom right / 1px var(--marca-l);
+  background-repeat: no-repeat;
+  transition: --marca-l var(--dur-media);
+}
+.maquina-placa:focus-within { --marca: var(--lavanda-300); --marca-l: 26px; } /* enfoca: es el foco visible */
+.maquina-pregunta { font-family: var(--fuente-titulos); font-style: italic; font-size: var(--texto-l); }
+.maquina-texto {
+  width: 100%; min-height: 6.4em; resize: vertical; border: 0; padding: 0;
+  font-family: var(--fuente-titulos); font-size: var(--texto-m); line-height: 1.6em; color: var(--color-texto);
+  background: repeating-linear-gradient(transparent 0 calc(1.6em - 1px), var(--color-borde) calc(1.6em - 1px) 1.6em);
+}
+.maquina-texto:focus { outline: none; } /* el foco lo marcan las esquinas de la placa */
+.maquina-texto::placeholder { color: var(--color-texto-suave); font-style: italic; }
+
+/* El calibre: una regla con una muesca. Hasta que la mueves, la cifra dice «¿Y tú?» */
+.maquina-calibre { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.4rem 1rem; }
+.maquina-etiqueta { grid-column: 1 / -1; }
+.maquina-regla {
+  --regla: repeating-linear-gradient(90deg, var(--color-borde-control) 0 1px, transparent 1px 10%) 0 50% / 100% 10px no-repeat,
+           linear-gradient(var(--color-borde-control), var(--color-borde-control)) 0 100% / 100% 1px no-repeat;
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 32px; background: none; cursor: pointer;
+}
+.maquina-regla::-webkit-slider-runnable-track { height: 18px; background: var(--regla); }
+.maquina-regla::-moz-range-track { height: 18px; background: var(--regla); }
+.maquina-regla::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 3px; height: 26px; margin-top: -4px; border-radius: 1px;
+  background: var(--lavanda-300); transition: background-color var(--dur-media);
+}
+.maquina-regla::-moz-range-thumb {
+  width: 3px; height: 26px; border: 0; border-radius: 1px; background: var(--lavanda-300);
+}
+.maquina-regla[data-vacia]::-webkit-slider-thumb { background: var(--color-borde-control); }
+.maquina-regla[data-vacia]::-moz-range-thumb { background: var(--color-borde-control); }
+.maquina-regla:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
+.maquina-cifra {
+  min-width: 4.5ch; text-align: center;
+  font-family: var(--fuente-marca); font-weight: 800; font-size: 1.6rem; line-height: 1; color: var(--lavanda-300);
+}
+.maquina-cifra[data-vacia] { font-size: var(--texto-m); filter: blur(0.6px); color: var(--color-texto-suave); }
+
+.maquina-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+/* Dos estados de la máquina: escribiendo (placa + calibre + revelar) o revelada (resultado + reescribir) */
+.maquina-reescribir,
+.maquina[data-revelada] :is(.maquina-placa, .maquina-calibre, .maquina-revelar) { display: none; }
+.maquina[data-revelada] .maquina-reescribir { display: inline; }
+.maquina[data-revelada] .maquina-volver { display: none; } /* Volver solo tiene sentido mientras escribes */
+.maquina:not([data-revelada]) .maquina-revelado { display: none; } /* mientras escribes, no se repite */
+.maquina[data-revelada] .maquina-acciones { order: 1; } /* las acciones, debajo de la lectura */
+.maquina-borrar { text-decoration: underline; text-underline-offset: 4px; }
+.maquina-borrar:hover { color: var(--color-texto); }
+.maquina-borrar:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.maquina-estado:empty { display: none; }
+
+/* El resultado: tu lectura revelada, con la persiana (la misma que abre el mapa) */
+.maquina-revelado {
+  display: grid; gap: 0.4rem; padding-left: 1rem; border-left: 1px solid var(--lavanda-300);
+  animation: persiana-sube var(--dur-lenta) var(--curva-persiana);
+}
+.maquina-revelado[hidden] { display: none; }
+.maquina-revelado-meta { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+/* El archivo de observaciones: cada una, una pista. La última, nítida; las anteriores, más tenues */
+.archivo { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.archivo:empty { display: none; }
+.observacion { display: grid; gap: 0.3rem; }
+.observacion-texto { font-family: var(--fuente-titulos); font-style: italic; line-height: 1.4; overflow-wrap: anywhere; }
+.archivo-ultima .observacion-texto { font-size: var(--texto-l); }
+.archivo-anteriores .observacion-texto { font-size: var(--texto-m); color: var(--color-texto-suave); }
+.observacion-meta, .archivo-anteriores summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1rem;
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+/* Corregir / Borrar aparecen al mirar la observación (en táctil, siempre) */
+.observacion-accion { opacity: 0; transition: opacity var(--dur-media) var(--curva-cine); }
+.observacion:is(:hover, :focus-within) .observacion-accion { opacity: 1; }
+@media (hover: none) { .observacion-accion { opacity: 1; } }
+
+.archivo-anteriores[hidden] { display: none; }
+.archivo-anteriores summary { cursor: pointer; list-style: none; padding-block: 0.5rem; }
+.archivo-anteriores summary::-webkit-details-marker { display: none; }
+.archivo-anteriores summary::after { content: '＋'; }
+.archivo-anteriores[open] summary::after { content: '－'; }
+.archivo-anteriores summary:hover { color: var(--color-texto); }
+.archivo-anteriores summary:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 3px; }
+.archivo-anteriores[open] > .archivo { animation: persiana-sube var(--dur-lenta) var(--curva-persiana); }
+@media (prefers-reduced-motion: reduce) {
+  .observacion-accion { transition: none; }
+  .archivo-anteriores[open] > .archivo { animation: none; }
+}
+
 .ficha-info { display: grid; gap: 0.85rem; max-width: 62ch; }
 .ficha-titulo {
   font-family: var(--fuente-titulos); font-size: var(--titulo-m);
@@ -924,7 +1398,9 @@ main { padding: 2rem var(--margen-lateral); }
 
 @media (max-width: 640px) {
   .ficha-cabecera-cuerpo { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-  .ficha-poster { width: 160px; }
+  .ficha-poster-marco { width: 160px; }
+  .visor { --visor-tam: 56px; right: 0.4rem; bottom: 0.4rem; }
+  .ficha-nota-fila { justify-content: center; }
   .ficha-generos { justify-content: center; }
 }
 
@@ -971,29 +1447,37 @@ main { padding: 2rem var(--margen-lateral); }
   .ficha-nav a { transition: none; }
 }
 
-/* ---------- Ficha: reparto como patio de ventanas ---------- */
+/* ---------- Ficha: reparto como fachada de ventanas ---------- */
 /* El edificio de enfrente: cada persona es una ventana en penumbra que se enciende al mirarla.
-   Ratón: se enciende la que miras. Teclado: al enfocar el patio se encienden todas. */
+   Ratón: se enciende la que miras. Teclado: al enfocar el patio se encienden todas.
+   La fachada ocupa el ancho de la ficha y se enmarca con la misma línea fina que la ficha técnica. */
+.seccion-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.patio-pista {
+  font-family: var(--fuente-detalle); font-size: var(--texto-meta);
+  letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--color-texto-suave);
+}
+.ficha-seccion:has(.patio[hidden]) .patio-pista { display: none; }
+
 .patio {
-  --ventanas-fila: 3;
+  --ventanas-fila: 4;
   --ventana-penumbra: grayscale(0.85) brightness(0.45);
   --ventana-luz: color-mix(in srgb, var(--lavanda-300) 30%, transparent);
-  list-style: none; margin: 0; max-width: 760px;
-  display: grid; grid-template-columns: repeat(var(--ventanas-fila), 1fr);
-  gap: clamp(1rem, 2.5vw, 1.5rem) clamp(0.75rem, 2vw, 1.25rem);
-  padding: clamp(1rem, 2.5vw, 1.5rem);
-  background: var(--color-atenuado); border-radius: var(--radio);
+  list-style: none; margin: 0;
+  display: grid; grid-template-columns: repeat(var(--ventanas-fila), minmax(0, 1fr));
+  gap: clamp(1rem, 2.5vw, 1.5rem) clamp(0.5rem, 1.5vw, 1.25rem);
+  padding-block: clamp(1rem, 2.5vw, 1.5rem);
+  border-block: 1px solid var(--color-borde);
 }
 :root[data-theme="claro"] .patio {
   --ventana-penumbra: grayscale(0.7) contrast(0.85) brightness(1.08); /* de día, el cristal refleja el cielo */
   --ventana-luz: color-mix(in srgb, var(--lavanda-100) 22%, transparent);
 }
-@media (min-width: 640px) { .patio { --ventanas-fila: 4; } }
+@media (min-width: 1024px) { .patio { --ventanas-fila: 8; } } /* una sola planta */
 .patio[hidden] { display: none; }
 .fila-flechas[hidden], .carrusel[hidden] { display: none; } /* lo usan los demás carruseles */
 .patio:focus-visible { outline: 2px solid var(--color-foco); outline-offset: 4px; }
 
-.persona { display: grid; gap: 0.25rem; }
+.persona { display: grid; gap: 0.25rem; align-content: start; }
 .persona-foto {
   position: relative;
   aspect-ratio: 2 / 3;
@@ -1002,7 +1486,7 @@ main { padding: 2rem var(--margen-lateral); }
   background: var(--color-secundario);
   display: grid;
   place-items: center;
-  box-shadow: 0 0 0 3px var(--color-borde); /* el marco de la ventana */
+  outline: 3px solid var(--color-borde); outline-offset: -3px; /* el marco, por dentro: no se sale de la fachada */
 }
 .persona-foto::after { /* la lámpara del cuarto: luz cálida desde arriba */
   content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -1014,7 +1498,7 @@ main { padding: 2rem var(--margen-lateral); }
   filter: var(--ventana-penumbra); transition: filter var(--dur-lenta) var(--curva-cine);
 }
 .persona-iniciales { font-family: var(--fuente-titulos); font-size: 1.75rem; color: var(--color-texto-suave); }
-.persona-nombre { font-weight: 700; margin-top: 0.5rem; }
+.persona-nombre { font-weight: 700; margin-top: 0.5rem; font-size: var(--texto-s); }
 .persona-personaje {
   font-family: var(--fuente-detalle); font-size: var(--texto-xs); color: var(--color-texto-suave);
   opacity: 0; translate: 0 -4px;
@@ -1035,6 +1519,7 @@ main { padding: 2rem var(--margen-lateral); }
 /* En pantallas táctiles no hay «mirar sin tocar»: el personaje se lee siempre */
 @media (hover: none) {
   .persona-personaje { opacity: 1; translate: 0 0; }
+  .patio-pista { display: none; } /* sin ratón no hay «mirar»: la pista sobra */
 }
 @media (prefers-reduced-motion: reduce) {
   .persona-img, .persona-foto::after, .persona-personaje { transition: none; }
@@ -1364,7 +1849,7 @@ main { padding: 2rem var(--margen-lateral); }
   padding: 0; font-family: var(--fuente-titulos); font-style: italic; font-weight: 700;
   font-size: var(--titulo-s); line-height: var(--interlineado-titulo); text-wrap: balance;
 }
-.qv-pregunta-subtitulo { margin-top: -0.4rem; color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
+.qv-pregunta-subtitulo { margin-top: 0.5rem; /* el <legend> no es celda de la rejilla: el gap no lo separa */ color: var(--color-texto-suave); line-height: var(--interlineado-texto); }
 .qv-opciones { display: grid; gap: 0.75rem; }
 @media (min-width: 600px) { .qv-opciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
@@ -1650,11 +2135,17 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 /* =========================================================
-   10. INTERACCIÓN DE BOTONES: una familia, cuatro registros
+   18. INTERACCIÓN DE BOTONES: una familia, cuatro registros
    Base común: la misma duración y curva, ascenso de 1-2px al acercarse y
    un leve «hundimiento» al pulsar. Solo con ratón (hover: hover); en táctil,
    solo la respuesta al pulsar. Con movimiento reducido, sin desplazamientos.
    ========================================================= */
+:is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado) {
+  --boton-luz: var(--capsula-luz); /* contorno: la luz de las cápsulas */
+}
+:is(.diapositiva-boton, .qv-boton:not(.qv-boton--secundario)) {
+  --boton-luz: rgb(255 255 255 / 0.5); /* relleno: un destello blanco, visible de día y de noche */
+}
 :is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado,
     .icono-boton, .fila-flechas button, .ml-quitar, .ml-deshacer) {
   transition: transform var(--dur-rapida) var(--curva-cine), filter var(--dur-rapida),
@@ -1674,8 +2165,12 @@ main { padding: 2rem var(--margen-lateral); }
     background: color-mix(in srgb, var(--color-primario) 10%, transparent);
   }
   .ml-estado[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--color-primario) 18%, transparent); }
+  /* Rellenos y de contorno: la luz sigue al cursor por todo el botón (--mx --my desde main.js, como las cápsulas) */
+  :is(.diapositiva-boton, .qv-boton, .boton-mas, .ml-filtro, .ml-estado, .ml-estado[aria-pressed="true"]):hover {
+    background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--boton-luz), transparent 65%);
+  }
   /* 3. Iconos y flechas: el círculo se ilumina, el icono no se mueve */
-  .icono-boton:hover, .fila-flechas button:hover {
+  .icono-boton:hover {
     background: var(--color-secundario); color: var(--color-texto);
     box-shadow: inset 0 0 0 1px var(--color-borde-control);
   }
@@ -1702,7 +2197,7 @@ main { padding: 2rem var(--margen-lateral); }
 }
 
 /* =========================================================
-   11. CIERRE (footer): el último plano de la experiencia
+   19. CIERRE (footer): el último plano de la experiencia
    ========================================================= */
 .cierre {
   position: relative; margin-top: 4rem;
@@ -1740,22 +2235,107 @@ main { padding: 2rem var(--margen-lateral); }
   letter-spacing: var(--tracking-meta); text-transform: uppercase;
 }
 
-/* Marca · navegación · créditos */
+/* Firma · créditos. Sin segundo menú: la navegación ya está arriba, fija, a un gesto de distancia */
 .cierre-fila {
   display: grid; gap: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-borde);
   font-size: var(--texto-s); line-height: var(--interlineado-texto);
 }
-.cierre-logo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); color: var(--color-texto); }
-.cierre-nav ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
-.cierre-nav a, .cierre-creditos a {
-  display: inline-block; padding-block: 0.6rem; color: var(--color-texto-suave);
-  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 5px;
+/* La firma: el emblema y, a su derecha, el nombre y el lema (dos líneas que se leen como un sello) */
+.cierre-marca {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 1rem;
+}
+.cierre-emblema {
+  grid-row: span 2; width: 48px; aspect-ratio: 1;
+  /* El SVG original como máscara: se reutiliza tal cual (sin redibujarlo) y toma el color del tema
+     de la web, no el del sistema. Son los mismos dos tonos que el propio favicon usa en claro y oscuro */
+  background: var(--cierre-emblema-color, var(--lavanda-700));
+  -webkit-mask: url('../img/favicon-c.svg') center / contain no-repeat;
+          mask: url('../img/favicon-c.svg') center / contain no-repeat;
+}
+:root[data-theme="claro"] { --cierre-emblema-color: var(--lavanda-100); }
+.cierre-logo { font-family: var(--fuente-titulos); font-weight: 700; font-size: var(--texto-l); line-height: 1.2; color: var(--color-texto); }
+.cierre-creditos a {
+  color: var(--color-texto-suave);
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 5px;
   transition: color var(--dur-rapida), text-decoration-color var(--dur-rapida);
 }
-.cierre-creditos a { padding-block: 0; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
 .cierre-creditos { display: grid; gap: 0.5rem; font-size: var(--texto-xs); max-width: 48ch; }
 @media (min-width: 850px) {
-  .cierre-fila { grid-template-columns: auto 1fr minmax(0, 46ch); align-items: start; gap: 3rem; }
-  .cierre-nav ul { justify-content: center; }
+  .cierre-fila { grid-template-columns: auto minmax(0, 46ch); justify-content: space-between; align-items: center; gap: 3rem; }
+  .cierre-creditos { text-align: right; justify-items: end; }
 }
-@media (prefers-reduced-motion: reduce) { .cierre-nav a, .cierre-creditos a { transition: none; } }
+@media (max-width: 599px) { .cierre-emblema { width: 40px; } }
+@media (prefers-reduced-motion: reduce) { .cierre-creditos a { transition: none; } }
+
+/* Mapa: OpenStreetMap en negativo para el tema oscuro (cine noir) */
+:root:not([data-theme="claro"]) .mapa-teselas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.5);
+}
+
+/* 20. MAPA: «AJUSTAR EL FOCO» ---------------------------------------------
+   Lo que no miras está desenfocado; al decidir mirar, se revela.
+   Solo se desenfoca el fondo (tile-pane): el marcador del país siempre se lee. */
+.ficha-mapa {
+  --foco-color: var(--lavanda-300);
+  --foco-luz: color-mix(in srgb, var(--lavanda-300) 45%, transparent);
+  --foco-halo: color-mix(in srgb, var(--color-primario) 30%, transparent);
+  --foco-vineta: rgb(0 0 0 / 0.55);
+  --foco-blur: 1.6px;
+  transition: box-shadow 320ms var(--curva-cine);
+}
+:root[data-theme="claro"] .ficha-mapa {
+  --foco-color: var(--color-primario);
+  --foco-luz: color-mix(in srgb, #FFFFFF 40%, transparent);
+  --foco-vineta: transparent;
+  --foco-blur: 1px;
+}
+
+/* Fondo desenfocado en reposo */
+.ficha-mapa .leaflet-tile-pane {
+  filter: blur(var(--foco-blur)) saturate(0.6);
+  transition: filter 320ms var(--curva-cine);
+}
+
+/* Halo que sigue al cursor + viñeta de lente (por debajo del marcador) */
+.ficha-mapa::before {
+  content: ''; position: absolute; inset: 0; z-index: 350; pointer-events: none;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--foco-luz), transparent 55%);
+  box-shadow: inset 0 0 48px var(--foco-vineta);
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: opacity 320ms var(--curva-cine);
+}
+
+/* Esquinas de visor: 8 líneas dibujadas con gradientes, sin HTML extra */
+.ficha-mapa::after {
+  --l: 18px; --g: 1.5px; --c: var(--foco-color);
+  content: ''; position: absolute; inset: 10px 10px 28px; z-index: 700; pointer-events: none;
+  background:
+    linear-gradient(var(--c) 0 0) top left / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) top left / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) top right / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) top right / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) bottom left / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) bottom left / var(--g) var(--l),
+    linear-gradient(var(--c) 0 0) bottom right / var(--l) var(--g),
+    linear-gradient(var(--c) 0 0) bottom right / var(--g) var(--l);
+  background-repeat: no-repeat;
+  opacity: 0; scale: 1.06;
+  transition: opacity 320ms var(--curva-cine), scale 320ms var(--curva-cine);
+}
+
+/* Mirar: ratón o teclado */
+.ficha-mapa:is(:hover, :focus-visible) { box-shadow: 0 0 28px var(--foco-halo); }
+.ficha-mapa:is(:hover, :focus-visible) .leaflet-tile-pane { filter: none; }
+.ficha-mapa:is(:hover, :focus-visible)::before { opacity: 1; }
+.ficha-mapa:is(:hover, :focus-visible)::after { opacity: 1; scale: 1; }
+
+/* Táctil: no hay hover, el mapa se muestra ya enfocado */
+@media (hover: none) {
+  .ficha-mapa .leaflet-tile-pane { filter: none; }
+  .ficha-mapa::after { opacity: 1; scale: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ficha-mapa, .ficha-mapa::before, .ficha-mapa::after,
+  .ficha-mapa .leaflet-tile-pane { transition: none; }
+}
